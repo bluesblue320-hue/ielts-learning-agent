@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines **how** to execute one node from the current authorized
+This document defines **how** to execute each node from the current authorized
 phase graph. It does not authorize a phase, start phase execution, or activate a
 node by itself. Apply the loop only after the current phase and its graph have
 been explicitly authorized for execution.
@@ -17,6 +17,69 @@ Observe
   -> Fix if needed
   -> Commit
   -> Repeat
+```
+
+## Phase Execution Loop
+
+### Purpose
+
+The Phase Execution Loop defines how an authorized phase may be executed
+continuously across multiple graph nodes.
+
+It does not authorize a phase by itself.
+
+Phase execution may begin only when:
+
+1. the phase graph exists;
+2. the phase has been explicitly authorized for execution;
+3. at least one node is `READY`.
+
+Once continuous phase execution is explicitly authorized, the executor may
+continue selecting and executing `READY` nodes without requiring new user
+authorization after every completed node.
+
+The executor must stop only when:
+
+- the graph reaches its declared `STOP` condition;
+- execution enters an unrecoverable `BLOCKED` state;
+- explicit execution authority is revoked;
+- continuing would require work outside the authorized phase.
+
+### Phase loop
+
+```text
+START
+  ↓
+Observe phase state
+  ↓
+Re-read authorized graph
+  ↓
+Phase complete?
+  ├── YES → Final validation → Report → STOP
+  │
+  └── NO
+       ↓
+Select READY node
+       ↓
+Execute Node Loop
+       ↓
+Node accepted?
+  ├── NO → FIXING
+  │        ↓
+  │      Fix
+  │        ↓
+  │      Revalidate
+  │        └───────────────┐
+  │                        │
+  └── YES                  │
+       ↓                   │
+Mark COMPLETE              │
+       ↓                   │
+Commit checkpoint          │
+       ↓                   │
+Record evidence            │
+       ↓                   │
+Re-read graph ─────────────┘
 ```
 
 ## 1. Observe
