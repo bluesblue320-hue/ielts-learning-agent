@@ -59,8 +59,12 @@ architecture, frontend implementation, and fine-tuning.
 
 1. The evaluator depends on an LLM provider interface or protocol, never on the
    DeepSeek implementation directly.
-2. Automated tests use a deterministic fake provider and never require a real
-   API key or live network call.
+2. The deterministic fake provider is only a test seam for tests, deterministic
+   validation, and explicitly test-scoped application composition. Tests inject
+   or override it through a clearly test-specific mechanism; ordinary production
+   runtime configuration cannot select it as a provider. Production composition
+   uses the provider protocol with `DeepSeekProvider`, while tests may use the
+   same protocol with `FakeProvider`.
 3. DeepSeek credentials and model configuration come from environment variables;
    real credentials are never committed or placed in CI workflows.
 4. Provider output entering application logic is structured and validated with
@@ -68,18 +72,29 @@ architecture, frontend implementation, and fine-tuning.
 5. Evaluation criteria represent Task Response, Coherence and Cohesion, Lexical
    Resource, and Grammatical Range and Accuracy. Existing IELTS half-band
    validation is reused where appropriate.
-6. Any product evaluation band derived from criterion scores uses a documented,
-   deterministic, tested aggregation policy. It is not described as an exact
-   reproduction of the official final IELTS Writing band unless independently
-   verified.
+6. Before evaluator implementation, `P2-02` freezes the product-band aggregation
+   contract: criterion inputs, weights, formula, permitted input precision,
+   output precision, rounding or quantization, exact tie behavior, boundaries at
+   0 and 9, and invalid or missing input handling. Boundary and rounding tests
+   precede `P2-07`, which consumes this accepted policy rather than inventing one.
+   The product band is not described as an exact reproduction of the official
+   final IELTS Writing band unless independently verified.
 7. Word count is computed deterministically and may be evaluation evidence. An
    essay is not rejected merely because it contains fewer than 250 words.
-8. No successful evaluation record is written unless provider output has passed
+8. The IELTS question and essay are untrusted, user-controlled content and are
+   never evaluator instructions. The provider request establishes a clear,
+   testable trust boundary between trusted rubric, criterion definitions,
+   structured-output contract, scoring policy, prompt version, and provider
+   safety constraints on one side and untrusted question/essay content on the
+   other. Instructions embedded in user content cannot override the trusted
+   contract. No single fragile delimiter syntax is mandated, and the graph does
+   not claim prompt injection can be perfectly prevented.
+9. No successful evaluation record is written unless provider output has passed
    validation. Attempt/evaluation transaction boundaries and rollback behavior
    are explicit; persistence failure cannot produce a reported success.
-9. Retries are bounded and limited to justified transient provider failures.
-   Validation errors and deterministic database failures are not blindly retried.
-10. Phase 1's isolated PostgreSQL `test-db` remains the only database used by
+10. Retries are bounded and limited to justified transient provider failures.
+    Validation errors and deterministic database failures are not blindly retried.
+11. Phase 1's isolated PostgreSQL `test-db` remains the only database used by
     database and migration tests.
 
 ## Node states and failure gate
@@ -172,24 +187,34 @@ validation node can route around a failed deterministic or integration test.
 ### P2-02 — Writing Domain Schemas
 
 - **Purpose:** Define the typed HTTP/domain boundaries for a Task 2 submission,
-  criterion evidence, validated provider output, and evaluation response.
+  criterion evidence, validated provider output, and evaluation response, and
+  freeze the deterministic product-band aggregation contract before evaluator
+  implementation.
 - **Dependencies:** `P2-01`.
 - **Inputs:** Existing `BandScore`, the four IELTS Task 2 criteria, conceptual
-  request/response shapes, deterministic word-count rule, and aggregation policy
-  requirements.
+  request/response shapes, deterministic word-count rule, and an explicit policy
+  decision covering aggregation inputs, weights, formula, precision, rounding,
+  ties, boundaries, and invalid or missing inputs.
 - **Deliverables:** Pydantic v2 schemas for submission, provider result,
   criterion-level feedback, and API result; a documented deterministic word-count
-  function or schema-adjacent domain utility if needed.
+  function or schema-adjacent domain utility if needed; and a concrete aggregation
+  policy specification defining criterion inputs and weights, formula, permitted
+  input and output precision, rounding/quantization, exact tie behavior, 0/9
+  boundaries, and invalid or missing input handling.
 - **Required validation:** Test valid and invalid requests; blank question/essay;
   essays below 250 words remain valid; deterministic word counts; missing fields;
   mutable-default safety; all criterion bands and derived band inputs use valid
-  0–9 half-band increments.
+  0–9 half-band increments; and add policy-level tests for every specified
+  precision, rounding/quantization, exact-tie, 0/9 boundary, invalid-input, and
+  missing-input case before evaluator implementation.
 - **Acceptance condition:** Schemas express the exact Phase 2 boundary without
-  evaluation, provider, database, learner-state, or agent behavior, and all domain
-  constraints have focused tests.
-- **Failure routing:** Any ambiguous field contract or failed schema test keeps
-  `P2-02` in `FIXING`; downstream model and provider work remains locked until
-  schemas and tests agree.
+  evaluation, provider, database, learner-state, or agent behavior; all domain
+  constraints have focused tests; and the accepted aggregation contract is
+  unambiguous enough that `P2-07` has no discretion to infer or invent a scoring
+  rule.
+- **Failure routing:** Any ambiguous schema or aggregation contract, or failed
+  domain/policy test, keeps `P2-02` in `FIXING`; downstream model and provider work
+  remains locked until schemas, policy, and tests agree.
 
 ### P2-03 — Writing Persistence Models
 
@@ -231,20 +256,27 @@ validation node can route around a failed deterministic or integration test.
 ### P2-05 — LLM Provider Contract
 
 - **Purpose:** Decouple writing evaluation from any provider vendor and provide a
-  deterministic test seam.
+  deterministic, test-only provider seam.
 - **Dependencies:** `P2-02`.
 - **Inputs:** Accepted structured provider-output schema, evaluator needs, timeout
-  and error categories, and secret-safe configuration rules.
+  and error categories, secret-safe configuration rules, and the production/test
+  composition boundary.
 - **Deliverables:** A minimal typed provider protocol/interface, provider request
-  boundary, normalized provider exceptions, and deterministic fake provider for
-  tests.
+  boundary, normalized provider exceptions, and a deterministic fake provider
+  confined to test support or explicitly test-scoped composition, with no normal
+  production runtime selection path.
 - **Required validation:** Type/import tests; fake-provider success and injected
-  failure tests; prove evaluator-facing code need not import DeepSeek; ensure the
-  contract returns structured data subject to Pydantic validation.
-- **Acceptance condition:** Evaluator tests can run deterministically without a
-  network, API key, vendor SDK, or DeepSeek implementation.
-- **Failure routing:** Leaky vendor coupling, nondeterminism, or unclear errors
-  keeps `P2-05` in `FIXING`; both `P2-06` and `P2-07` remain locked.
+  failure tests through a test-specific injection/override seam; prove
+  evaluator-facing code need not import DeepSeek; ensure the contract returns
+  structured data subject to Pydantic validation; and verify production-like
+  composition cannot select the fake through ordinary provider configuration.
+- **Acceptance condition:** Evaluator tests can inject the fake and run
+  deterministically without a network, API key, vendor SDK, or DeepSeek
+  implementation, while the fake remains unavailable as normal production
+  behavior.
+- **Failure routing:** Leaky vendor coupling, fake-provider runtime exposure,
+  nondeterminism, or unclear errors keeps `P2-05` in `FIXING`; both `P2-06` and
+  `P2-07` remain locked.
 
 ### P2-06 — DeepSeek Provider
 
@@ -267,21 +299,36 @@ validation node can route around a failed deterministic or integration test.
 ### P2-07 — Writing Evaluator
 
 - **Purpose:** Orchestrate deterministic submission evidence and qualitative
-  evaluation through the provider contract.
+  evaluation through the provider contract while maintaining a testable trust
+  boundary around user-controlled writing content.
 - **Dependencies:** `P2-05`.
 - **Inputs:** Writing schemas, four criterion definitions, deterministic word
-  count, provider protocol, validated provider result, and aggregation rules.
-- **Deliverables:** Writing Evaluation Service that constructs the versioned
-  provider request, validates output, and deterministically derives the product
-  evaluation band from criterion bands without blindly trusting a provider total.
+  count, provider protocol, validated provider result, the aggregation policy
+  accepted by `P2-02`, trusted evaluator instructions, and untrusted
+  user-controlled question and essay content.
+- **Deliverables:** Writing Evaluation Service that constructs a versioned
+  provider request with a clear, testable boundary between trusted rubric,
+  criteria, output contract, scoring policy, prompt version, and provider safety
+  constraints and the untrusted question/essay; validates output; and applies the
+  previously accepted aggregation policy without trusting a provider total or
+  treating instructions in user content as evaluator instructions.
 - **Required validation:** Fake-provider tests for all four criteria, strengths,
   weaknesses, error tags, recommended skills, feedback, prompt/provider metadata,
-  below-250-word essays, invalid bands, and aggregation boundary/rounding cases.
+  below-250-word essays, invalid bands, and every exact boundary, tie, and
+  rounding/quantization case defined by the accepted aggregation policy. Add
+  deterministic adversarial question/essay cases that attempt to ignore the
+  rubric, demand Band 9, replace or bypass the structured schema, inject alternate
+  evaluation instructions, or disclose evaluator/system instructions; the
+  service must continue following the trusted evaluation contract.
 - **Acceptance condition:** The service is vendor-independent, deterministic
-  outside the provider call, returns only validated output, and makes no claim of
-  reproducing the official final IELTS Writing band.
-- **Failure routing:** Validation, aggregation, prompt-contract, or coupling
-  failure keeps `P2-07` in `FIXING`; persistence and API nodes remain locked.
+  outside the provider call, consumes rather than invents the accepted aggregation
+  policy, maintains the explicit trust boundary under the defined adversarial
+  cases, returns only validated output, and makes neither a perfect prompt-
+  injection-prevention claim nor a claim of reproducing the official final IELTS
+  Writing band.
+- **Failure routing:** Validation, aggregation-policy, trust-boundary,
+  prompt-contract, or coupling failure keeps `P2-07` in `FIXING`; persistence and
+  API nodes remain locked.
 
 ### P2-08 — Evaluation Persistence Service
 
@@ -305,39 +352,54 @@ validation node can route around a failed deterministic or integration test.
   FastAPI endpoint.
 - **Dependencies:** `P2-06`, `P2-08`.
 - **Inputs:** Request/response schemas, evaluator and persistence services,
-  provider construction/configuration, and database dependency.
-- **Deliverables:** `POST /writing/evaluate`, dependency wiring, explicit response
-  schema including `attempt_id` and evaluation, and appropriate HTTP status
-  mapping without internal or credential leakage.
-- **Required validation:** `httpx` tests with fake provider for valid request,
-  blank input, below-250-word essay acceptance, response schema, persisted record,
-  and dependency failures; verify the route contains no evaluation logic.
-- **Acceptance condition:** One request can traverse validation, evaluation,
-  atomic persistence, and response using a deterministic fake provider, while
-  preserving thin route boundaries.
-- **Failure routing:** HTTP contract, dependency, persistence, or leakage failure
-  keeps `P2-09` in `FIXING`; failure/retry consolidation cannot begin.
+  production provider construction/configuration, a clearly test-scoped provider
+  override seam, and the database dependency.
+- **Deliverables:** `POST /writing/evaluate`, production dependency wiring to the
+  provider protocol and DeepSeek implementation, a separate test-only injection
+  or override seam for the fake, an explicit response schema including
+  `attempt_id` and evaluation, and appropriate HTTP status mapping without
+  internal or credential leakage.
+- **Required validation:** `httpx` tests inject the fake through the explicitly
+  test-scoped seam for valid request, blank input, below-250-word essay acceptance,
+  response schema, persisted record, and dependency failures; verify the route
+  contains no evaluation logic and normal runtime configuration cannot select the
+  fake provider.
+- **Acceptance condition:** One deterministic test request can traverse
+  validation, evaluation, atomic persistence, and response through a test-scoped
+  fake override while preserving thin route boundaries, without exposing fake
+  evaluation as a normal runtime feature.
+- **Failure routing:** HTTP contract, dependency, persistence, fake-provider
+  runtime exposure, or leakage failure keeps `P2-09` in `FIXING`; failure/retry
+  consolidation cannot begin.
 
 ### P2-10 — Failure and Retry Handling
 
 - **Purpose:** Make failure behavior explicit across provider, validation,
-  persistence, and API boundaries.
+  persistence, API, and untrusted-content boundaries.
 - **Dependencies:** `P2-06`, `P2-07`, `P2-08`, `P2-09`.
 - **Inputs:** Normalized provider errors, evaluator validation errors, transaction
-  failures, API mappings, and bounded retry requirements.
+  failures, API mappings, bounded retry requirements, the untrusted-content trust
+  boundary, and the P2-07 adversarial cases.
 - **Deliverables:** Documented error taxonomy and minimal retry policy covering
   provider timeout, transient provider HTTP failure, malformed structured output,
   missing required fields, invalid IELTS bands, empty response, and database
-  failure; bounded retry implementation only where justified.
+  failure; bounded retry implementation only where justified; and safe handling
+  for user-content instruction attempts without claiming perfect prevention.
 - **Required validation:** Deterministic tests for every listed failure, retryable
   versus non-retryable classification, maximum attempts, no unbounded loop,
   rollback/no-success persistence, stable safe API responses, and no secret or raw
-  provider-body leakage.
+  provider-body leakage. Re-run adversarial question/essay cases and verify they
+  cannot alter the accepted scoring policy, bypass structured validation, expose
+  secrets or evaluator/system instructions, or cause unsafe raw provider content
+  to be returned.
 - **Acceptance condition:** Each required failure has a predictable outcome;
   retries are bounded and restricted to transient provider failures; validation
-  and database failures do not create duplicate or partial success.
-- **Failure routing:** Any unhandled failure, unsafe retry, data duplication, or
-  information leak keeps `P2-10` in `FIXING` and blocks suite consolidation.
+  and database failures do not create duplicate or partial success; and
+  user-content instructions do not override the trusted evaluation contract or
+  escape safe structured API responses in the defined adversarial cases.
+- **Failure routing:** Any unhandled failure, unsafe retry, trust-boundary failure,
+  data duplication, or information leak keeps `P2-10` in `FIXING` and blocks suite
+  consolidation.
 
 ### P2-11 — Automated Test Suite
 
@@ -383,18 +445,25 @@ validation node can route around a failed deterministic or integration test.
   in the existing container environment.
 - **Dependencies:** `P2-12`.
 - **Inputs:** Dockerfile, Compose stack, isolated `db`/`test-db`, migrations, API,
-  and deterministic test suite.
+  deterministic test suite, production provider composition, and explicitly
+  test-scoped provider overrides.
 - **Deliverables:** Minimal Docker/Compose changes if required and recorded clean
   checkout validation evidence; no provider key embedded in an image or required
-  by the test container.
+  by the test container; and a test-image or otherwise isolated test composition
+  path for deterministic writing API validation without a runtime fake-provider
+  mode.
 - **Required validation:** `docker compose config`; build runtime/test targets;
   healthy `db`, `test-db`, and API; migration completion; full containerized test
-  suite; writing API smoke test with deterministic provider configuration; clean
-  teardown; inspect rendered configuration and image inputs for credentials.
+  suite; writing API smoke test through the test image, dependency override, or
+  another clearly isolated test mechanism; clean teardown; inspect rendered
+  configuration and image inputs for credentials; and prove a production-like
+  runtime cannot start in or silently return a fake-provider evaluation mode.
 - **Acceptance condition:** A documented clean Docker workflow validates the full
-  Phase 2 path with isolated test data and no real DeepSeek credential.
-- **Failure routing:** Build, health, migration, test, isolation, or credential
-  failure keeps `P2-13` in `FIXING`; documentation cannot be finalized.
+  Phase 2 path with isolated test data and no real DeepSeek credential, while the
+  normal runtime has no ordinary configuration path to fake evaluations.
+- **Failure routing:** Build, health, migration, test, isolation, fake-provider
+  runtime exposure, or credential failure keeps `P2-13` in `FIXING`;
+  documentation cannot be finalized.
 
 ### P2-14 — Documentation
 
@@ -445,9 +514,15 @@ Phase 2 is complete only when all nodes are `COMPLETE` and evidence confirms:
 - `POST /writing/evaluate` validates a Task 2 question and essay without rejecting
   an essay solely for being under 250 words;
 - word count and any product evaluation band are deterministic and tested;
+- the complete aggregation policy is selected, documented, and boundary-tested in
+  `P2-02` before the evaluator consumes it;
 - all four Task 2 criterion results use validated structured schemas;
 - the evaluator depends only on the provider protocol and deterministic tests use
-  a fake provider;
+  a fake provider through a test-only seam unavailable to normal runtime
+  configuration;
+- trusted evaluator instructions remain separated from untrusted question/essay
+  content and the required adversarial cases cannot override the evaluation
+  contract or escape safe structured responses;
 - DeepSeek configuration is environment-based, secret-safe, and unnecessary for
   normal automated tests;
 - malformed, missing, empty, invalid-band, timeout, HTTP, and database failures
