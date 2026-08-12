@@ -18,6 +18,9 @@ from app.services.writing_evaluation import WritingEvaluationService
 from tests.fakes import FakeProvider
 
 
+pytestmark = pytest.mark.provider
+
+
 def provider_payload() -> dict[str, object]:
     criterion = {
         "band": {"value": "6.5"},

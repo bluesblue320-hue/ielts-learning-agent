@@ -33,6 +33,9 @@ from app.services.writing_evaluation import (
 from tests.fakes import FakeProvider
 
 
+pytestmark = pytest.mark.provider
+
+
 CRITERION_FIELDS = tuple(criterion.value for criterion in WritingCriterion)
 
 

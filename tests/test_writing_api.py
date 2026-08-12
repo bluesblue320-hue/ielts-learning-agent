@@ -30,7 +30,7 @@ from app.services.writing_persistence import WritingPersistenceError
 from tests.fakes import FakeProvider
 
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.provider]
 
 
 def provider_payload(value: str = "6.5") -> dict[str, object]:

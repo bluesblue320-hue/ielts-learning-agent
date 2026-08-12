@@ -28,7 +28,8 @@ packages = ["app"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra"
+addopts = "-ra --strict-markers"
 markers = [
     "integration: requires an isolated PostgreSQL service",
+    "provider: uses only FakeProvider or an explicitly mocked HTTP transport",
 ]

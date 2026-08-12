@@ -25,6 +25,9 @@ from app.schemas.writing import (
 from tests.fakes import FakeProvider
 
 
+pytestmark = pytest.mark.provider
+
+
 def criterion_payload(value: str = "6.5") -> dict[str, object]:
     return {
         "band": {"value": Decimal(value)},

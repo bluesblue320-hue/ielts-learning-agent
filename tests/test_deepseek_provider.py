@@ -24,6 +24,9 @@ from app.schemas.writing import (
 )
 
 
+pytestmark = pytest.mark.provider
+
+
 API_URL = "https://api.deepseek.test/chat/completions"
 
 
