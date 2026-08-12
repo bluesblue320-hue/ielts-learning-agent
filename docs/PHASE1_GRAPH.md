@@ -94,10 +94,10 @@ current node
 
 ## Completion evidence
 
-Final validation on 2026-08-12 confirmed 29 passing pytest tests with PostgreSQL,
-Alembic head `0001_phase1` with downgrade/re-upgrade, healthy API and database
-containers, successful containerized tests, resolved documentation links, and
-no Phase 2 implementation.
+Final validation on 2026-08-12 confirmed 29 passing pytest tests with an isolated
+PostgreSQL test service, Alembic head `0001_phase1` with downgrade/re-upgrade,
+healthy API, development database, and test database containers, successful
+containerized tests, resolved documentation links, and no Phase 2 implementation.
 
 ## Phase 1 acceptance criteria
 

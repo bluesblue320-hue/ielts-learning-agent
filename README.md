@@ -16,7 +16,8 @@ it is not intended to be only a chatbot or a thin LLM wrapper.
 - validated IELTS band and health response schemas;
 - `/health/live` and `/health/ready` APIs;
 - 29 pytest tests, including PostgreSQL integration coverage;
-- runtime/test Docker image targets and an integrated Compose stack.
+- runtime/test Docker image targets and an integrated Compose stack with
+  isolated development and test databases.
 
 Phase 2 has not started. No LLM integration, evaluator, planner, learning-memory
 logic, agent runtime, RAG, or IELTS practice workflow is implemented.
@@ -57,6 +58,9 @@ curl http://localhost:8000/health/ready
 ```bash
 docker compose --profile test run --rm --build test
 ```
+
+The test profile starts a separate, non-persistent `test-db` service. Pytest and
+its Alembic downgrade/re-upgrade checks never connect to the development `db`.
 
 6. Stop services while preserving development data:
 

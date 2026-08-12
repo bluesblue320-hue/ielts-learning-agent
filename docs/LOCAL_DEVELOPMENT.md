@@ -7,7 +7,7 @@ local-only value, and keep `.env` uncommitted. Start and verify PostgreSQL:
 
 ```bash
 docker compose up -d --wait db
-docker compose exec db pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+docker compose exec db sh -c 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
 ```
 
 Stop PostgreSQL while preserving its named development volume:
@@ -18,6 +18,11 @@ docker compose down
 
 Run `docker compose down --volumes` only when the local development data is no
 longer needed.
+
+The development `db` uses the named `postgres_data` volume. The test profile
+uses a separate `test-db` service on `TEST_POSTGRES_PORT` (5433 by default),
+with no persistent volume. Its credentials and database name come from the
+`TEST_POSTGRES_*` values in `.env`.
 
 ## Integrated application stack
 
@@ -35,6 +40,11 @@ the test image:
 ```bash
 docker compose --profile test run --rm --build test
 ```
+
+Compose passes `IELTS_DOCKER_TEST_DATABASE_URL` to pytest as
+`IELTS_TEST_DATABASE_URL`, so database and Alembic integration tests operate
+only on `test-db`. The `api` and `migrate` services continue to use the
+development `db` through `IELTS_DOCKER_DATABASE_URL`.
 
 Stop the stack with `docker compose down`. Add `--volumes` only when its local
 PostgreSQL data is no longer needed.
@@ -55,16 +65,20 @@ Activate it with `. .venv/bin/activate` on POSIX or
 python -m pip install -e ".[test]"
 ```
 
-Set `IELTS_TEST_DATABASE_URL` to the isolated PostgreSQL test database before
-running all tests. Tests marked `integration` skip explicitly when it is absent.
+Start the isolated test database with
+`docker compose --profile test up -d --wait test-db`, then set
+`IELTS_TEST_DATABASE_URL` to its host URL before running all tests. Tests marked
+`integration` skip explicitly when it is absent.
 Run unit/API tests without PostgreSQL with:
 
 ```bash
 python -m pytest -m "not integration" -q
 ```
 
-Apply or inspect migrations with `alembic upgrade head`, `alembic current`, and
-`alembic downgrade base`. `IELTS_DATABASE_URL` must point to PostgreSQL.
+Apply or inspect development migrations with `alembic upgrade head`,
+`alembic current`, and `alembic downgrade base`; `IELTS_DATABASE_URL` controls
+that target. Pytest migration checks instead use `IELTS_TEST_DATABASE_URL` and
+must point to the isolated test database.
 
 ## Windows Docker Desktop note
 
