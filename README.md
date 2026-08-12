@@ -7,27 +7,29 @@ it is not intended to be only a chatbot or a thin LLM wrapper.
 
 ## Current status
 
-**Phase 1 — Foundation is complete.** The repository provides:
+**Phase 1 — Foundation is complete. Phase 2 — Writing Evaluation Pipeline is
+implemented.** The repository provides:
 
-- an importable FastAPI application on Python 3.12+;
-- typed Pydantic v2 settings with secret-safe database configuration;
-- PostgreSQL, SQLAlchemy 2.x session/base infrastructure, and Alembic;
-- an empty reversible baseline migration at `0001_phase1`;
-- validated IELTS band and health response schemas;
-- `/health/live` and `/health/ready` APIs;
-- 29 pytest tests, including PostgreSQL integration coverage;
-- runtime/test Docker image targets and an integrated Compose stack with
-  isolated development and test databases.
+- a FastAPI application with liveness, readiness, and Writing Task 2 evaluation;
+- strict Pydantic v2 request, provider-result, response, and error boundaries;
+- deterministic word counting and product-band aggregation;
+- a vendor-independent provider protocol and environment-configured DeepSeek
+  HTTP adapter;
+- bounded provider retries and safe API failure mapping;
+- atomic Writing attempt/evaluation persistence in PostgreSQL through SQLAlchemy
+  2.x and the reversible `0002_writing` Alembic migration;
+- deterministic FakeProvider tests with no live provider or credential
+  requirement;
+- runtime/test Docker targets and isolated development/test Compose databases.
 
-**Phase 2 — Writing Evaluation Pipeline is planned and starting.** Its authorized
-dependency graph is documented in [docs/PHASE2_GRAPH.md](docs/PHASE2_GRAPH.md),
-but no Phase 2 runtime functionality has been implemented yet. There is no LLM
-integration, Writing Evaluator, learner-state logic, planner, learning-memory
-logic, agent runtime, RAG, or IELTS practice workflow in the application.
+The authorized dependency graph is documented in
+[docs/PHASE2_GRAPH.md](docs/PHASE2_GRAPH.md). Phase 2 does not implement learner
+state, planning, learning memory, an agent runtime, RAG, frontend behavior, or
+Speaking, Reading, and Listening workflows.
 
 ## Technology stack
 
-| Area | Implemented foundation |
+| Area | Implemented Phase 2 stack |
 | --- | --- |
 | Backend | Python 3.12+, FastAPI, Pydantic v2 |
 | Persistence | PostgreSQL, SQLAlchemy 2.x, Alembic |
@@ -42,7 +44,9 @@ functionality are outside Phase 2.
 Requirements: Docker Desktop or Docker Engine with Docker Compose.
 
 1. Copy `.env.example` to `.env`.
-2. Replace every placeholder password in `.env`; do not commit that file.
+2. Replace every placeholder database password in `.env`. Set
+   `IELTS_DEEPSEEK_API_KEY` only for real writing evaluations; health checks and
+   deterministic tests do not require it. Never commit `.env`.
 3. Build and start PostgreSQL, migrations, and the API:
 
 ```bash
@@ -80,22 +84,27 @@ local Python setup, migrations, cleanup, and Windows Docker troubleshooting.
 | --- | --- | --- |
 | `GET` | `/health/live` | Process liveness; never requires PostgreSQL |
 | `GET` | `/health/ready` | PostgreSQL readiness; returns `503` when unavailable |
+| `POST` | `/writing/evaluate` | Validate, evaluate, and atomically persist one Writing Task 2 submission |
 
 Readiness responses expose only `available` or `unavailable`; connection details
-are not returned.
+are not returned. See the [Writing API reference](docs/API.md) for request and
+response schemas, deterministic scoring, retries, safe error codes, and the
+product-score disclaimer.
 
 ## Project structure
 
 ```text
 .
 ├── app/
-│   ├── api/routes/       # thin HTTP routes
+│   ├── api/              # thin routes, dependencies, and safe error mapping
 │   ├── core/             # typed settings
 │   ├── db/               # SQLAlchemy base, engine, and sessions
+│   ├── llm/              # provider protocol, DeepSeek adapter, bounded retries
+│   ├── models/           # Writing persistence models
 │   ├── schemas/          # Pydantic boundary/domain value schemas
-│   ├── services/         # deterministic health service
+│   ├── services/         # evaluation, persistence, and health services
 │   └── main.py           # app.main:app entry point
-├── migrations/           # Alembic environment and baseline revision
+├── migrations/           # reversible Phase 1 and Writing revisions
 ├── tests/                # unit, API, database, and migration tests
 ├── compose.yaml
 ├── Dockerfile
@@ -103,8 +112,8 @@ are not returned.
 └── docs/
 ```
 
-No speculative agent, evaluator, memory, planner, LLM, or IELTS skill packages
-are present.
+No learner-state, memory, planner, agent runtime, RAG, frontend, or multi-skill
+practice implementation is present.
 
 ## Development guidance
 
@@ -116,6 +125,6 @@ Before changing the project, read these documents in order:
 4. [Target architecture](docs/ARCHITECTURE.md)
 
 Phase 1 remains complete and preserved in
-[docs/PHASE1_GRAPH.md](docs/PHASE1_GRAPH.md). Phase 2 implementation must follow
-the Phase 2 graph node by node; this planning transition does not itself
-implement or validate any Phase 2 runtime capability.
+[docs/PHASE1_GRAPH.md](docs/PHASE1_GRAPH.md). Phase 2 implementation and its
+final audit follow the Phase 2 graph node by node. A later phase still requires
+separate authorization and its own graph.
