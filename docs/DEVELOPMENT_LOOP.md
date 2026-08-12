@@ -2,7 +2,10 @@
 
 ## Purpose
 
-This document defines **how** to execute one node from [PHASE1_GRAPH.md](PHASE1_GRAPH.md). It does not authorize work, select a node, or start Phase 1. Apply the loop only after a graph node has been explicitly selected.
+This document defines **how** to execute one node from the current authorized
+phase graph. It does not authorize a phase, start phase execution, or activate a
+node by itself. Apply the loop only after the current phase and its graph have
+been explicitly authorized for execution.
 
 ```text
 Observe
@@ -37,9 +40,19 @@ Observation must answer:
 
 ## 2. Select
 
-Choose exactly one `READY` node from the graph. Confirm that all dependencies are complete and that the node is within the current phase.
+Choose exactly one `READY` node from the current authorized phase graph, and keep
+at most one node `ACTIVE` at a time. Selection is deterministic:
 
-Do not select a downstream node to avoid a failure. Do not combine future functionality with foundation work. If no node is ready or execution has not been authorized, stop and report that state.
+1. If the user explicitly selects a `READY` node, use that node.
+2. Otherwise, when multiple nodes are `READY`, select the lowest-numbered one.
+3. Before activation, confirm every declared dependency is `COMPLETE` and the
+   node belongs to the current authorized phase.
+
+Never select a downstream node whose dependencies are incomplete or route around
+a failure. If an explicitly requested node is not `READY`, report why and do not
+activate it. Do not combine future functionality with current-phase work. If no
+node is ready or phase execution has not been authorized, stop and report that
+state.
 
 ## 3. Plan
 
@@ -130,7 +143,10 @@ If a commit cannot be created, retain the validated work, report the blocker, an
 
 Record the completed node, validation evidence, commit, and known limitations. Re-read the dependency graph and identify newly ready nodes.
 
-Repeat only when continued phase execution is authorized. When Phase 1 acceptance is complete, follow the graph's stop condition: report results and wait. Never start the next phase automatically.
+Repeat only when continued phase execution is authorized. When the current
+phase's acceptance criteria are complete, follow its graph's stop condition:
+report results and wait. Never start the next phase automatically; a new phase
+requires separate explicit authorization and its own authorized graph.
 
 ## Failure summary
 

@@ -40,13 +40,13 @@ Always inspect the current phase documentation before implementing features.
 Current phase:
 
 ```text
-Phase 1 — Foundation
+Phase 2 — Writing Evaluation Pipeline
 ```
 
 Read:
 
 ```text
-docs/PHASE1_GRAPH.md
+docs/PHASE2_GRAPH.md
 docs/DEVELOPMENT_LOOP.md
 ```
 
