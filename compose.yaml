@@ -16,5 +16,49 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  migrate:
+    build:
+      context: .
+      target: runtime
+    environment:
+      IELTS_DATABASE_URL: ${IELTS_DOCKER_DATABASE_URL:?Set IELTS_DOCKER_DATABASE_URL in .env}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["alembic", "upgrade", "head"]
+
+  api:
+    build:
+      context: .
+      target: runtime
+    environment:
+      IELTS_DATABASE_URL: ${IELTS_DOCKER_DATABASE_URL:?Set IELTS_DOCKER_DATABASE_URL in .env}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready', timeout=2)"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+      start_period: 5s
+
+  test:
+    profiles: ["test"]
+    build:
+      context: .
+      target: test
+    environment:
+      IELTS_TEST_DATABASE_URL: ${IELTS_DOCKER_DATABASE_URL:?Set IELTS_DOCKER_DATABASE_URL in .env}
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
 volumes:
   postgres_data:
