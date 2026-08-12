@@ -7,7 +7,7 @@ it is not intended to be only a chatbot or a thin LLM wrapper.
 
 ## Current status
 
-**Phase 1 — Foundation is complete.** The repository now provides:
+**Phase 1 — Foundation is complete.** The repository provides:
 
 - an importable FastAPI application on Python 3.12+;
 - typed Pydantic v2 settings with secret-safe database configuration;
@@ -19,8 +19,11 @@ it is not intended to be only a chatbot or a thin LLM wrapper.
 - runtime/test Docker image targets and an integrated Compose stack with
   isolated development and test databases.
 
-Phase 2 has not started. No LLM integration, evaluator, planner, learning-memory
-logic, agent runtime, RAG, or IELTS practice workflow is implemented.
+**Phase 2 — Writing Evaluation Pipeline is planned and starting.** Its authorized
+dependency graph is documented in [docs/PHASE2_GRAPH.md](docs/PHASE2_GRAPH.md),
+but no Phase 2 runtime functionality has been implemented yet. There is no LLM
+integration, Writing Evaluator, learner-state logic, planner, learning-memory
+logic, agent runtime, RAG, or IELTS practice workflow in the application.
 
 ## Technology stack
 
@@ -31,8 +34,8 @@ logic, agent runtime, RAG, or IELTS practice workflow is implemented.
 | Testing | pytest, httpx |
 | Infrastructure | Docker, Docker Compose |
 
-The planned Next.js frontend and all learner-facing practice functionality are
-outside Phase 1.
+The planned Next.js frontend and learner-state or multi-skill practice
+functionality are outside Phase 2.
 
 ## Quick start with Docker
 
@@ -108,9 +111,11 @@ are present.
 Before changing the project, read these documents in order:
 
 1. [AGENTS.md](AGENTS.md)
-2. [Phase 1 graph](docs/PHASE1_GRAPH.md)
+2. [Phase 2 graph](docs/PHASE2_GRAPH.md)
 3. [Development loop](docs/DEVELOPMENT_LOOP.md)
 4. [Target architecture](docs/ARCHITECTURE.md)
 
-Phase 1 is stopped at `P1-11`. Starting the next phase requires explicit
-authorization and an updated phase graph.
+Phase 1 remains complete and preserved in
+[docs/PHASE1_GRAPH.md](docs/PHASE1_GRAPH.md). Phase 2 implementation must follow
+the Phase 2 graph node by node; this planning transition does not itself
+implement or validate any Phase 2 runtime capability.
