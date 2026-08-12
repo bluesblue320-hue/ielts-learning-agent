@@ -12,7 +12,8 @@ def test_baseline_migration_upgrades_downgrades_and_reupgrades(
     config = Config("alembic.ini")
     config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
 
-    command.upgrade(config, "head")
+    command.downgrade(config, "base")
+    command.upgrade(config, "0001_phase1")
     engine = create_engine(database_url)
 
     try:
