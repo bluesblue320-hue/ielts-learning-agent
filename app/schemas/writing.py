@@ -160,3 +160,10 @@ class WritingEvaluationResult(StructuredProviderResult):
         """Compute the final product band from validated criteria only."""
 
         return aggregate_product_band(self.criteria.band_scores())
+
+
+class WritingEvaluationResponse(WritingSchema):
+    """Persisted API response for one completed writing evaluation."""
+
+    attempt_id: int = Field(gt=0)
+    evaluation: WritingEvaluationResult
