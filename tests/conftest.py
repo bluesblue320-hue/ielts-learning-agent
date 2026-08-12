@@ -7,8 +7,11 @@ import pytest
 
 from app.llm.deepseek import DeepSeekProvider
 
+from tests.support.database import validate_test_database_url
+
 
 TEST_DATABASE_URL_ENV = "IELTS_TEST_DATABASE_URL"
+DEVELOPMENT_DATABASE_URL_ENV = "IELTS_DATABASE_URL"
 DEEPSEEK_API_KEY_ENV = "IELTS_DEEPSEEK_API_KEY"
 
 
@@ -39,4 +42,11 @@ def database_url() -> str:
     url = os.getenv(TEST_DATABASE_URL_ENV)
     if url is None:
         pytest.skip(f"{TEST_DATABASE_URL_ENV} is required for PostgreSQL integration")
-    return url
+    development_url = os.getenv(DEVELOPMENT_DATABASE_URL_ENV)
+    try:
+        return validate_test_database_url(
+            url,
+            development_url,
+        )
+    except ValueError as error:
+        pytest.fail(str(error))
