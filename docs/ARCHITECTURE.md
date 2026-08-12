@@ -2,7 +2,7 @@
 
 ## Document status
 
-This document describes the **long-term target architecture** and the intended writing-first MVP. It is not an implementation report. At present, the repository contains guidance documents only; none of the runtime components below has been implemented.
+This document describes the **long-term target architecture** and the intended writing-first MVP. Phase 1 foundation is implemented: FastAPI, typed configuration, PostgreSQL/SQLAlchemy/Alembic infrastructure, foundation schemas, health APIs, tests, and Docker integration. The learning-loop components below remain target designs unless their status says otherwise.
 
 Phase 1 is strictly a foundation phase. Its allowed deliverables are defined by [PHASE1_GRAPH.md](PHASE1_GRAPH.md). Later-phase components described here must not be implemented during Phase 1 without an explicit scope change.
 
@@ -53,13 +53,13 @@ The core agent coordinates the learning loop. Planner, Memory, Evaluator, and IE
 | Component | Target responsibility | Phase 1 status |
 | --- | --- | --- |
 | Core Learning Agent | Coordinate state, planning, tools, evaluation, and replanning | Deferred |
-| Learner Model | Represent goals, current level, skill mastery, weaknesses, and history as structured persistent data | Schemas may be defined; behavior is deferred |
+| Learner Model | Represent goals, current level, skill mastery, weaknesses, and history as structured persistent data | IELTS band value schema only; learner state and persistence are deferred |
 | Planner | Select the next learning objective using deterministic priorities, with constrained generation where useful | Deferred |
 | Memory | Separate stable profile data, learning events, and derived patterns | Storage logic and retrieval are deferred |
 | Evaluator | Convert learning outcomes into validated structured evidence | Deferred |
 | Tool Layer | Expose focused learning activities behind explicit interfaces | Deferred |
-| API Layer | Validate HTTP boundaries and call application services | Foundation only |
-| Persistence | Store durable application data in PostgreSQL through SQLAlchemy and Alembic | Infrastructure only |
+| API Layer | Validate HTTP boundaries and call application services | FastAPI shell plus liveness/readiness APIs implemented |
+| Persistence | Store durable application data in PostgreSQL through SQLAlchemy and Alembic | Engine/session/base, PostgreSQL service, and empty baseline migration implemented; domain models are deferred |
 
 ## Responsibility boundaries
 
@@ -89,7 +89,7 @@ This is a later-phase target. Phase 1 must not implement the writing evaluator, 
 
 ## Phase 1 architecture boundary
 
-Phase 1 may establish only the supporting foundation:
+Phase 1 established the following supporting foundation:
 
 ```text
 FastAPI application shell
@@ -106,4 +106,4 @@ Explicitly deferred capabilities include DeepSeek or other LLM integrations, Wri
 
 ## Evolution rule
 
-Architecture follows verified product requirements. Complete the current phase graph, report its acceptance evidence, and stop. A later phase starts only with explicit instruction. Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
+Architecture follows verified product requirements. Phase 1 is complete and stopped at `P1-11`. A later phase starts only with explicit instruction and an authorized phase graph. Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
