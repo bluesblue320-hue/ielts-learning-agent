@@ -1,8 +1,5 @@
 """Tests for SQLAlchemy foundation infrastructure."""
 
-import os
-from collections.abc import Iterator
-
 import pytest
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
@@ -12,21 +9,11 @@ from app.db.base import Base
 from app.db.session import create_db_engine, create_session_factory
 
 
-TEST_DATABASE_URL_ENV = "IELTS_TEST_DATABASE_URL"
-
-
-@pytest.fixture
-def database_url() -> Iterator[str]:
-    url = os.getenv(TEST_DATABASE_URL_ENV)
-    if url is None:
-        pytest.skip(f"{TEST_DATABASE_URL_ENV} is required for PostgreSQL integration")
-    yield url
-
-
 def test_base_uses_sqlalchemy_two_declarative_api() -> None:
     assert issubclass(Base, DeclarativeBase)
 
 
+@pytest.mark.integration
 def test_engine_and_session_execute_against_postgresql(database_url: str) -> None:
     engine = create_db_engine(database_url)
     factory = create_session_factory(engine)

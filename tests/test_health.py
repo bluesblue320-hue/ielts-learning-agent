@@ -5,11 +5,13 @@ from collections.abc import Generator
 from unittest.mock import Mock
 
 import httpx
+import pytest
 from fastapi import FastAPI
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db_session
+from app.core.config import get_settings
+from app.db.session import get_db_session, get_engine, get_session_factory
 from app.main import create_app
 
 
@@ -75,3 +77,29 @@ def test_readiness_reports_dependency_failure_without_leaking_details() -> None:
         "database": "unavailable",
     }
     assert "private connection details" not in response.text
+
+
+@pytest.mark.integration
+def test_readiness_connects_to_postgresql(
+    database_url: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("IELTS_DATABASE_URL", database_url)
+    get_settings.cache_clear()
+    get_session_factory.cache_clear()
+    get_engine.cache_clear()
+    application = create_app()
+    try:
+        response = asyncio.run(get(application, "/health/ready"))
+    finally:
+        if get_engine.cache_info().currsize:
+            get_engine().dispose()
+        get_session_factory.cache_clear()
+        get_engine.cache_clear()
+        get_settings.cache_clear()
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "ready",
+        "database": "available",
+    }

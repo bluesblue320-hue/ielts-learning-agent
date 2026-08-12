@@ -29,3 +29,6 @@ packages = ["app"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+markers = [
+    "integration: requires an isolated PostgreSQL service",
+]

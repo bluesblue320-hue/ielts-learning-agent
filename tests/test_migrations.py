@@ -1,24 +1,11 @@
 """Integration tests for the Alembic baseline migration path."""
 
-import os
-from collections.abc import Iterator
-
 import pytest
 from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine, text
 
-TEST_DATABASE_URL_ENV = "IELTS_TEST_DATABASE_URL"
-
-
-@pytest.fixture
-def database_url() -> Iterator[str]:
-    url = os.getenv(TEST_DATABASE_URL_ENV)
-    if url is None:
-        pytest.skip(f"{TEST_DATABASE_URL_ENV} is required for PostgreSQL integration")
-    yield url
-
-
+@pytest.mark.integration
 def test_baseline_migration_upgrades_downgrades_and_reupgrades(
     database_url: str,
 ) -> None:
