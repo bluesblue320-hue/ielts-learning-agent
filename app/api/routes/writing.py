@@ -2,21 +2,19 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies.writing import get_writing_provider
 from app.db.session import get_db_session
-from app.llm.provider import LLMProvider, ProviderError
+from app.llm.provider import LLMProvider
+from app.schemas.errors import APIErrorResponse
 from app.schemas.writing import (
     WritingEvaluationResponse,
     WritingSubmission,
 )
 from app.services.writing_evaluation import WritingEvaluationService
-from app.services.writing_persistence import (
-    WritingEvaluationPersistenceService,
-    WritingPersistenceError,
-)
+from app.services.writing_persistence import WritingEvaluationPersistenceService
 
 
 router = APIRouter(prefix="/writing", tags=["writing"])
@@ -26,6 +24,12 @@ router = APIRouter(prefix="/writing", tags=["writing"])
     "/evaluate",
     response_model=WritingEvaluationResponse,
     status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {"model": APIErrorResponse},
+        status.HTTP_502_BAD_GATEWAY: {"model": APIErrorResponse},
+        status.HTTP_503_SERVICE_UNAVAILABLE: {"model": APIErrorResponse},
+        status.HTTP_504_GATEWAY_TIMEOUT: {"model": APIErrorResponse},
+    },
 )
 async def evaluate_writing(
     submission: WritingSubmission,
@@ -34,22 +38,11 @@ async def evaluate_writing(
 ) -> WritingEvaluationResponse:
     """Evaluate and atomically persist one validated Task 2 submission."""
 
-    try:
-        evaluation = await WritingEvaluationService(provider).evaluate(submission)
-        persisted = WritingEvaluationPersistenceService(session).persist(
-            submission,
-            evaluation,
-        )
-    except ProviderError:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Writing evaluation provider failed.",
-        ) from None
-    except WritingPersistenceError:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Writing evaluation could not be persisted.",
-        ) from None
+    evaluation = await WritingEvaluationService(provider).evaluate(submission)
+    persisted = WritingEvaluationPersistenceService(session).persist(
+        submission,
+        evaluation,
+    )
 
     return WritingEvaluationResponse(
         attempt_id=persisted.attempt_id,

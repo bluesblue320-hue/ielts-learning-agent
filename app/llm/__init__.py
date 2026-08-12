@@ -9,6 +9,12 @@ from app.llm.provider import (
     TrustedEvaluationContext,
     WritingProviderRequest,
 )
+from app.llm.retry import (
+    MAX_PROVIDER_ATTEMPTS,
+    RETRYABLE_PROVIDER_ERRORS,
+    ProviderRetryPolicy,
+    RetryingProvider,
+)
 
 __all__ = [
     "DeepSeekProvider",
@@ -19,4 +25,8 @@ __all__ = [
     "ProviderErrorContext",
     "TrustedEvaluationContext",
     "WritingProviderRequest",
+    "MAX_PROVIDER_ATTEMPTS",
+    "RETRYABLE_PROVIDER_ERRORS",
+    "ProviderRetryPolicy",
+    "RetryingProvider",
 ]

@@ -1,6 +1,7 @@
 """Pydantic boundary schemas."""
 
 from app.schemas.common import BandScore, IeltsBand
+from app.schemas.errors import APIErrorCode, APIErrorDetail, APIErrorResponse
 from app.schemas.health import LivenessResponse, ReadinessResponse
 from app.schemas.writing import (
     CriterionBandScores,
@@ -17,6 +18,9 @@ from app.schemas.writing import (
 )
 
 __all__ = [
+    "APIErrorCode",
+    "APIErrorDetail",
+    "APIErrorResponse",
     "BandScore",
     "CriterionBandScores",
     "CriterionEvaluation",
