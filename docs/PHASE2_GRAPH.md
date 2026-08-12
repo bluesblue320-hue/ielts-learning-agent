@@ -113,7 +113,12 @@ Any state -> BLOCKED when required input or authority is unavailable.
 A node becomes `READY` only when every declared dependency is `COMPLETE`. A
 failed implementation, test, migration, integration, Docker, security, or
 documentation check keeps the current node in `FIXING`; it does not unlock any
-dependent node. Only one node should be `ACTIVE` at a time.
+dependent node. At most one node may be `ACTIVE` at a time.
+
+Node selection follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md): use a
+user-selected `READY` node when one is explicitly named; otherwise select the
+lowest-numbered `READY` node. A node with incomplete dependencies is never
+selectable.
 
 ## Dependency graph
 
@@ -258,25 +263,30 @@ validation node can route around a failed deterministic or integration test.
 - **Purpose:** Decouple writing evaluation from any provider vendor and provide a
   deterministic, test-only provider seam.
 - **Dependencies:** `P2-02`.
-- **Inputs:** Accepted structured provider-output schema, evaluator needs, timeout
-  and error categories, secret-safe configuration rules, and the production/test
-  composition boundary.
+- **Inputs:** Accepted structured provider-output schema, evaluator needs, the
+  minimal downstream distinctions required for provider failures, secret-safe
+  configuration rules, and the production/test composition boundary.
 - **Deliverables:** A minimal typed provider protocol/interface, provider request
-  boundary, normalized provider exceptions, and a deterministic fake provider
-  confined to test support or explicitly test-scoped composition, with no normal
-  production runtime selection path.
+  boundary, and normalized provider error contract with stable categories and
+  context required by downstream code, without retry decisions or HTTP/API
+  mappings; plus a deterministic fake provider confined to test support or
+  explicitly test-scoped composition, with no normal production runtime selection
+  path.
 - **Required validation:** Type/import tests; fake-provider success and injected
   failure tests through a test-specific injection/override seam; prove
-  evaluator-facing code need not import DeepSeek; ensure the contract returns
-  structured data subject to Pydantic validation; and verify production-like
-  composition cannot select the fake through ordinary provider configuration.
+  evaluator-facing code need not import DeepSeek; ensure DeepSeek and fake
+  failures surface through the same minimal normalized contract without leaking
+  vendor exceptions; ensure the contract returns structured data subject to
+  Pydantic validation; and verify production-like composition cannot select the
+  fake through ordinary provider configuration.
 - **Acceptance condition:** Evaluator tests can inject the fake and run
   deterministically without a network, API key, vendor SDK, or DeepSeek
   implementation, while the fake remains unavailable as normal production
-  behavior.
+  behavior and downstream code can distinguish required provider failure
+  categories without importing vendor details or defining retry/API policy.
 - **Failure routing:** Leaky vendor coupling, fake-provider runtime exposure,
-  nondeterminism, or unclear errors keeps `P2-05` in `FIXING`; both `P2-06` and
-  `P2-07` remain locked.
+  unstable or vendor-specific errors, nondeterminism, or unclear error categories
+  keeps `P2-05` in `FIXING`; both `P2-06` and `P2-07` remain locked.
 
 ### P2-06 — DeepSeek Provider
 
@@ -318,14 +328,17 @@ validation node can route around a failed deterministic or integration test.
   rounding/quantization case defined by the accepted aggregation policy. Add
   deterministic adversarial question/essay cases that attempt to ignore the
   rubric, demand Band 9, replace or bypass the structured schema, inject alternate
-  evaluation instructions, or disclose evaluator/system instructions; the
-  service must continue following the trusted evaluation contract.
+  evaluation instructions, or disclose evaluator/system instructions. These
+  tests inspect application-level trust-boundary enforcement, request construction,
+  structured-output validation, and safe handling of untrusted content; they do
+  not prove that a real LLM cannot be prompt-injected.
 - **Acceptance condition:** The service is vendor-independent, deterministic
   outside the provider call, consumes rather than invents the accepted aggregation
-  policy, maintains the explicit trust boundary under the defined adversarial
-  cases, returns only validated output, and makes neither a perfect prompt-
-  injection-prevention claim nor a claim of reproducing the official final IELTS
-  Writing band.
+  policy, provides deterministic evidence for the application's explicit trust
+  boundary and safe structured-output handling under the defined adversarial
+  cases, returns only validated output, and makes neither a real-model immunity or
+  perfect prompt-injection-prevention claim nor a claim of reproducing the
+  official final IELTS Writing band.
 - **Failure routing:** Validation, aggregation-policy, trust-boundary,
   prompt-contract, or coupling failure keeps `P2-07` in `FIXING`; persistence and
   API nodes remain locked.
@@ -374,32 +387,39 @@ validation node can route around a failed deterministic or integration test.
 
 ### P2-10 — Failure and Retry Handling
 
-- **Purpose:** Make failure behavior explicit across provider, validation,
-  persistence, API, and untrusted-content boundaries.
+- **Purpose:** Consume the normalized provider error contract from `P2-05` and
+  consolidate retry policy, API mapping, and end-to-end failure behavior across
+  provider, validation, persistence, API, and untrusted-content boundaries.
 - **Dependencies:** `P2-06`, `P2-07`, `P2-08`, `P2-09`.
-- **Inputs:** Normalized provider errors, evaluator validation errors, transaction
-  failures, API mappings, bounded retry requirements, the untrusted-content trust
-  boundary, and the P2-07 adversarial cases.
-- **Deliverables:** Documented error taxonomy and minimal retry policy covering
-  provider timeout, transient provider HTTP failure, malformed structured output,
-  missing required fields, invalid IELTS bands, empty response, and database
-  failure; bounded retry implementation only where justified; and safe handling
-  for user-content instruction attempts without claiming perfect prevention.
-- **Required validation:** Deterministic tests for every listed failure, retryable
-  versus non-retryable classification, maximum attempts, no unbounded loop,
-  rollback/no-success persistence, stable safe API responses, and no secret or raw
-  provider-body leakage. Re-run adversarial question/essay cases and verify they
-  cannot alter the accepted scoring policy, bypass structured validation, expose
-  secrets or evaluator/system instructions, or cause unsafe raw provider content
-  to be returned.
+- **Inputs:** The accepted normalized provider error contract from `P2-05`,
+  evaluator validation errors, transaction failures, API response requirements,
+  bounded retry requirements, the untrusted-content trust boundary, and the P2-07
+  adversarial cases.
+- **Deliverables:** A consolidated bounded retry policy, API error mapping, and
+  end-to-end failure behavior that consume rather than redesign the `P2-05`
+  provider taxonomy and cover provider timeout, transient provider HTTP failure,
+  malformed structured output, missing required fields, invalid IELTS bands,
+  empty response, and database failure; plus safe handling for user-content
+  instruction attempts without claiming perfect prevention.
+- **Required validation:** Deterministic tests preserve every established `P2-05`
+  provider error category while verifying its retry and API mapping; cover every
+  listed end-to-end failure, retryable versus non-retryable policy, maximum
+  attempts, no unbounded loop, rollback/no-success persistence, stable safe API
+  responses, and no secret or raw provider-body leakage. With deterministic fake
+  responses and request inspection, verify application-level controls keep
+  untrusted question/essay content from changing trusted request construction or
+  scoring policy, enforce structured validation, and prevent secrets,
+  evaluator/system instructions, or unsafe raw provider content from entering API
+  responses; this does not prove a real LLM is immune to prompt injection.
 - **Acceptance condition:** Each required failure has a predictable outcome;
-  retries are bounded and restricted to transient provider failures; validation
-  and database failures do not create duplicate or partial success; and
-  user-content instructions do not override the trusted evaluation contract or
-  escape safe structured API responses in the defined adversarial cases.
-- **Failure routing:** Any unhandled failure, unsafe retry, trust-boundary failure,
-  data duplication, or information leak keeps `P2-10` in `FIXING` and blocks suite
-  consolidation.
+  retries are bounded and restricted to justified transient provider failures;
+  validation and database failures do not create duplicate or partial success;
+  the established provider error contract is not redefined; and the defined
+  adversarial cases demonstrate application-level trust-boundary and safe-response
+  behavior without asserting real-model prompt-injection immunity.
+- **Failure routing:** Any provider-taxonomy redesign, unhandled failure, unsafe
+  retry, trust-boundary failure, data duplication, or information leak keeps
+  `P2-10` in `FIXING` and blocks suite consolidation.
 
 ### P2-11 — Automated Test Suite
 
@@ -520,9 +540,10 @@ Phase 2 is complete only when all nodes are `COMPLETE` and evidence confirms:
 - the evaluator depends only on the provider protocol and deterministic tests use
   a fake provider through a test-only seam unavailable to normal runtime
   configuration;
-- trusted evaluator instructions remain separated from untrusted question/essay
-  content and the required adversarial cases cannot override the evaluation
-  contract or escape safe structured responses;
+- deterministic fake-provider adversarial tests verify application-level request
+  construction, trust-boundary enforcement, structured validation, and safe
+  responses for untrusted question/essay content without claiming real-model
+  prompt-injection immunity;
 - DeepSeek configuration is environment-based, secret-safe, and unnecessary for
   normal automated tests;
 - malformed, missing, empty, invalid-band, timeout, HTTP, and database failures

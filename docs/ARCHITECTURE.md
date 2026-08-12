@@ -2,9 +2,18 @@
 
 ## Document status
 
-This document describes the **long-term target architecture** and the intended writing-first MVP. Phase 1 foundation is implemented: FastAPI, typed configuration, PostgreSQL/SQLAlchemy/Alembic infrastructure, foundation schemas, health APIs, tests, and Docker integration. The learning-loop components below remain target designs unless their status says otherwise.
+This document describes the **long-term target architecture** and the intended
+writing-first MVP. Phase 1 foundation is implemented: FastAPI, typed
+configuration, PostgreSQL/SQLAlchemy/Alembic infrastructure, foundation schemas,
+health APIs, tests, and Docker integration. Phase 2 — Writing Evaluation Pipeline
+is the current authorized planning phase under
+[PHASE2_GRAPH.md](PHASE2_GRAPH.md), but no Phase 2 runtime functionality has been
+implemented. The learning-loop components below remain target designs unless
+their status says otherwise.
 
-Phase 1 is strictly a foundation phase. Its allowed deliverables are defined by [PHASE1_GRAPH.md](PHASE1_GRAPH.md). Later-phase components described here must not be implemented during Phase 1 without an explicit scope change.
+The completed [PHASE1_GRAPH.md](PHASE1_GRAPH.md) remains the historical Phase 1
+execution record. Current work is bounded by the authorized Phase 2 graph;
+components outside it require a later explicit phase authorization.
 
 ## Architecture goal
 
@@ -85,7 +94,9 @@ Writing goal
   -> Next-task planning
 ```
 
-This is a later-phase target. Phase 1 must not implement the writing evaluator, LLM provider integration, learner-state update logic, learning-memory logic, planner, or task generation.
+Phase 2 covers only the writing-evaluation portion defined by its graph.
+Learner-state updates, learning memory, planning, task generation, and the wider
+closed loop remain later-phase targets.
 
 ## Phase 1 architecture boundary
 
@@ -106,4 +117,8 @@ Explicitly deferred capabilities include DeepSeek or other LLM integrations, Wri
 
 ## Evolution rule
 
-Architecture follows verified product requirements. Phase 1 is complete and stopped at `P1-11`. A later phase starts only with explicit instruction and an authorized phase graph. Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
+Architecture follows verified product requirements. Phase 1 is complete and
+stopped at `P1-11`; Phase 2 is the current authorized graph but its execution
+must not begin automatically. Every phase requires explicit execution authority,
+and a subsequent phase requires separate authorization and its own graph.
+Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
