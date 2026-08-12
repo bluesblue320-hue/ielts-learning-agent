@@ -128,3 +128,6 @@ Phase 1 remains complete and preserved in
 [docs/PHASE1_GRAPH.md](docs/PHASE1_GRAPH.md). Phase 2 implementation and its
 final audit follow the Phase 2 graph node by node. A later phase still requires
 separate authorization and its own graph.
+
+The completed validation evidence is recorded in the
+[Phase 2 final audit](docs/PHASE2_AUDIT.md).
