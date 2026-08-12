@@ -3,7 +3,7 @@
 from decimal import Decimal
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 IeltsBand = Annotated[
@@ -14,5 +14,7 @@ IeltsBand = Annotated[
 
 class BandScore(BaseModel):
     """Validated IELTS band value without evaluation behavior."""
+
+    model_config = ConfigDict(extra="forbid")
 
     value: IeltsBand

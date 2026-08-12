@@ -174,6 +174,15 @@ def test_every_criterion_rejects_invalid_band_values(
 
 
 @pytest.mark.parametrize("field", CRITERION_FIELDS)
+def test_every_criterion_rejects_extra_nested_band_fields(field: str) -> None:
+    payload = provider_payload()
+    payload["criteria"][field]["band"]["unexpected"] = "not allowed"
+
+    with pytest.raises(ValidationError, match="unexpected"):
+        StructuredProviderResult.model_validate(payload)
+
+
+@pytest.mark.parametrize("field", CRITERION_FIELDS)
 def test_provider_result_rejects_missing_criterion(field: str) -> None:
     payload = provider_payload()
     payload["criteria"].pop(field)
