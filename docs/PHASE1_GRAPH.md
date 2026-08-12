@@ -4,7 +4,7 @@
 
 This document defines **what** may be implemented in Phase 1 and the order imposed by dependencies. [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md) defines **how** to execute each selected node.
 
-Creating this graph does not start Phase 1. Current execution status is **not started**. Do not select or implement the first node until explicitly instructed.
+Phase 1 execution is **complete**. Nodes `P1-01` through `P1-11` satisfied their acceptance gates, and the graph is now a retained scope and dependency record. The `P1-11 -> STOP` transition is active; do not begin a later phase without explicit instruction.
 
 ## Scope boundary
 
@@ -91,6 +91,13 @@ current node
 - A proposed fix that requires forbidden or later-phase functionality is rejected. Record the limitation and request direction.
 - Missing credentials, unavailable infrastructure, an ambiguous destructive action, or a required scope decision moves the node to `BLOCKED`; do not invent values or broaden scope.
 - Preserve unrelated user changes and never use destructive Git recovery to resolve a node failure without explicit approval.
+
+## Completion evidence
+
+Final validation on 2026-08-12 confirmed 29 passing pytest tests with PostgreSQL,
+Alembic head `0001_phase1` with downgrade/re-upgrade, healthy API and database
+containers, successful containerized tests, resolved documentation links, and
+no Phase 2 implementation.
 
 ## Phase 1 acceptance criteria
 
