@@ -12,8 +12,9 @@ Phase 3 is based on merged Phase 2 commit
 `dd63a99a9fc08cbe5597988f71aaa360a3a1f66c`, including the accepted Writing
 Task 2 pipeline and Alembic head `0002_writing`. Creating and approving this
 graph authorizes the Phase 3 scope, but does not activate a node or authorize
-continuous execution by itself. `P3-01` is the first `READY` node. Every later
-node is `NOT_STARTED` until all declared dependencies are `COMPLETE`.
+continuous execution by itself. `P3-01` was the first `READY` node and its
+accepted transition evidence is recorded in
+[PHASE3_BASELINE.md](PHASE3_BASELINE.md).
 
 ## Phase objective
 
@@ -169,12 +170,18 @@ same node in `FIXING` and never unlocks downstream nodes.
 
 Selection follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md): use an explicitly
 selected `READY` node; otherwise select the lowest-numbered `READY` node.
-This graph's initial state is:
+This graph's initial state at design approval was:
 
 - `P3-01`: `READY`
 - `P3-02` through `P3-15`: `NOT_STARTED`
 
-This design-only task does not activate or execute `P3-01`.
+After the accepted P3-01 baseline transition, the current state is:
+
+- `P3-01`: `COMPLETE`
+- `P3-02`: `READY`
+- `P3-03` through `P3-15`: `NOT_STARTED`
+
+Completing P3-01 does not authorize or activate P3-02.
 
 ## Dependency graph
 
