@@ -15,7 +15,7 @@ from pydantic import (
 )
 
 from app.schemas.writing import (
-    StructuredProviderResult,
+    ProviderEvaluationPayload,
     WritingCriterion,
     WritingSubmission,
 )
@@ -37,25 +37,40 @@ class TrustedEvaluationContext(ProviderBoundary):
     """Application-controlled instructions and contracts for evaluation."""
 
     evaluator_instructions: NonBlankText
-    rubric: NonBlankText
+    rubric_version: NonBlankText
     criterion_definitions: dict[WritingCriterion, NonBlankText]
+    band_descriptors: dict[WritingCriterion, dict[str, NonBlankText]]
+    half_band_guidance: NonBlankText
+    task_length_guidance: NonBlankText
+    submission_word_count: int = Field(gt=0)
+    scoring_policy_version: NonBlankText
     scoring_policy: NonBlankText
     output_schema: dict[str, Any] = Field(min_length=1)
     prompt_version: NonBlankText
     safety_constraints: NonBlankText
 
     @model_validator(mode="after")
-    def require_all_criteria(self) -> TrustedEvaluationContext:
-        """Require exactly the four accepted Writing Task 2 criteria."""
+    def require_complete_rubric(self) -> TrustedEvaluationContext:
+        """Require every criterion and every integer band anchor from 0 to 9."""
 
         expected = set(WritingCriterion)
-        actual = set(self.criterion_definitions)
-        if actual != expected:
-            missing = sorted(criterion.value for criterion in expected - actual)
-            extra = sorted(str(criterion) for criterion in actual - expected)
+        definition_criteria = set(self.criterion_definitions)
+        descriptor_criteria = set(self.band_descriptors)
+        if definition_criteria != expected or descriptor_criteria != expected:
             raise ValueError(
-                "criterion_definitions must contain exactly the four Writing "
-                f"Task 2 criteria; missing={missing}, extra={extra}"
+                "criterion_definitions and band_descriptors must contain "
+                "exactly the four Writing Task 2 criteria"
+            )
+        expected_bands = {str(value) for value in range(10)}
+        incomplete = [
+            criterion.value
+            for criterion, descriptors in self.band_descriptors.items()
+            if set(descriptors) != expected_bands
+        ]
+        if incomplete:
+            raise ValueError(
+                "band_descriptors must contain integer anchors 0 through 9 "
+                f"for every criterion; incomplete={sorted(incomplete)}"
             )
         return self
 
@@ -67,11 +82,19 @@ class WritingProviderRequest(ProviderBoundary):
     untrusted_submission: WritingSubmission
 
 
+class ThinkingMode(StrEnum):
+    """Explicit application-owned provider reasoning mode."""
+
+    ENABLED = "enabled"
+    DISABLED = "disabled"
+
+
 class ProviderErrorCategory(StrEnum):
     """Stable provider failure distinctions required by downstream code."""
 
     CONFIGURATION = "configuration"
     AUTHENTICATION = "authentication"
+    BILLING = "billing"
     TIMEOUT = "timeout"
     RATE_LIMIT = "rate_limit"
     TRANSIENT = "transient"
@@ -129,10 +152,14 @@ class LLMProvider(Protocol):
     def model_name(self) -> str:
         """Return the configured model identifier."""
 
+    @property
+    def thinking_mode(self) -> ThinkingMode:
+        """Return the explicit application-configured reasoning mode."""
+
     async def evaluate_writing(
         self,
         request: WritingProviderRequest,
-    ) -> StructuredProviderResult:
+    ) -> ProviderEvaluationPayload:
         """Return a validated structured result or raise ProviderError."""
 
         ...

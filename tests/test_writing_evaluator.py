@@ -9,6 +9,14 @@ from typing import Any
 import pytest
 
 import app.services.writing_evaluation as evaluator_module
+from app.evaluators.rubrics.writing_task2_v1 import (
+    WRITING_TASK2_BAND_DESCRIPTORS,
+    WRITING_TASK2_CRITERION_DEFINITIONS,
+    WRITING_TASK2_HALF_BAND_GUIDANCE,
+    WRITING_TASK2_LENGTH_GUIDANCE,
+    WRITING_TASK2_MINIMUM_WORDS,
+    WRITING_TASK2_RUBRIC_VERSION,
+)
 from app.llm.provider import (
     ProviderError,
     ProviderErrorCategory,
@@ -16,18 +24,17 @@ from app.llm.provider import (
 )
 from app.schemas.writing import (
     PRODUCT_BAND_INCREMENT,
-    StructuredProviderResult,
+    ProviderEvaluationPayload,
     WritingCriterion,
     WritingEvaluationResult,
     WritingSubmission,
 )
 from app.services.writing_evaluation import (
-    CRITERION_DEFINITIONS,
     EVALUATOR_INSTRUCTIONS,
     SAFETY_CONSTRAINTS,
     SCORING_POLICY,
     WRITING_PROMPT_VERSION,
-    WRITING_RUBRIC,
+    WRITING_SCORING_POLICY_VERSION,
     WritingEvaluationService,
 )
 from tests.fakes import FakeProvider
@@ -60,11 +67,6 @@ def provider_payload(
         "error_tags": ["article-use"],
         "recommended_skills": ["supporting examples"],
         "feedback": "Prioritize specific evidence and precise language.",
-        "metadata": {
-            "provider": "provider-controlled-value",
-            "model": "provider-controlled-model",
-            "prompt_version": "provider-controlled-version",
-        },
     }
 
 
@@ -101,6 +103,11 @@ def test_evaluator_returns_complete_validated_result_for_short_essay() -> None:
     assert result.feedback == "Prioritize specific evidence and precise language."
     assert result.product_band.value == Decimal("6.5")
     assert len(provider.requests) == 1
+    request = provider.requests[0]
+    assert request.trusted_context.submission_word_count == 5
+    assert str(WRITING_TASK2_MINIMUM_WORDS) in (
+        request.trusted_context.task_length_guidance
+    )
 
 
 def test_evaluator_owns_provider_and_prompt_metadata() -> None:
@@ -109,6 +116,12 @@ def test_evaluator_owns_provider_and_prompt_metadata() -> None:
     assert result.metadata.provider == "fake-provider"
     assert result.metadata.model == "fake-model"
     assert result.metadata.prompt_version == WRITING_PROMPT_VERSION
+    assert result.metadata.rubric_version == WRITING_TASK2_RUBRIC_VERSION
+    assert (
+        result.metadata.scoring_policy_version
+        == WRITING_SCORING_POLICY_VERSION
+    )
+    assert result.metadata.thinking_mode == "disabled"
     assert "provider-controlled" not in json.dumps(result.model_dump(mode="json"))
 
 
@@ -122,13 +135,30 @@ def test_evaluator_request_contains_frozen_contract_and_untrusted_submission() -
 
     assert request.untrusted_submission == writing
     assert request.trusted_context.evaluator_instructions == EVALUATOR_INSTRUCTIONS
-    assert request.trusted_context.rubric == WRITING_RUBRIC
+    assert (
+        request.trusted_context.rubric_version
+        == WRITING_TASK2_RUBRIC_VERSION
+    )
     assert request.trusted_context.scoring_policy == SCORING_POLICY
+    assert (
+        request.trusted_context.scoring_policy_version
+        == WRITING_SCORING_POLICY_VERSION
+    )
     assert request.trusted_context.safety_constraints == SAFETY_CONSTRAINTS
     assert request.trusted_context.prompt_version == WRITING_PROMPT_VERSION
     assert request.trusted_context.criterion_definitions == dict(
-        CRITERION_DEFINITIONS
+        WRITING_TASK2_CRITERION_DEFINITIONS
     )
+    assert request.trusted_context.band_descriptors == dict(
+        WRITING_TASK2_BAND_DESCRIPTORS
+    )
+    assert request.trusted_context.half_band_guidance == (
+        WRITING_TASK2_HALF_BAND_GUIDANCE
+    )
+    assert request.trusted_context.task_length_guidance == (
+        WRITING_TASK2_LENGTH_GUIDANCE
+    )
+    assert request.trusted_context.submission_word_count == 4
     assert set(request.trusted_context.output_schema["properties"]) == {
         "criteria",
         "strengths",
@@ -136,7 +166,6 @@ def test_evaluator_request_contains_frozen_contract_and_untrusted_submission() -
         "error_tags",
         "recommended_skills",
         "feedback",
-        "metadata",
     }
     assert "product_band" not in request.trusted_context.output_schema["properties"]
 
@@ -201,6 +230,19 @@ def test_evaluator_rejects_invalid_provider_band_through_fake() -> None:
 def test_evaluator_rejects_provider_product_band_override() -> None:
     invalid = provider_payload()
     invalid["product_band"] = {"value": "9"}
+    provider = FakeProvider([invalid])
+
+    with pytest.raises(ProviderError) as captured:
+        asyncio.run(WritingEvaluationService(provider).evaluate(submission()))
+
+    assert captured.value.category is ProviderErrorCategory.INVALID_RESPONSE
+
+
+def test_evaluator_rejects_provider_attempt_to_override_metadata() -> None:
+    invalid = provider_payload()
+    invalid["metadata"] = {
+        "rubric_version": "provider-controlled-rubric",
+    }
     provider = FakeProvider([invalid])
 
     with pytest.raises(ProviderError) as captured:
@@ -277,7 +319,7 @@ def test_adversarial_content_remains_untrusted_application_data(
     assert content not in trusted_json
     assert request.trusted_context.scoring_policy == SCORING_POLICY
     assert request.trusted_context.output_schema == (
-        StructuredProviderResult.model_json_schema()
+        ProviderEvaluationPayload.model_json_schema()
     )
     assert result.product_band.value == Decimal("6.5")
     assert content not in json.dumps(result.model_dump(mode="json"))

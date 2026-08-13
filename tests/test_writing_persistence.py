@@ -91,7 +91,10 @@ def evaluation(
             "metadata": {
                 "provider": "fake-provider",
                 "model": "fake-model",
-                "prompt_version": "writing-v1",
+                "prompt_version": "writing-v2",
+                "rubric_version": "writing-task2-v1",
+                "scoring_policy_version": "writing-product-band-v1",
+                "thinking_mode": "disabled",
             },
             "word_count": word_count,
         }
@@ -150,7 +153,10 @@ def test_persistence_writes_complete_pair_and_returns_committed_ids(
         assert stored.feedback == "Use more precise evidence."
         assert stored.provider == "fake-provider"
         assert stored.model == "fake-model"
-        assert stored.prompt_version == "writing-v1"
+        assert stored.prompt_version == "writing-v2"
+        assert stored.rubric_version == "writing-task2-v1"
+        assert stored.scoring_policy_version == "writing-product-band-v1"
+        assert stored.thinking_mode == "disabled"
         assert stored.created_at is not None
 
 

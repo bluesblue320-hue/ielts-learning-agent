@@ -10,13 +10,14 @@ from app.llm import (
     ProviderError,
     ProviderErrorCategory,
     ProviderErrorContext,
+    ThinkingMode,
     WritingProviderRequest,
 )
-from app.schemas.writing import StructuredProviderResult
+from app.schemas.writing import ProviderEvaluationPayload
 
 
 FakeEffect: TypeAlias = (
-    StructuredProviderResult | Mapping[str, object] | ProviderError
+    ProviderEvaluationPayload | Mapping[str, object] | ProviderError
 )
 
 
@@ -29,10 +30,12 @@ class FakeProvider:
         *,
         provider_name: str = "fake-provider",
         model_name: str = "fake-model",
+        thinking_mode: ThinkingMode = ThinkingMode.DISABLED,
     ) -> None:
         self._effects = deque(effects)
         self._provider_name = provider_name
         self._model_name = model_name
+        self._thinking_mode = thinking_mode
         self.requests: list[WritingProviderRequest] = []
 
     @property
@@ -43,10 +46,14 @@ class FakeProvider:
     def model_name(self) -> str:
         return self._model_name
 
+    @property
+    def thinking_mode(self) -> ThinkingMode:
+        return self._thinking_mode
+
     async def evaluate_writing(
         self,
         request: WritingProviderRequest,
-    ) -> StructuredProviderResult:
+    ) -> ProviderEvaluationPayload:
         self.requests.append(request.model_copy(deep=True))
         if not self._effects:
             raise AssertionError("FakeProvider has no scripted effect remaining")
@@ -56,7 +63,7 @@ class FakeProvider:
             raise effect
 
         try:
-            return StructuredProviderResult.model_validate(effect)
+            return ProviderEvaluationPayload.model_validate(effect)
         except ValidationError as error:
             raise ProviderError(
                 ProviderErrorCategory.INVALID_RESPONSE,

@@ -32,6 +32,11 @@ PROVIDER_API_ERROR_POLICIES: Final = MappingProxyType(
             APIErrorCode.PROVIDER_AUTHENTICATION,
             "Writing evaluation provider authentication failed.",
         ),
+        ProviderErrorCategory.BILLING: ProviderAPIErrorPolicy(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            APIErrorCode.PROVIDER_BILLING_UNAVAILABLE,
+            "Writing evaluation provider account is unavailable.",
+        ),
         ProviderErrorCategory.TIMEOUT: ProviderAPIErrorPolicy(
             status.HTTP_504_GATEWAY_TIMEOUT,
             APIErrorCode.PROVIDER_TIMEOUT,

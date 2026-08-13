@@ -45,11 +45,6 @@ def valid_provider_payload() -> dict[str, object]:
         "error_tags": ["article-use"],
         "recommended_skills": ["supporting examples"],
         "feedback": "Use more precise evidence.",
-        "metadata": {
-            "provider": "untrusted-provider",
-            "model": "untrusted-model",
-            "prompt_version": "untrusted-version",
-        },
     }
 
 
@@ -150,7 +145,13 @@ def test_submission_traverses_api_and_stores_complete_migrated_pair(
         assert attempt.evaluation.product_band == Decimal("6.5")
         assert attempt.evaluation.provider == "fake-provider"
         assert attempt.evaluation.model == "fake-model"
-        assert attempt.evaluation.prompt_version == "writing-v1"
+        assert attempt.evaluation.prompt_version == "writing-v2"
+        assert attempt.evaluation.rubric_version == "writing-task2-v1"
+        assert (
+            attempt.evaluation.scoring_policy_version
+            == "writing-product-band-v1"
+        )
+        assert attempt.evaluation.thinking_mode == "disabled"
         assert attempt.evaluation.error_tags == ["article-use"]
 
 

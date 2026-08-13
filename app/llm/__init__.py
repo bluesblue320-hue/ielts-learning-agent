@@ -6,10 +6,12 @@ from app.llm.provider import (
     ProviderError,
     ProviderErrorCategory,
     ProviderErrorContext,
+    ThinkingMode,
     TrustedEvaluationContext,
     WritingProviderRequest,
 )
 from app.llm.retry import (
+    BASE_RETRY_DELAY_SECONDS,
     MAX_PROVIDER_ATTEMPTS,
     RETRYABLE_PROVIDER_ERRORS,
     ProviderRetryPolicy,
@@ -23,8 +25,10 @@ __all__ = [
     "ProviderError",
     "ProviderErrorCategory",
     "ProviderErrorContext",
+    "ThinkingMode",
     "TrustedEvaluationContext",
     "WritingProviderRequest",
+    "BASE_RETRY_DELAY_SECONDS",
     "MAX_PROVIDER_ATTEMPTS",
     "RETRYABLE_PROVIDER_ERRORS",
     "ProviderRetryPolicy",

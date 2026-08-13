@@ -42,6 +42,9 @@ EVALUATION_COLUMNS = {
     "provider",
     "model",
     "prompt_version",
+    "rubric_version",
+    "scoring_policy_version",
+    "thinking_mode",
     "created_at",
 }
 BAND_COLUMNS = {
@@ -115,6 +118,9 @@ def test_evaluation_columns_preserve_bands_structured_feedback_and_metadata() ->
     assert table.c.model.type.length == 255
     assert isinstance(table.c.prompt_version.type, String)
     assert table.c.prompt_version.type.length == 64
+    assert table.c.rubric_version.type.length == 64
+    assert table.c.scoring_policy_version.type.length == 64
+    assert table.c.thinking_mode.type.length == 16
     assert table.c.created_at.server_default is not None
     assert {index.name for index in table.indexes} == {
         "ix_writing_evaluation_created_at"
@@ -130,6 +136,9 @@ def test_evaluation_constraints_cover_every_band_and_nonblank_metadata() -> None
         "ck_writing_evaluation_provider_nonblank",
         "ck_writing_evaluation_model_nonblank",
         "ck_writing_evaluation_prompt_version_nonblank",
+        "ck_writing_evaluation_rubric_version_nonblank",
+        "ck_writing_evaluation_scoring_policy_version_nonblank",
+        "ck_writing_evaluation_thinking_mode",
         "uq_writing_evaluation_attempt_id",
     }
     checks = {

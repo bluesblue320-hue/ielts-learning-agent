@@ -123,4 +123,7 @@ class WritingEvaluationPersistenceService:
             provider=evaluation.metadata.provider,
             model=evaluation.metadata.model,
             prompt_version=evaluation.metadata.prompt_version,
+            rubric_version=evaluation.metadata.rubric_version,
+            scoring_policy_version=evaluation.metadata.scoring_policy_version,
+            thinking_mode=evaluation.metadata.thinking_mode,
         )

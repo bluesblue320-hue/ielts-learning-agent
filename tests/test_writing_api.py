@@ -37,6 +37,10 @@ from tests.fakes import FakeProvider
 pytestmark = [pytest.mark.integration, pytest.mark.provider]
 
 
+async def no_sleep(delay: float) -> None:
+    assert delay > 0
+
+
 def provider_payload(value: str = "6.5") -> dict[str, object]:
     criterion = {
         "band": {"value": value},
@@ -55,11 +59,6 @@ def provider_payload(value: str = "6.5") -> dict[str, object]:
         "error_tags": ["article-use"],
         "recommended_skills": ["supporting examples"],
         "feedback": "Use more precise evidence.",
-        "metadata": {
-            "provider": "provider-controlled",
-            "model": "provider-controlled",
-            "prompt_version": "provider-controlled",
-        },
     }
 
 
@@ -137,7 +136,10 @@ def test_valid_request_evaluates_persists_and_returns_explicit_schema(
     assert body["evaluation"]["metadata"] == {
         "provider": "fake-provider",
         "model": "fake-model",
-        "prompt_version": "writing-v1",
+        "prompt_version": "writing-v2",
+        "rubric_version": "writing-task2-v1",
+        "scoring_policy_version": "writing-product-band-v1",
+        "thinking_mode": "disabled",
     }
     assert len(provider.requests) == 1
     assert row_counts(writing_engine) == (1, 1)
@@ -347,6 +349,11 @@ def test_route_remains_thin_and_openapi_declares_response_schema() -> None:
     [
         (ProviderErrorCategory.CONFIGURATION, 503, "provider_configuration"),
         (ProviderErrorCategory.AUTHENTICATION, 503, "provider_authentication"),
+        (
+            ProviderErrorCategory.BILLING,
+            503,
+            "provider_billing_unavailable",
+        ),
         (ProviderErrorCategory.TIMEOUT, 504, "provider_timeout"),
         (ProviderErrorCategory.RATE_LIMIT, 503, "provider_rate_limited"),
         (ProviderErrorCategory.TRANSIENT, 503, "provider_unavailable"),
@@ -418,7 +425,7 @@ def test_invalid_structured_provider_results_are_non_retryable_and_safe(
 
     with client_for(
         writing_engine,
-        RetryingProvider(provider),
+        RetryingProvider(provider, sleeper=no_sleep),
     ) as client:
         response = client.post(
             "/writing/evaluate",
@@ -454,7 +461,7 @@ def test_retryable_provider_failure_can_recover_to_one_atomic_success(
 
     with client_for(
         writing_engine,
-        RetryingProvider(provider),
+        RetryingProvider(provider, sleeper=no_sleep),
     ) as client:
         response = client.post(
             "/writing/evaluate",
@@ -479,7 +486,7 @@ def test_retryable_failure_stops_at_three_attempts_without_write(
 
     with client_for(
         writing_engine,
-        RetryingProvider(provider),
+        RetryingProvider(provider, sleeper=no_sleep),
     ) as client:
         response = client.post(
             "/writing/evaluate",

@@ -1,11 +1,16 @@
 """Vendor-independent orchestration for Writing Task 2 evaluation."""
 
-from collections.abc import Mapping
-from types import MappingProxyType
 from typing import Final
 
 from pydantic import ValidationError
 
+from app.evaluators.rubrics.writing_task2_v1 import (
+    WRITING_TASK2_CRITERION_DEFINITIONS,
+    WRITING_TASK2_HALF_BAND_GUIDANCE,
+    WRITING_TASK2_LENGTH_GUIDANCE,
+    WRITING_TASK2_RUBRIC_VERSION,
+    writing_task2_band_descriptors,
+)
 from app.llm.provider import (
     LLMProvider,
     ProviderError,
@@ -16,40 +21,18 @@ from app.llm.provider import (
 )
 from app.schemas.writing import (
     EvaluationMetadata,
-    StructuredProviderResult,
-    WritingCriterion,
+    ProviderEvaluationPayload,
     WritingEvaluationResult,
     WritingSubmission,
 )
 
 
-WRITING_PROMPT_VERSION: Final[str] = "writing-v1"
-CRITERION_DEFINITIONS: Final[Mapping[WritingCriterion, str]] = MappingProxyType(
-    {
-        WritingCriterion.TASK_RESPONSE: (
-            "Assess how fully and relevantly the response addresses the task "
-            "and supports its position."
-        ),
-        WritingCriterion.COHERENCE_AND_COHESION: (
-            "Assess logical organization, progression, paragraphing, and "
-            "cohesive control."
-        ),
-        WritingCriterion.LEXICAL_RESOURCE: (
-            "Assess vocabulary range, precision, appropriacy, spelling, and "
-            "word formation."
-        ),
-        WritingCriterion.GRAMMATICAL_RANGE_AND_ACCURACY: (
-            "Assess sentence-form range, grammatical control, and punctuation."
-        ),
-    }
-)
+WRITING_PROMPT_VERSION: Final[str] = "writing-v2"
+WRITING_SCORING_POLICY_VERSION: Final[str] = "writing-product-band-v1"
 EVALUATOR_INSTRUCTIONS: Final[str] = (
-    "Evaluate the writing submission only against the trusted Task 2 rubric. "
-    "Return criterion evidence and actionable feedback as one JSON object."
-)
-WRITING_RUBRIC: Final[str] = (
-    "Evaluate Task Response, Coherence and Cohesion, Lexical Resource, and "
-    "Grammatical Range and Accuracy independently using IELTS half bands."
+    "Evaluate each criterion only against the supplied versioned definitions "
+    "and band descriptors, not provider memory. Return criterion evidence and "
+    "actionable feedback as one JSON object."
 )
 SCORING_POLICY: Final[str] = (
     "Return only four criterion bands from 0 to 9 in 0.5 increments. The "
@@ -72,10 +55,15 @@ def build_writing_provider_request(
     return WritingProviderRequest(
         trusted_context=TrustedEvaluationContext(
             evaluator_instructions=EVALUATOR_INSTRUCTIONS,
-            rubric=WRITING_RUBRIC,
-            criterion_definitions=dict(CRITERION_DEFINITIONS),
+            rubric_version=WRITING_TASK2_RUBRIC_VERSION,
+            criterion_definitions=dict(WRITING_TASK2_CRITERION_DEFINITIONS),
+            band_descriptors=writing_task2_band_descriptors(),
+            half_band_guidance=WRITING_TASK2_HALF_BAND_GUIDANCE,
+            task_length_guidance=WRITING_TASK2_LENGTH_GUIDANCE,
+            submission_word_count=submission.word_count,
+            scoring_policy_version=WRITING_SCORING_POLICY_VERSION,
             scoring_policy=SCORING_POLICY,
-            output_schema=StructuredProviderResult.model_json_schema(),
+            output_schema=ProviderEvaluationPayload.model_json_schema(),
             prompt_version=WRITING_PROMPT_VERSION,
             safety_constraints=SAFETY_CONSTRAINTS,
         ),
@@ -96,15 +84,18 @@ class WritingEvaluationService:
         request = build_writing_provider_request(submission)
         raw_result = await self._provider.evaluate_writing(request)
         try:
-            provider_result = StructuredProviderResult.model_validate(raw_result)
+            provider_result = ProviderEvaluationPayload.model_validate(raw_result)
             metadata = EvaluationMetadata(
                 provider=self._provider.provider_name,
                 model=self._provider.model_name,
                 prompt_version=WRITING_PROMPT_VERSION,
+                rubric_version=WRITING_TASK2_RUBRIC_VERSION,
+                scoring_policy_version=WRITING_SCORING_POLICY_VERSION,
+                thinking_mode=self._provider.thinking_mode.value,
             )
             return WritingEvaluationResult.model_validate(
                 {
-                    **provider_result.model_dump(exclude={"metadata"}),
+                    **provider_result.model_dump(),
                     "metadata": metadata.model_dump(),
                     "word_count": submission.word_count,
                 }

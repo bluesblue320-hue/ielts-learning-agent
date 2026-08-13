@@ -118,6 +118,18 @@ class WritingEvaluation(Base):
             "length(trim(prompt_version)) > 0",
             name="ck_writing_evaluation_prompt_version_nonblank",
         ),
+        CheckConstraint(
+            "length(trim(rubric_version)) > 0",
+            name="ck_writing_evaluation_rubric_version_nonblank",
+        ),
+        CheckConstraint(
+            "length(trim(scoring_policy_version)) > 0",
+            name="ck_writing_evaluation_scoring_policy_version_nonblank",
+        ),
+        CheckConstraint(
+            "thinking_mode IN ('enabled', 'disabled')",
+            name="ck_writing_evaluation_thinking_mode",
+        ),
         Index("ix_writing_evaluation_created_at", "created_at"),
     )
 
@@ -163,6 +175,11 @@ class WritingEvaluation(Base):
     provider: Mapped[str] = mapped_column(String(64), nullable=False)
     model: Mapped[str] = mapped_column(String(255), nullable=False)
     prompt_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    rubric_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    scoring_policy_version: Mapped[str] = mapped_column(
+        String(64), nullable=False
+    )
+    thinking_mode: Mapped[str] = mapped_column(String(16), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

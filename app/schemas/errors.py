@@ -9,6 +9,7 @@ class APIErrorCode(StrEnum):
     REQUEST_INVALID = "request_invalid"
     PROVIDER_CONFIGURATION = "provider_configuration"
     PROVIDER_AUTHENTICATION = "provider_authentication"
+    PROVIDER_BILLING_UNAVAILABLE = "provider_billing_unavailable"
     PROVIDER_TIMEOUT = "provider_timeout"
     PROVIDER_RATE_LIMITED = "provider_rate_limited"
     PROVIDER_UNAVAILABLE = "provider_unavailable"

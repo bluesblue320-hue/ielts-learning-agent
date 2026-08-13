@@ -21,9 +21,10 @@ from app.llm.provider import (
     ProviderError,
     ProviderErrorCategory,
     ProviderErrorContext,
+    ThinkingMode,
     WritingProviderRequest,
 )
-from app.schemas.writing import EvaluationMetadata, StructuredProviderResult
+from app.schemas.writing import ProviderEvaluationPayload
 
 
 NonBlankText = Annotated[
@@ -46,6 +47,7 @@ class DeepSeekSettings(BaseSettings):
     api_url: HttpUrl = HttpUrl("https://api.deepseek.com/chat/completions")
     model: NonBlankText = "deepseek-v4-pro"
     timeout_seconds: float = Field(default=30.0, gt=0, le=120)
+    thinking_mode: ThinkingMode = ThinkingMode.DISABLED
 
     @field_validator("api_key")
     @classmethod
@@ -80,12 +82,16 @@ class DeepSeekProvider:
     def model_name(self) -> str:
         return self._settings.model
 
+    @property
+    def thinking_mode(self) -> ThinkingMode:
+        return self._settings.thinking_mode
+
     async def evaluate_writing(
         self,
         request: WritingProviderRequest,
-    ) -> StructuredProviderResult:
+    ) -> ProviderEvaluationPayload:
         response = await self._send(self._request_payload(request))
-        return self._validated_result(response, request)
+        return self._validated_result(response)
 
     def _request_payload(
         self,
@@ -122,6 +128,7 @@ class DeepSeekProvider:
             "response_format": {"type": "json_object"},
             "stream": False,
             "max_tokens": 4096,
+            "thinking": {"type": self.thinking_mode.value},
         }
 
     async def _send(self, payload: dict[str, object]) -> httpx.Response:
@@ -163,7 +170,10 @@ class DeepSeekProvider:
         return response
 
     def _http_error(self, response: httpx.Response) -> ProviderError:
-        if response.status_code in {401, 403}:
+        if response.status_code == 402:
+            category = ProviderErrorCategory.BILLING
+            message = "Provider account cannot process the request."
+        elif response.status_code in {401, 403}:
             category = ProviderErrorCategory.AUTHENTICATION
             message = "Provider authentication failed."
         elif response.status_code == 429:
@@ -185,8 +195,7 @@ class DeepSeekProvider:
     def _validated_result(
         self,
         response: httpx.Response,
-        request: WritingProviderRequest,
-    ) -> StructuredProviderResult:
+    ) -> ProviderEvaluationPayload:
         try:
             envelope = response.json()
         except (json.JSONDecodeError, ValueError) as error:
@@ -239,13 +248,8 @@ class DeepSeekProvider:
                 request_id=response.headers.get("x-request-id"),
             )
 
-        payload["metadata"] = EvaluationMetadata(
-            provider=self.provider_name,
-            model=self.model_name,
-            prompt_version=request.trusted_context.prompt_version,
-        ).model_dump(mode="json")
         try:
-            return StructuredProviderResult.model_validate(payload)
+            return ProviderEvaluationPayload.model_validate(payload)
         except ValidationError as error:
             raise self._error(
                 ProviderErrorCategory.INVALID_RESPONSE,

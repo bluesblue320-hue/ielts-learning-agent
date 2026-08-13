@@ -78,6 +78,13 @@ def upgrade() -> None:
         sa.Column("provider", sa.String(length=64), nullable=False),
         sa.Column("model", sa.String(length=255), nullable=False),
         sa.Column("prompt_version", sa.String(length=64), nullable=False),
+        sa.Column("rubric_version", sa.String(length=64), nullable=False),
+        sa.Column(
+            "scoring_policy_version",
+            sa.String(length=64),
+            nullable=False,
+        ),
+        sa.Column("thinking_mode", sa.String(length=16), nullable=False),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
@@ -128,6 +135,18 @@ def upgrade() -> None:
         sa.CheckConstraint(
             "length(trim(prompt_version)) > 0",
             name="ck_writing_evaluation_prompt_version_nonblank",
+        ),
+        sa.CheckConstraint(
+            "length(trim(rubric_version)) > 0",
+            name="ck_writing_evaluation_rubric_version_nonblank",
+        ),
+        sa.CheckConstraint(
+            "length(trim(scoring_policy_version)) > 0",
+            name="ck_writing_evaluation_scoring_policy_version_nonblank",
+        ),
+        sa.CheckConstraint(
+            "thinking_mode IN ('enabled', 'disabled')",
+            name="ck_writing_evaluation_thinking_mode",
         ),
         sa.ForeignKeyConstraint(
             ["attempt_id"],

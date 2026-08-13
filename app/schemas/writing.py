@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from decimal import ROUND_HALF_UP, Decimal
 from enum import StrEnum
 from types import MappingProxyType
-from typing import Annotated, Final
+from typing import Annotated, Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, computed_field
 
@@ -149,15 +149,18 @@ def aggregate_product_band(scores: CriterionBandScores) -> BandScore:
 
 
 class EvaluationMetadata(WritingSchema):
-    """Provider and prompt identifiers attached by application composition."""
+    """Reproducibility identifiers owned by application composition."""
 
     provider: NonBlankText
     model: NonBlankText
     prompt_version: NonBlankText
+    rubric_version: NonBlankText
+    scoring_policy_version: NonBlankText
+    thinking_mode: Literal["enabled", "disabled"]
 
 
-class StructuredProviderResult(WritingSchema):
-    """Validated qualitative provider result without a provider-chosen total."""
+class ProviderEvaluationPayload(WritingSchema):
+    """Only qualitative fields that an evaluation provider may control."""
 
     criteria: WritingCriteria
     strengths: NonEmptyTextList
@@ -165,12 +168,12 @@ class StructuredProviderResult(WritingSchema):
     error_tags: list[NonBlankText]
     recommended_skills: list[NonBlankText]
     feedback: NonBlankText
+
+
+class WritingEvaluationResult(ProviderEvaluationPayload):
+    """Provider payload plus deterministic evidence and application metadata."""
+
     metadata: EvaluationMetadata
-
-
-class WritingEvaluationResult(StructuredProviderResult):
-    """Evaluation payload suitable for a future API response boundary."""
-
     word_count: int = Field(ge=1)
 
     @computed_field(return_type=BandScore)

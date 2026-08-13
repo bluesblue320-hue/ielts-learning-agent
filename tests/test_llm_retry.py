@@ -5,6 +5,7 @@ import asyncio
 import pytest
 
 from app.llm import (
+    BASE_RETRY_DELAY_SECONDS,
     MAX_PROVIDER_ATTEMPTS,
     RETRYABLE_PROVIDER_ERRORS,
     ProviderError,
@@ -19,6 +20,14 @@ from tests.fakes import FakeProvider
 
 
 pytestmark = pytest.mark.provider
+
+
+class RecordingSleeper:
+    def __init__(self) -> None:
+        self.delays: list[float] = []
+
+    async def __call__(self, delay: float) -> None:
+        self.delays.append(delay)
 
 
 def provider_payload() -> dict[str, object]:
@@ -39,11 +48,6 @@ def provider_payload() -> dict[str, object]:
         "error_tags": [],
         "recommended_skills": ["supporting examples"],
         "feedback": "Use more precise evidence.",
-        "metadata": {
-            "provider": "ignored",
-            "model": "ignored",
-            "prompt_version": "ignored",
-        },
     }
 
 
@@ -75,14 +79,20 @@ def test_every_established_error_category_has_deterministic_retry_behavior(
     )
     failure = provider_error(category)
     fake = FakeProvider([failure] * expected_attempts)
+    sleeper = RecordingSleeper()
 
     with pytest.raises(ProviderError) as captured:
-        evaluate(RetryingProvider(fake))
+        evaluate(RetryingProvider(fake, sleeper=sleeper))
 
     assert captured.value is failure
     assert captured.value.category is category
     assert len(fake.requests) == expected_attempts
     assert len(fake.requests) <= MAX_PROVIDER_ATTEMPTS
+    assert sleeper.delays == (
+        [BASE_RETRY_DELAY_SECONDS, BASE_RETRY_DELAY_SECONDS * 2]
+        if category in RETRYABLE_PROVIDER_ERRORS
+        else []
+    )
 
 
 @pytest.mark.parametrize("category", tuple(RETRYABLE_PROVIDER_ERRORS))
@@ -90,10 +100,12 @@ def test_transient_category_retries_then_succeeds_without_mutating_request(
     category: ProviderErrorCategory,
 ) -> None:
     fake = FakeProvider([provider_error(category), provider_payload()])
+    sleeper = RecordingSleeper()
 
-    result = evaluate(RetryingProvider(fake))
+    result = evaluate(RetryingProvider(fake, sleeper=sleeper))
 
     assert result.product_band.value == 6.5
+    assert sleeper.delays == [BASE_RETRY_DELAY_SECONDS]
     assert len(fake.requests) == 2
     assert fake.requests[0] == fake.requests[1]
     assert fake.requests[0].untrusted_submission.essay == (
@@ -104,16 +116,19 @@ def test_transient_category_retries_then_succeeds_without_mutating_request(
 def test_policy_can_disable_retries_with_one_attempt() -> None:
     failure = provider_error(ProviderErrorCategory.TIMEOUT)
     fake = FakeProvider([failure])
+    sleeper = RecordingSleeper()
 
     with pytest.raises(ProviderError):
         evaluate(
             RetryingProvider(
                 fake,
                 ProviderRetryPolicy(max_attempts=1),
+                sleeper=sleeper,
             )
         )
 
     assert len(fake.requests) == 1
+    assert sleeper.delays == []
 
 
 @pytest.mark.parametrize("max_attempts", [0, MAX_PROVIDER_ATTEMPTS + 1])
@@ -122,6 +137,12 @@ def test_policy_rejects_unbounded_or_empty_attempt_counts(
 ) -> None:
     with pytest.raises(ValueError, match="max_attempts"):
         ProviderRetryPolicy(max_attempts=max_attempts)
+
+
+@pytest.mark.parametrize("base_delay", [0, -0.1])
+def test_policy_rejects_non_positive_backoff(base_delay: float) -> None:
+    with pytest.raises(ValueError, match="base_delay_seconds"):
+        ProviderRetryPolicy(base_delay_seconds=base_delay)
 
 
 def test_retry_taxonomy_is_exact_and_does_not_redesign_provider_contract() -> None:
@@ -133,6 +154,7 @@ def test_retry_taxonomy_is_exact_and_does_not_redesign_provider_contract() -> No
     assert set(ProviderErrorCategory) == {
         ProviderErrorCategory.CONFIGURATION,
         ProviderErrorCategory.AUTHENTICATION,
+        ProviderErrorCategory.BILLING,
         ProviderErrorCategory.TIMEOUT,
         ProviderErrorCategory.RATE_LIMIT,
         ProviderErrorCategory.TRANSIENT,

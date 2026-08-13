@@ -91,6 +91,9 @@ def test_writing_migration_upgrades_downgrades_and_reupgrades(
                 "ck_writing_evaluation_provider_nonblank",
                 "ck_writing_evaluation_model_nonblank",
                 "ck_writing_evaluation_prompt_version_nonblank",
+                "ck_writing_evaluation_rubric_version_nonblank",
+                "ck_writing_evaluation_scoring_policy_version_nonblank",
+                "ck_writing_evaluation_thinking_mode",
             }
 
             foreign_keys = inspector.get_foreign_keys("writing_evaluations")
