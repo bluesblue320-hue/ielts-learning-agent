@@ -25,7 +25,7 @@ Persisted Phase 2 WritingEvaluation
   -> four immutable LearningEvidence observations
   -> four materialized LearnerSkillState rows
   -> deterministic Practice Planner
-  -> persisted PracticeRecommendation
+  -> one persisted PracticeRecommendation planning decision
 ```
 
 The phase must make it possible to answer:
@@ -51,8 +51,11 @@ calling DeepSeek or another provider.
   accepted Writing evaluation produces exactly four canonical observations.
 - **LearnerSkillState:** the current materialized estimate derived from accepted
   evidence. It is not the historical source of truth.
-- **PracticeRecommendation:** an immutable historical planning decision derived
-  from learner state at a specific learning update.
+- **PracticeRecommendation:** the immutable historical planning decision for one
+  successful learning update. Exactly one is persisted per update. It represents
+  either `practice` with a required `target_skill`, or policy-defined
+  `no_practice` with `target_skill = null`; both outcomes retain stable reason
+  codes and the decision-time state snapshot.
 
 The initial taxonomy is `writing-core-v1` and contains exactly:
 
@@ -73,7 +76,12 @@ dimensions. Phase 3 v1 state is driven by the four structured criterion bands.
    normal update or rebuild operations.
 3. **State is rebuildable.** Given the same accepted evidence, deterministic
    order, taxonomy version, and state-policy version, replay must reproduce the
-   materialized state exactly.
+   materialized state exactly. Canonical evidence order comes only from stable,
+   immutable source data and never from HTTP request arrival, transaction commit,
+   `LearningUpdate` insertion, `LearningEvidence` primary-key, or ORM default
+   row order. `P3-02` must freeze the primary order key, immutable source of that
+   key, stable tie-breaker, equal-key behavior, replay order, and late-arriving
+   older-evidence behavior before implementation.
 4. **State updates are deterministic.** No LLM selects estimates, weights,
    confidence, evidence inclusion, precision, rounding, or recency behavior.
 5. **Policy precedes implementation.** `P3-02` freezes the complete versioned
@@ -87,17 +95,21 @@ dimensions. Phase 3 v1 state is driven by the four structured criterion bands.
 8. **One evaluation yields four observations.** Partial extraction or partial
    application is invalid.
 9. **Learning application is atomic.** Claiming the update, writing four
-   evidence records, updating four state rows, and persisting one recommendation
-   commit together or all roll back. The Phase 2 evaluation remains valid.
+   evidence records, updating four state rows, and persisting exactly one
+   `PracticeRecommendation` planning decision commit together or all roll back.
+   The decision may be `practice` or policy-defined `no_practice`. The Phase 2
+   evaluation remains valid.
 10. **No provider call occurs in the transaction.** Phase 3 reads persisted
     evaluation data only.
 11. **Planning is deterministic.** `P3-08` freezes the policy before `P3-09`
     implements it. No LLM decides what to practice.
 12. **Tie-breaking is explicit.** No implicit dictionary, ORM, or database row
     order may select a skill.
-13. **Recommendations are auditable history.** A stored recommendation retains
-    the learner target, relevant state snapshot, stable reason codes, source
-    update, planner version, and decision-time values.
+13. **Planning decisions are auditable history.** Every successful learning
+    update stores exactly one recommendation record retaining decision type,
+    optional target skill under the policy-defined rules, learner target,
+    relevant state snapshot, stable reason codes, source update, planner
+    version, and decision-time values.
 14. **Policies are versioned.** Phase 3 retains
     `skill_taxonomy_version`, `state_policy_version`, and `planner_version`;
     evidence provenance preserves relevant Phase 2 provider, model, prompt,
@@ -116,14 +128,23 @@ design must preserve these concepts and invariants:
   reference, taxonomy/state-policy/planner versions, `created_at`; it may serve
   as the idempotency and ownership anchor.
 - `LearningEvidence`: id, update/learner/evaluation references, canonical
-  `skill_key`, `observed_band`, required Phase 2 provenance, `created_at`;
-  immutable after acceptance.
-- `LearnerSkillState`: learner and skill key, `estimated_band`,
-  `evidence_count`, policy version, `last_evidence_id`, `revision`, and
-  `updated_at`; unique by learner and skill.
-- `PracticeRecommendation`: id, learner/update references, target skill,
-  learner target and estimate at decision time, reason codes, planner version,
-  state snapshot, and `created_at`.
+  `skill_key`, IELTS half-band `observed_band`, immutable canonical-order source
+  values, required Phase 2 provenance, `created_at`; immutable after acceptance.
+- `LearnerSkillState`: learner and skill key, derived `estimated_band` or
+  `estimated_level`, `evidence_count`, policy version, `last_evidence_id`,
+  `revision`, and `updated_at`; unique by learner and skill. Its numeric precision
+  and database representation follow the accepted P3-02 output policy and are
+  not forced to the Phase 2 half-band `BandScore` contract.
+- `PracticeRecommendation`: id, unique learning-update reference, learner
+  reference, `decision_type`, target skill nullable only for policy-defined
+  `no_practice`, learner target and estimate at decision time, reason codes,
+  planner version, state snapshot, and `created_at`. There is exactly one record
+  per successful `LearningUpdate`.
+
+Phase 2 criterion observations and the learner Writing target retain the
+existing IELTS half-band `BandScore` semantics. Derived learner-state precision
+is a separate P3-02 policy decision; this graph does not preselect half-band
+quantization for it.
 
 Confidence is omitted unless `P3-02` adopts a real deterministic mathematical
 definition and `P3-08` explicitly defines whether and how the planner consumes
@@ -165,7 +186,7 @@ P3-02
   -> P3-03 Learner / Evidence / State Schemas
   -> P3-08 Practice Planning Policy
 
-P3-03
+P3-03 + P3-08
   -> P3-04 Persistence Models
 
 P3-04
@@ -239,71 +260,92 @@ early, even when its eventual code location is already known.
   idempotency invariants from this graph.
 - **Deliverables:** A versioned policy specification and boundary/example tests
   defining exactly four skills; taxonomy and state-policy versions;
-  initialization; accepted evidence; deterministic evidence order with a stable
-  tie-breaker; exact update formula; recency behavior; input/output precision;
-  rounding; 0/9 boundaries; duplicate and missing evidence; outliers;
-  `evidence_count`; replay/rebuild semantics; and, only if adopted, a
-  mathematically defined confidence measure.
+  initialization; accepted evidence; exact update formula; recency behavior;
+  input/output precision and serialization; rounding; 0/9 boundaries; duplicate
+  and missing evidence; outliers; `evidence_count`; replay/rebuild semantics;
+  and, only if adopted, a mathematically defined confidence measure. The policy
+  must separately preserve IELTS half-band `BandScore` semantics for source
+  criterion observations and learner targets while explicitly deciding the
+  derived `LearnerSkillState` precision, which is not pre-forced to half bands.
+  Its canonical evidence-order contract must define the primary chronological or
+  order key, the stable immutable source of that key, a deterministic tie-breaker,
+  equal-key behavior, replay order, and late-arriving older-evidence behavior.
 - **Required validation:** Review the policy independently of updater code; test
   initialization, single/multiple evidence sequences, ordering ties, boundaries,
   rounding, duplicates, missing evidence, outliers, count semantics, and replay
-  examples; prove free-text Phase 2 fields are not canonical state inputs.
+  examples; test late-arriving evidence and the same accepted set applied as
+  `A -> B` and `B -> A` when canonical source order is `A, B`; verify derived
+  output precision independently from half-band evidence/target validation; and
+  prove free-text Phase 2 fields are not canonical state inputs.
 - **Acceptance condition:** The taxonomy is exactly `writing-core-v1` with four
-  skills, every numeric and ordering decision is explicit and versioned, example
-  tests encode the accepted decisions, and `P3-07` has no discretion to invent
-  a rule.
+  skills; every numeric, precision, and ordering decision is explicit and
+  versioned; canonical order is independent of request, commit, insertion,
+  primary-key, and default ORM order; example tests encode the accepted
+  decisions; and `P3-07` has no discretion to invent a rule.
 - **Failure routing:** Any undecided formula, arbitrary confidence, ambiguous
-  order/rounding/count behavior, or failed policy test keeps `P3-02` in
-  `FIXING`; `P3-03` and `P3-08` remain locked.
+  order/late-arrival/precision/rounding/count behavior, or failed policy test
+  keeps `P3-02` in `FIXING`; `P3-03` and `P3-08` remain locked.
 
 ### P3-03 — Learner / Evidence / State Schemas
 
 - **Purpose:** Define strict Pydantic v2 domain and API boundaries for the
-  accepted Phase 3 concepts without implementing persistence or algorithms.
+  policy-independent learner, evidence, and state concepts without implementing
+  persistence, planner-owned semantics, or algorithms.
 - **Dependencies:** `P3-02`.
 - **Inputs:** Accepted taxonomy/state policy, existing strict schema patterns and
-  `BandScore`, conceptual persistence contract, provenance requirements, and
-  planned API responsibilities.
+  `BandScore`, conceptual persistence contract, and provenance requirements.
 - **Deliverables:** Strict typed schemas for Learner creation/result, Writing
-  target, canonical skill key, LearningUpdate, LearningEvidence,
-  LearnerSkillState, PracticeRecommendation, state snapshots, reason codes, and
-  API responses; safe collection defaults and explicit version fields.
+  target, canonical skill key, LearningUpdate, LearningEvidence, and
+  LearnerSkillState, plus only reusable state value/snapshot structures that do
+  not encode planner decisions, reason codes, or recommendation semantics; safe
+  collection defaults and explicit version fields.
 - **Required validation:** Test valid/missing/blank/extra fields; IELTS half-band
-  boundaries; target and estimate constraints; canonical skills only; positive
+  boundaries for observed criterion evidence and Writing targets; derived state
+  estimate constraints, precision, and serialization exactly as accepted by
+  P3-02 without assuming half-band increments; canonical skills only; positive
   identifiers/counts/revisions; immutable-value boundaries where appropriate;
   mutable-default safety; complete four-skill state/evidence shapes; and safe
   serialization.
 - **Acceptance condition:** Schemas precisely express accepted policy and
-  provenance, reuse IELTS band validation, reject partial or unknown canonical
-  skills, and contain no ORM, transaction, updater, planner, or LLM behavior.
+  provenance, reuse IELTS half-band validation only for evidence and targets,
+  reject partial or unknown canonical skills, defer planner-owned contracts to
+  P3-08, and contain no ORM, transaction, updater, planner, or LLM behavior.
 - **Failure routing:** Schema-policy mismatch, weak validation, mutable defaults,
-  or premature implementation keeps `P3-03` in `FIXING`; persistence remains
-  locked.
+  premature half-band quantization, planner-contract leakage, or premature
+  implementation keeps `P3-03` in `FIXING`; persistence remains locked.
 
 ### P3-04 — Persistence Models
 
 - **Purpose:** Represent learners, learning updates, immutable evidence,
   materialized state, and recommendation history with SQLAlchemy 2.x and
   database-level integrity.
-- **Dependencies:** `P3-03`.
-- **Inputs:** Accepted Phase 3 schemas and policy contracts, existing
-  `WritingEvaluation`, SQLAlchemy base/session conventions, and PostgreSQL.
+- **Dependencies:** `P3-03`, `P3-08`.
+- **Inputs:** Accepted learner/evidence/state schemas, state policy, planner policy
+  and decision contract, existing `WritingEvaluation`, SQLAlchemy base/session
+  conventions, and PostgreSQL.
 - **Deliverables:** Focused models and relationships for Learner,
   LearningUpdate, LearningEvidence, LearnerSkillState, and
   PracticeRecommendation. Database design must enforce one state row per learner
   and skill, one application/owner per Writing evaluation, canonical skill
-  validity, half-band boundaries, positive evidence counts/revisions, nonblank
-  policy versions, referential ownership, and auditable snapshots/reason codes.
+  validity, half-band boundaries for observed evidence and learner targets,
+  P3-02-owned precision/constraints for derived state estimates, positive
+  evidence counts/revisions, nonblank policy versions, referential ownership,
+  exactly one planning decision per learning update, and the P3-08-owned
+  decision-type/nullable-target/reason-code/state-snapshot contract.
 - **Required validation:** Inspect table metadata, constraints, foreign keys,
   uniqueness, relationships, cascades, server defaults, indexes, JSON/structured
-  fields, and SQLAlchemy 2.x style; prove model and schema intent agree; review
-  that normal evidence mutation is not exposed as domain behavior.
+  fields, and SQLAlchemy 2.x style; prove model, schema, and both policy contracts
+  agree; test `target_skill` is required for `practice` and null only for defined
+  `no_practice`; verify state estimate storage follows P3-02 rather than
+  `BandScore`; and review that normal evidence mutation is not exposed.
 - **Acceptance condition:** Models encode all required integrity and
   idempotency/ownership invariants in the database rather than relying only on
-  Python, while remaining focused on persistence.
+  Python, persist planner semantics only after P3-08 freezes them, and remain
+  focused on persistence.
 - **Failure routing:** Missing database invariants, ambiguous ownership,
-  mutable-history design, relationship mismatch, or metadata test failure keeps
-  `P3-04` in `FIXING`; migration work remains locked.
+  premature planner semantics, incorrect derived precision, mutable-history
+  design, relationship mismatch, or metadata test failure keeps `P3-04` in
+  `FIXING`; migration work remains locked.
 
 ### P3-05 — Alembic Migration
 
@@ -334,16 +376,19 @@ early, even when its eventual code location is already known.
 - **Inputs:** Persisted evaluation criterion bands and provenance, accepted
   taxonomy, Phase 3 evidence schema/model, and Phase 2 model relationships.
 - **Deliverables:** Deterministic extraction that produces exactly four
-  canonical evidence values with source evaluation identity and relevant
+  canonical evidence values with source evaluation identity, the immutable
+  source values required by P3-02 canonical ordering, and relevant
   provider/model/prompt/rubric/scoring/thinking provenance; explicit rejection
-  of incomplete or inconsistent persisted source data.
+  of incomplete or inconsistent persisted source/order data.
 - **Required validation:** Test exact skill-to-column mapping, all four outputs,
-  stable ordering, band boundaries, provenance copying, inconsistent/missing
-  source failure, no partial output, no free-text-to-skill conversion, no
-  provider import/call, and no database mutation by pure extraction logic.
+  stable within-evaluation skill ordering, canonical cross-evaluation order-key
+  extraction and tie-break values, band boundaries, provenance copying,
+  inconsistent/missing source failure, no partial output, no free-text-to-skill
+  conversion, no provider import/call, and no database mutation by pure
+  extraction logic.
 - **Acceptance condition:** The same accepted persisted evaluation always yields
-  the same complete four-item evidence set, traceable to its source, with no
-  network or LLM dependency.
+  the same complete four-item evidence set and immutable canonical-order data,
+  traceable to its source, with no network or LLM dependency.
 - **Failure routing:** Partial extraction, unstable mapping, provenance loss,
   free-text authority, invalid source acceptance, or network coupling keeps
   `P3-06` in `FIXING`; state update remains locked.
@@ -355,46 +400,61 @@ early, even when its eventual code location is already known.
 - **Dependencies:** `P3-06`.
 - **Inputs:** Accepted state policy and examples, canonical ordered evidence,
   strict schemas, and existing materialized state values.
-- **Deliverables:** Small deterministic functions for initialization, one-step
-  state transition, ordered replay/rebuild, and exact comparison with
-  materialized state. The implementation consumes policy constants/version; it
-  does not infer rules from data or call an LLM.
+- **Deliverables:** Small deterministic functions for initialization, applying an
+  accepted evidence set under canonical source order, replay/rebuild, and exact
+  comparison with materialized state. The node selects a minimal implementation
+  strategy consistent with P3-02—such as order-independent math, canonical
+  replay after acceptance, or a mathematically equivalent method—without using
+  request/commit/insertion order. It consumes policy constants/version and never
+  infers rules from data or calls an LLM.
 - **Required validation:** Run every P3-02 policy example; test sequences,
   ordering ties, boundaries, precision/rounding, duplicate/missing/outlier
   behavior, evidence counts, policy-version mismatch, and deterministic repeated
-  runs. Prove
-  `replay(accepted evidence history) == materialized learner state` for every
-  skill under the same policy.
+  runs. For source evaluations whose canonical order is `A, B`, apply `A -> B`
+  and separately `B -> A`; both final materialized states must equal canonical
+  `replay(A, B)` for the same accepted set and policy version. Prove this rebuild
+  equality for every skill, including a late-arriving older evaluation.
 - **Acceptance condition:** Implementation exactly matches the frozen policy,
-  produces reproducible state and counts, and can rebuild all four skill states
-  without consulting current state as historical truth.
+  produces reproducible state and counts independent of application arrival
+  order, and can rebuild all four skill states without consulting current state
+  as historical truth.
 - **Failure routing:** Policy drift, nondeterminism, replay mismatch, count error,
-  or LLM/provider coupling keeps `P3-07` in `FIXING`; planner implementation
-  remains locked.
+  arrival-order dependence, or LLM/provider coupling keeps `P3-07` in `FIXING`;
+  planner implementation remains locked.
 
 ### P3-08 — Practice Planning Policy
 
 - **Purpose:** Freeze a versioned deterministic policy for selecting what
-  Writing skill to practice before planner implementation.
+  Writing skill to practice and the complete planner-owned decision contract
+  before planner implementation or persistence models.
 - **Dependencies:** `P3-02`.
 - **Inputs:** Four canonical skills, learner target band, accepted state-policy
   outputs, product decisions for cold/no/insufficient evidence, and auditability
   requirements.
 - **Deliverables:** Planner version and policy specification defining target-gap
-  calculation, cold start, no evidence, insufficient evidence, target achieved,
-  stable skill priority and explicit tie-breaking, stable reason-code taxonomy,
-  decision-time state snapshot requirements, and whether/how an accepted
-  deterministic confidence value is used.
+  calculation; target and no-target behavior; cold start; no/insufficient
+  evidence; target achieved; stable skill priority and explicit tie-breaking;
+  stable reason-code taxonomy; decision-time state snapshot; and whether/how an
+  accepted deterministic confidence value is used. It freezes the structured
+  recommendation representation: every successful update yields exactly one
+  decision, either `practice` with a required `target_skill` or `no_practice`
+  with `target_skill = null`, plus target, current estimate when defined, reason
+  codes, planner version, and snapshot.
 - **Required validation:** Table/example tests for all policy branches, target
   boundaries, gap ties, explicit priority ties, absent/insufficient state,
   achieved targets, reason-code stability, input-order independence, and
-  serialization of decision evidence.
+  serialization of both `practice` and `no_practice` decisions; reject missing
+  practice targets, non-null no-practice targets, and zero/multiple decisions for
+  one successful update.
 - **Acceptance condition:** For every valid learner/state input the policy yields
-  one unambiguous explainable decision or an explicit defined no-recommendation
-  outcome; no implicit order or LLM decision remains.
+  exactly one unambiguous explainable planning decision. Target-achieved and any
+  other policy-defined no-target outcome are represented by auditable
+  `no_practice`, never by absence of a persisted decision; no implicit order or
+  LLM decision remains.
 - **Failure routing:** Undefined cold-start/target-achieved behavior, unstable
-  ties, decorative confidence, ambiguous reasons, or failed examples keeps
-  `P3-08` in `FIXING`; `P3-09` remains locked even if P3-07 is complete.
+  ties, decorative confidence, ambiguous reason/decision shape, contradictory
+  no-practice semantics, or failed examples keeps `P3-08` in `FIXING`; `P3-04`
+  and `P3-09` remain locked.
 
 ### P3-09 — Practice Planner
 
@@ -403,19 +463,23 @@ early, even when its eventual code location is already known.
 - **Dependencies:** `P3-07`, `P3-08`.
 - **Inputs:** Valid learner target, complete accepted learner state or defined
   cold-start state, planner policy/version, skill priority, and reason codes.
-- **Deliverables:** Structured planner decision containing target skill, current
-  estimate when defined, target band, stable reason codes, planner version, and
-  the exact decision-time state snapshot; no lesson or exercise content.
+- **Deliverables:** Structured planner decision containing `decision_type`,
+  policy-valid optional target skill, current estimate when defined, target band,
+  stable reason codes, planner version, and the exact decision-time state
+  snapshot; no lesson or exercise content.
 - **Required validation:** Execute every P3-08 example; test input-order
   independence, gaps, cold/no/insufficient evidence, ties, target achieved,
   boundaries, reason codes, version propagation, snapshot completeness, and
-  repeated-run determinism; assert no LLM/provider dependency.
+  repeated-run determinism; assert `practice` requires a target,
+  `no_practice` has no target but remains a complete decision, and no
+  LLM/provider dependency exists.
 - **Acceptance condition:** The planner chooses only **what** to practice,
-  reproduces the frozen policy exactly, and returns enough structured data to
-  persist and explain the decision.
+  or deterministically records that no practice target is required; it reproduces
+  the frozen policy exactly and always returns one structured, persistable,
+  explainable decision.
 - **Failure routing:** Policy drift, unstable decision, missing audit data,
-  lesson generation, or LLM coupling keeps `P3-09` in `FIXING`; application
-  orchestration remains locked.
+  absent no-practice record, lesson generation, or LLM coupling keeps `P3-09`
+  in `FIXING`; application orchestration remains locked.
 
 ### P3-10 — Learning Update Application Service
 
@@ -428,17 +492,22 @@ early, even when its eventual code location is already known.
 - **Deliverables:** Focused application service performing, in one transaction:
   validate learner and source evaluation; claim/create the update anchor; create
   exactly four evidence records; update exactly four skill-state rows; run the
-  deterministic planner; persist one recommendation; commit. Same learner plus
-  same evaluation returns the existing logical result without duplicate effects;
-  a different learner reusing that evaluation returns an explicit conflict.
+  deterministic planner; persist exactly one `PracticeRecommendation` decision,
+  whether `practice` or policy-defined `no_practice`; commit. State materialization
+  must honor canonical evidence semantics when older evidence arrives late. Same
+  learner plus same evaluation returns the existing logical result without
+  duplicate effects; a different learner reusing that evaluation returns an
+  explicit conflict.
 - **Required validation:** PostgreSQL tests for first apply, same-owner replay,
-  cross-owner conflict, exactly four evidence/state records, one recommendation,
-  version/provenance retention, deterministic state/planner results, failure at
-  each transaction stage, complete rollback of Phase 3 writes, unchanged Phase 2
-  evaluation, and no provider call.
+  cross-owner conflict, exactly four evidence/state records, exactly one planning
+  decision for both practice-required and no-practice outcomes,
+  version/provenance retention, canonical-order state results, deterministic
+  planner results, failure at each transaction stage, complete rollback of Phase
+  3 writes, unchanged Phase 2 evaluation, and no provider call.
 - **Acceptance condition:** One successful transaction creates one auditable
-  logical update; retries are idempotent, ownership is exclusive, and any failure
-  leaves zero partial Phase 3 success.
+  logical update and exactly one auditable planning decision; retries are
+  idempotent, ownership is exclusive, late arrival cannot change canonical
+  semantics, and any failure leaves zero partial Phase 3 success.
 - **Failure routing:** Duplicate effects, partial writes, ownership ambiguity,
   rollback failure, policy mismatch, or provider coupling keeps `P3-10` in
   `FIXING`; APIs remain locked.
@@ -454,16 +523,19 @@ early, even when its eventual code location is already known.
 - **Deliverables:** Equivalent responsibilities to `POST /learners`,
   `GET /learners/{learner_id}/state`, and
   `POST /learners/{learner_id}/writing/evaluations/{evaluation_id}/apply`;
-  explicit response schemas and safe not-found/conflict/validation/failure
-  responses. Exact paths may follow repository conventions without changing
+  explicit response schemas including the persisted `practice` or `no_practice`
+  planning decision, and safe not-found/conflict/validation/failure responses.
+  Exact paths may follow repository conventions without changing
   responsibilities.
 - **Required validation:** API tests for valid/invalid target, learner creation,
   state before/after evidence, successful apply, same-owner idempotent replay,
-  cross-owner conflict, learner/evaluation not found, response audit fields,
-  rollback behavior, no raw internals, route thinness, and no provider call.
+  cross-owner conflict, learner/evaluation not found, practice and no-practice
+  response audit fields, optional-target rules, rollback behavior, no raw
+  internals, route thinness, and no provider call.
 - **Acceptance condition:** HTTP routes delegate all policy and transaction work
-  to services, expose stable safe responses, and provide the complete
-  deterministic Phase 3 path without unrelated learning workflows.
+  to services, expose exactly one safe auditable planning decision for every
+  successful apply response, and provide the complete deterministic Phase 3 path
+  without unrelated learning workflows.
 - **Failure routing:** Route business logic, unsafe error leakage, schema
   mismatch, persistence inconsistency, or provider invocation keeps `P3-11` in
   `FIXING`; concurrency hardening remains locked.
@@ -484,12 +556,18 @@ early, even when its eventual code location is already known.
 - **Required validation:** Against isolated PostgreSQL, execute concurrent same
   learner/same evaluation requests and prove one logical application; execute
   same learner/different evaluations concurrently and prove deterministic,
-  uncorrupted final state matching accepted evidence order and replay. Test
-  bounded conflict handling, no double counts/evidence/recommendations, atomic
-  rollback, stable safe API responses, and unchanged Phase 2 rows.
+  uncorrupted final state matching canonical source order and replay rather than
+  the winning transaction. For evaluations canonically ordered `A, B`, validate
+  sequential `A -> B`, sequential late arrival `B -> A`, and concurrent schedules
+  whose commit order differs; every final materialized state must equal canonical
+  `replay(A, B)` for the same accepted set and policy version. Test bounded
+  conflict handling, no double counts/evidence/planning decisions, exactly one
+  decision per successful update, atomic rollback, stable safe API responses,
+  and unchanged Phase 2 rows.
 - **Acceptance condition:** Defined concurrent schedules cannot double apply,
-  corrupt state, violate deterministic evidence order, or lose audit history;
-  final materialized state equals replayed evidence.
+  corrupt state, let request/transaction/insertion order override canonical
+  evidence semantics, or lose audit history; final materialized state equals
+  canonical replay and each successful update owns exactly one planning decision.
 - **Failure routing:** Race, deadlock without bounded handling, double count,
   lost update, replay mismatch, local-lock dependence, or unsafe failure response
   keeps `P3-12` in `FIXING`; consolidated validation remains locked.
@@ -506,10 +584,13 @@ early, even when its eventual code location is already known.
   transaction, concurrency, replay/rebuild, and end-to-end suites; CI-compatible
   deterministic commands requiring no live DeepSeek key.
 - **Required validation:** Cover policy boundaries, evidence extraction, state
-  replay, planner decisions, database invariants, idempotency, rollback, API
-  failures, same-evaluation concurrency, different-evaluation concurrency, and
-  the full flow
-  `persisted WritingEvaluation -> apply -> 4 evidence -> 4 state rows -> 1 recommendation`.
+  replay, `A -> B` versus late `B -> A` canonical-order equivalence, planner
+  practice/no-practice decisions, database invariants, idempotency, rollback,
+  API failures, same-evaluation concurrency, different-evaluation concurrency,
+  and the full flow
+  `persisted WritingEvaluation -> apply -> 4 evidence -> 4 state rows -> 1 planning decision`.
+  Prove both decision types persist exactly one auditable record and concurrent
+  final state follows immutable source order rather than transaction order.
   Run complete Phase 1/2/3 regression suites with no required skip and no live
   provider call.
 - **Acceptance condition:** All accepted behavior is deterministic and tested
@@ -557,8 +638,11 @@ early, even when its eventual code location is already known.
   phase recommendation.
 - **Required validation:** Re-run full local and containerized suites; validate
   one Alembic head and Phase 2/3 downgrade/re-upgrade; execute end-to-end,
-  idempotency, cross-owner, rollback, rebuild, planner-explanation, and both
-  concurrency scenarios; inspect CI; check links, secrets, forbidden scope,
+  idempotency, cross-owner, rollback, canonical rebuild, sequential `A -> B`
+  versus late `B -> A`, practice/no-practice persistence and explanation, and
+  both concurrency scenarios. Confirm exactly one planning decision per
+  successful update and state independence from request/commit/insertion order;
+  inspect CI; check links, secrets, forbidden scope,
   documentation truth, and clean Git state.
 - **Acceptance condition:** Every `P3-01` through `P3-15` node is
   `COMPLETE`; all success criteria below have evidence; no unauthorized scope
@@ -575,14 +659,21 @@ Phase 3 is complete only when all nodes are `COMPLETE` and evidence proves:
 2. an already persisted Phase 2 `WritingEvaluation` can be applied without a
    provider call;
 3. one application creates exactly four immutable canonical evidence records;
-4. four learner skill states update deterministically under the accepted policy;
-5. one deterministic, auditable recommendation is persisted;
+4. four learner skill states update deterministically under canonical immutable
+   source order, independent of request, commit, insertion, primary-key, or ORM
+   default order;
+5. every successful update persists exactly one deterministic, auditable
+   `PracticeRecommendation` decision: `practice` with a target or policy-defined
+   `no_practice` without one;
 6. the entire Phase 3 write set commits atomically or rolls back;
 7. replaying the same learner/evaluation creates no duplicate effect;
 8. applying the same evaluation to another learner returns an explicit conflict;
-9. rebuilding from ordered evidence reproduces materialized state exactly;
-10. stored reason codes and state snapshot explain the historical recommendation;
-11. defined concurrent updates do not double count, corrupt state, or lose data;
+9. rebuilding from canonical evidence order reproduces materialized state exactly,
+   including when older evidence arrives after newer evidence;
+10. stored decision type, reason codes, optional target, and state snapshot explain
+    every historical practice or no-practice decision;
+11. defined concurrent updates do not double count, corrupt state, lose data, or
+    let transaction completion order replace canonical evidence semantics;
 12. migration upgrade/downgrade/re-upgrade, CI, Docker, and all Phase 1/2
     regressions pass.
 
