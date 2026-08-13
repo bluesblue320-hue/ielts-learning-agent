@@ -26,6 +26,10 @@ from app.llm import (
 )
 from app.main import create_app
 from app.models import WritingAttempt, WritingEvaluation
+from app.schemas.writing import (
+    MAX_WRITING_ESSAY_CHARACTERS,
+    MAX_WRITING_QUESTION_CHARACTERS,
+)
 from app.services.writing_persistence import WritingPersistenceError
 from tests.fakes import FakeProvider
 
@@ -167,6 +171,38 @@ def test_blank_input_returns_422_without_provider_or_write(
         response = client.post("/writing/evaluate", json=payload)
 
     assert response.status_code == 422
+    assert provider.requests == []
+    assert row_counts(writing_engine) == (0, 0)
+
+
+@pytest.mark.parametrize(
+    ("field", "limit"),
+    [
+        ("question", MAX_WRITING_QUESTION_CHARACTERS),
+        ("essay", MAX_WRITING_ESSAY_CHARACTERS),
+    ],
+)
+def test_oversized_input_returns_422_without_provider_or_write(
+    writing_engine: Engine,
+    field: str,
+    limit: int,
+) -> None:
+    payload = {
+        "question": "A valid question.",
+        "essay": "A valid response.",
+    }
+    payload[field] = "x" * (limit + 1)
+    provider = FakeProvider([provider_payload()])
+
+    with client_for(writing_engine, provider) as client:
+        response = client.post("/writing/evaluate", json=payload)
+
+    assert response.status_code == 422
+    assert response.json()["error"] == {
+        "code": "request_invalid",
+        "message": "Request validation failed.",
+        "fields": [field],
+    }
     assert provider.requests == []
     assert row_counts(writing_engine) == (0, 0)
 

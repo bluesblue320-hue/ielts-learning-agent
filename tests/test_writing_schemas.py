@@ -7,6 +7,8 @@ import pytest
 from pydantic import ValidationError
 
 from app.schemas.writing import (
+    MAX_WRITING_ESSAY_CHARACTERS,
+    MAX_WRITING_QUESTION_CHARACTERS,
     PRODUCT_BAND_INCREMENT,
     PRODUCT_BAND_INPUTS,
     PRODUCT_BAND_ROUNDING,
@@ -84,6 +86,26 @@ def test_valid_submission_strips_boundaries_and_counts_words() -> None:
     assert submission.essay == "One  two\nthree\tfour."
     assert submission.word_count == 4
     assert submission.model_dump()["word_count"] == 4
+
+
+@pytest.mark.parametrize(
+    ("field", "limit"),
+    [
+        ("question", MAX_WRITING_QUESTION_CHARACTERS),
+        ("essay", MAX_WRITING_ESSAY_CHARACTERS),
+    ],
+)
+def test_submission_enforces_conservative_character_limits(
+    field: str,
+    limit: int,
+) -> None:
+    payload = {"question": "q", "essay": "e"}
+    payload[field] = "x" * limit
+    assert len(getattr(WritingSubmission.model_validate(payload), field)) == limit
+
+    payload[field] += "x"
+    with pytest.raises(ValidationError, match="string_too_long"):
+        WritingSubmission.model_validate(payload)
 
 
 @pytest.mark.parametrize(

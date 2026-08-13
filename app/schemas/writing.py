@@ -15,6 +15,25 @@ NonBlankText = Annotated[
     str,
     StringConstraints(strip_whitespace=True, min_length=1),
 ]
+MAX_WRITING_QUESTION_CHARACTERS: Final[int] = 2_000
+MAX_WRITING_ESSAY_CHARACTERS: Final[int] = 20_000
+WritingQuestionText = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True,
+        min_length=1,
+        max_length=MAX_WRITING_QUESTION_CHARACTERS,
+    ),
+]
+WritingEssayText = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True,
+        min_length=1,
+        max_length=MAX_WRITING_ESSAY_CHARACTERS,
+    ),
+]
+
 NonEmptyTextList = Annotated[list[NonBlankText], Field(min_length=1)]
 
 
@@ -50,8 +69,8 @@ def count_words(text: str) -> int:
 class WritingSubmission(WritingSchema):
     """Validated IELTS Writing Task 2 question and essay submission."""
 
-    question: NonBlankText
-    essay: NonBlankText
+    question: WritingQuestionText
+    essay: WritingEssayText
 
     @computed_field(return_type=int)
     @property
