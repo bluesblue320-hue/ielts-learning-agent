@@ -7,12 +7,15 @@ import pytest
 from pydantic import ValidationError
 
 from app.schemas.writing import (
+    MAX_WRITING_ESSAY_CHARACTERS,
+    MAX_WRITING_QUESTION_CHARACTERS,
     PRODUCT_BAND_INCREMENT,
     PRODUCT_BAND_INPUTS,
     PRODUCT_BAND_ROUNDING,
     PRODUCT_BAND_WEIGHTS,
     CriterionBandScores,
-    StructuredProviderResult,
+    EvaluationMetadata,
+    ProviderEvaluationPayload,
     WritingCriterion,
     WritingEvaluationResult,
     WritingSubmission,
@@ -55,11 +58,17 @@ def provider_payload(
         "error_tags": [],
         "recommended_skills": [],
         "feedback": "Prioritize specific evidence and precise language.",
-        "metadata": {
-            "provider": "test-provider",
-            "model": "test-model",
-            "prompt_version": "writing-v1",
-        },
+    }
+
+
+def evaluation_metadata_payload() -> dict[str, str]:
+    return {
+        "provider": "test-provider",
+        "model": "test-model",
+        "prompt_version": "writing-v2",
+        "rubric_version": "writing-task2-v1",
+        "scoring_policy_version": "writing-product-band-v1",
+        "thinking_mode": "disabled",
     }
 
 
@@ -84,6 +93,26 @@ def test_valid_submission_strips_boundaries_and_counts_words() -> None:
     assert submission.essay == "One  two\nthree\tfour."
     assert submission.word_count == 4
     assert submission.model_dump()["word_count"] == 4
+
+
+@pytest.mark.parametrize(
+    ("field", "limit"),
+    [
+        ("question", MAX_WRITING_QUESTION_CHARACTERS),
+        ("essay", MAX_WRITING_ESSAY_CHARACTERS),
+    ],
+)
+def test_submission_enforces_conservative_character_limits(
+    field: str,
+    limit: int,
+) -> None:
+    payload = {"question": "q", "essay": "e"}
+    payload[field] = "x" * limit
+    assert len(getattr(WritingSubmission.model_validate(payload), field)) == limit
+
+    payload[field] += "x"
+    with pytest.raises(ValidationError, match="string_too_long"):
+        WritingSubmission.model_validate(payload)
 
 
 @pytest.mark.parametrize(
@@ -151,7 +180,7 @@ def test_submission_rejects_caller_supplied_word_count() -> None:
 
 @pytest.mark.parametrize("value", ["0", "0.5", "8.5", "9"])
 def test_all_criterion_bands_accept_ielts_boundaries(value: str) -> None:
-    result = StructuredProviderResult.model_validate(
+    result = ProviderEvaluationPayload.model_validate(
         provider_payload((value, value, value, value))
     )
 
@@ -170,7 +199,7 @@ def test_every_criterion_rejects_invalid_band_values(
     payload["criteria"][field]["band"] = band_payload(value)
 
     with pytest.raises(ValidationError):
-        StructuredProviderResult.model_validate(payload)
+        ProviderEvaluationPayload.model_validate(payload)
 
 
 @pytest.mark.parametrize("field", CRITERION_FIELDS)
@@ -179,7 +208,7 @@ def test_every_criterion_rejects_extra_nested_band_fields(field: str) -> None:
     payload["criteria"][field]["band"]["unexpected"] = "not allowed"
 
     with pytest.raises(ValidationError, match="unexpected"):
-        StructuredProviderResult.model_validate(payload)
+        ProviderEvaluationPayload.model_validate(payload)
 
 
 @pytest.mark.parametrize("field", CRITERION_FIELDS)
@@ -188,7 +217,7 @@ def test_provider_result_rejects_missing_criterion(field: str) -> None:
     payload["criteria"].pop(field)
 
     with pytest.raises(ValidationError):
-        StructuredProviderResult.model_validate(payload)
+        ProviderEvaluationPayload.model_validate(payload)
 
 
 @pytest.mark.parametrize(
@@ -200,7 +229,6 @@ def test_provider_result_rejects_missing_criterion(field: str) -> None:
         "error_tags",
         "recommended_skills",
         "feedback",
-        "metadata",
     ],
 )
 def test_provider_result_rejects_missing_required_fields(field: str) -> None:
@@ -208,7 +236,7 @@ def test_provider_result_rejects_missing_required_fields(field: str) -> None:
     payload.pop(field)
 
     with pytest.raises(ValidationError):
-        StructuredProviderResult.model_validate(payload)
+        ProviderEvaluationPayload.model_validate(payload)
 
 
 @pytest.mark.parametrize("field", ["strengths", "weaknesses"])
@@ -217,7 +245,7 @@ def test_provider_result_requires_non_empty_summary_lists(field: str) -> None:
     payload[field] = []
 
     with pytest.raises(ValidationError):
-        StructuredProviderResult.model_validate(payload)
+        ProviderEvaluationPayload.model_validate(payload)
 
 
 def test_criterion_requires_non_empty_evidence() -> None:
@@ -225,30 +253,24 @@ def test_criterion_requires_non_empty_evidence() -> None:
     payload["criteria"]["task_response"]["evidence"] = []
 
     with pytest.raises(ValidationError):
-        StructuredProviderResult.model_validate(payload)
+        ProviderEvaluationPayload.model_validate(payload)
 
 
-@pytest.mark.parametrize(
-    ("section", "field"),
-    [
-        ("criteria", "feedback"),
-        ("metadata", "provider"),
-        ("metadata", "model"),
-        ("metadata", "prompt_version"),
-    ],
-)
-def test_provider_result_rejects_blank_nested_text(
-    section: str,
-    field: str,
-) -> None:
+def test_provider_result_rejects_blank_criterion_feedback() -> None:
     payload = provider_payload()
-    if section == "criteria":
-        payload[section]["task_response"][field] = " "
-    else:
-        payload[section][field] = " "
+    payload["criteria"]["task_response"]["feedback"] = " "
 
     with pytest.raises(ValidationError):
-        StructuredProviderResult.model_validate(payload)
+        ProviderEvaluationPayload.model_validate(payload)
+
+
+@pytest.mark.parametrize("field", tuple(evaluation_metadata_payload()))
+def test_evaluation_metadata_rejects_blank_fields(field: str) -> None:
+    payload = evaluation_metadata_payload()
+    payload[field] = " "
+
+    with pytest.raises(ValidationError):
+        EvaluationMetadata.model_validate(payload)
 
 
 @pytest.mark.parametrize("field", ["error_tags", "recommended_skills"])
@@ -257,12 +279,12 @@ def test_optional_taxonomy_items_must_be_non_blank(field: str) -> None:
     payload[field] = [" "]
 
     with pytest.raises(ValidationError):
-        StructuredProviderResult.model_validate(payload)
+        ProviderEvaluationPayload.model_validate(payload)
 
 
 def test_mutable_collection_values_are_isolated() -> None:
-    first = StructuredProviderResult.model_validate(provider_payload())
-    second = StructuredProviderResult.model_validate(provider_payload())
+    first = ProviderEvaluationPayload.model_validate(provider_payload())
+    second = ProviderEvaluationPayload.model_validate(provider_payload())
 
     first.error_tags.append("article-use")
     first.recommended_skills.append("sentence variety")
@@ -276,7 +298,15 @@ def test_structured_provider_result_cannot_supply_product_band() -> None:
     payload["product_band"] = band_payload("9")
 
     with pytest.raises(ValidationError, match="product_band"):
-        StructuredProviderResult.model_validate(payload)
+        ProviderEvaluationPayload.model_validate(payload)
+
+
+def test_provider_payload_cannot_supply_application_metadata() -> None:
+    payload = provider_payload()
+    payload["metadata"] = evaluation_metadata_payload()
+
+    with pytest.raises(ValidationError, match="metadata"):
+        ProviderEvaluationPayload.model_validate(payload)
 
 
 def test_evaluation_result_serializes_computed_product_band_and_metadata() -> None:
@@ -284,6 +314,7 @@ def test_evaluation_result_serializes_computed_product_band_and_metadata() -> No
         {
             **provider_payload(("6", "6.5", "7", "6.5")),
             "word_count": 4,
+            "metadata": evaluation_metadata_payload(),
         }
     )
 
@@ -294,7 +325,10 @@ def test_evaluation_result_serializes_computed_product_band_and_metadata() -> No
     assert dumped["metadata"] == {
         "provider": "test-provider",
         "model": "test-model",
-        "prompt_version": "writing-v1",
+        "prompt_version": "writing-v2",
+        "rubric_version": "writing-task2-v1",
+        "scoring_policy_version": "writing-product-band-v1",
+        "thinking_mode": "disabled",
     }
 
 
@@ -302,6 +336,7 @@ def test_evaluation_result_rejects_provider_product_band_override() -> None:
     payload = {
         **provider_payload(("5", "5", "5", "5")),
         "word_count": 4,
+        "metadata": evaluation_metadata_payload(),
         "product_band": band_payload("9"),
     }
 
@@ -315,6 +350,7 @@ def test_evaluation_result_requires_positive_deterministic_word_count() -> None:
             {
                 **provider_payload(),
                 "word_count": 0,
+                "metadata": evaluation_metadata_payload(),
             }
         )
 
@@ -408,6 +444,6 @@ def test_provider_validation_does_not_mutate_input() -> None:
     payload = provider_payload()
     original = deepcopy(payload)
 
-    StructuredProviderResult.model_validate(payload)
+    ProviderEvaluationPayload.model_validate(payload)
 
     assert payload == original

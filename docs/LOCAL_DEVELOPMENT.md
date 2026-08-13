@@ -49,6 +49,34 @@ development `db` through `IELTS_DOCKER_DATABASE_URL`.
 Stop the stack with `docker compose down`. Add `--volumes` only when its local
 PostgreSQL data is no longer needed.
 
+## DeepSeek and Writing evaluation
+
+The normal API composition always uses `DeepSeekProvider`; there is no provider
+selector or runtime FakeProvider mode. Configure these local-only values in
+`.env`:
+
+```text
+IELTS_DEEPSEEK_API_KEY=your-local-key
+IELTS_DEEPSEEK_API_URL=https://api.deepseek.com/chat/completions
+IELTS_DEEPSEEK_MODEL=deepseek-v4-pro
+IELTS_DEEPSEEK_TIMEOUT_SECONDS=30
+IELTS_DEEPSEEK_THINKING_MODE=disabled
+```
+
+`IELTS_DEEPSEEK_THINKING_MODE` is a strict `enabled`/`disabled` enum. The
+application default is explicitly `disabled`, and every DeepSeek request sends
+that mode using the provider `thinking.type` field. Invalid values fail
+configuration before a provider call.
+
+The key is required only when calling `POST /writing/evaluate`. Without it, the
+application and health endpoints still start, while the writing endpoint returns
+the safe `provider_configuration` response. No live DeepSeek request was
+required for Phase 2 automated or Docker validation.
+
+See the [Writing API reference](API.md) for request/response examples,
+deterministic word count and product-band behavior, bounded retries, failure
+codes, trust-boundary limits, and the score-equivalence disclaimer.
+
 ## Local Python environment
 
 Python 3.12 or newer is required. Create an ignored virtual environment and
@@ -67,18 +95,28 @@ python -m pip install -e ".[test]"
 
 Start the isolated test database with
 `docker compose --profile test up -d --wait test-db`, then set
-`IELTS_TEST_DATABASE_URL` to its host URL before running all tests. Tests marked
-`integration` skip explicitly when it is absent.
-Run unit/API tests without PostgreSQL with:
+`IELTS_TEST_DATABASE_URL` to its host URL before running all tests:
 
 ```bash
-python -m pytest -m "not integration" -q
+python -m pytest -q --strict-markers
 ```
+
+The database name must contain a separate `test` token and its URL must differ
+from `IELTS_DATABASE_URL`. Integration tests skip explicitly only when
+`IELTS_TEST_DATABASE_URL` is absent. Run the deterministic non-integration
+suite without PostgreSQL with:
+
+```bash
+python -m pytest -m "not integration" -q --strict-markers
+```
+
+Both commands remove any inherited DeepSeek key and block provider HTTP unless a
+test supplies an explicit mocked client.
 
 Apply or inspect development migrations with `alembic upgrade head`,
 `alembic current`, and `alembic downgrade base`; `IELTS_DATABASE_URL` controls
-that target. Pytest migration checks instead use `IELTS_TEST_DATABASE_URL` and
-must point to the isolated test database.
+that target. The current head is `0002_writing`. Pytest migration checks instead
+use `IELTS_TEST_DATABASE_URL` and must point to the isolated test database.
 
 ## Windows Docker Desktop note
 

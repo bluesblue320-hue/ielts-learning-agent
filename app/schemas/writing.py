@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from decimal import ROUND_HALF_UP, Decimal
 from enum import StrEnum
 from types import MappingProxyType
-from typing import Annotated, Final
+from typing import Annotated, Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, computed_field
 
@@ -15,6 +15,25 @@ NonBlankText = Annotated[
     str,
     StringConstraints(strip_whitespace=True, min_length=1),
 ]
+MAX_WRITING_QUESTION_CHARACTERS: Final[int] = 2_000
+MAX_WRITING_ESSAY_CHARACTERS: Final[int] = 20_000
+WritingQuestionText = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True,
+        min_length=1,
+        max_length=MAX_WRITING_QUESTION_CHARACTERS,
+    ),
+]
+WritingEssayText = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True,
+        min_length=1,
+        max_length=MAX_WRITING_ESSAY_CHARACTERS,
+    ),
+]
+
 NonEmptyTextList = Annotated[list[NonBlankText], Field(min_length=1)]
 
 
@@ -50,8 +69,8 @@ def count_words(text: str) -> int:
 class WritingSubmission(WritingSchema):
     """Validated IELTS Writing Task 2 question and essay submission."""
 
-    question: NonBlankText
-    essay: NonBlankText
+    question: WritingQuestionText
+    essay: WritingEssayText
 
     @computed_field(return_type=int)
     @property
@@ -130,15 +149,18 @@ def aggregate_product_band(scores: CriterionBandScores) -> BandScore:
 
 
 class EvaluationMetadata(WritingSchema):
-    """Provider and prompt identifiers attached by application composition."""
+    """Reproducibility identifiers owned by application composition."""
 
     provider: NonBlankText
     model: NonBlankText
     prompt_version: NonBlankText
+    rubric_version: NonBlankText
+    scoring_policy_version: NonBlankText
+    thinking_mode: Literal["enabled", "disabled"]
 
 
-class StructuredProviderResult(WritingSchema):
-    """Validated qualitative provider result without a provider-chosen total."""
+class ProviderEvaluationPayload(WritingSchema):
+    """Only qualitative fields that an evaluation provider may control."""
 
     criteria: WritingCriteria
     strengths: NonEmptyTextList
@@ -146,12 +168,12 @@ class StructuredProviderResult(WritingSchema):
     error_tags: list[NonBlankText]
     recommended_skills: list[NonBlankText]
     feedback: NonBlankText
+
+
+class WritingEvaluationResult(ProviderEvaluationPayload):
+    """Provider payload plus deterministic evidence and application metadata."""
+
     metadata: EvaluationMetadata
-
-
-class WritingEvaluationResult(StructuredProviderResult):
-    """Evaluation payload suitable for a future API response boundary."""
-
     word_count: int = Field(ge=1)
 
     @computed_field(return_type=BandScore)
@@ -160,3 +182,10 @@ class WritingEvaluationResult(StructuredProviderResult):
         """Compute the final product band from validated criteria only."""
 
         return aggregate_product_band(self.criteria.band_scores())
+
+
+class WritingEvaluationResponse(WritingSchema):
+    """Persisted API response for one completed writing evaluation."""
+
+    attempt_id: int = Field(gt=0)
+    evaluation: WritingEvaluationResult

@@ -2,14 +2,15 @@
 
 ## Document status
 
-This document describes the **long-term target architecture** and the intended
-writing-first MVP. Phase 1 foundation is implemented: FastAPI, typed
-configuration, PostgreSQL/SQLAlchemy/Alembic infrastructure, foundation schemas,
-health APIs, tests, and Docker integration. Phase 2 — Writing Evaluation Pipeline
-is the current authorized planning phase under
-[PHASE2_GRAPH.md](PHASE2_GRAPH.md), but no Phase 2 runtime functionality has been
-implemented. The learning-loop components below remain target designs unless
-their status says otherwise.
+This document distinguishes the **implemented Phase 2 architecture** from the
+long-term adaptive-learning target. Phase 1 foundation is implemented: FastAPI,
+typed configuration, PostgreSQL/SQLAlchemy/Alembic infrastructure, foundation
+schemas, health APIs, tests, and Docker integration. Phase 2 adds the Writing
+Task 2 evaluation API, a vendor-independent provider boundary with a DeepSeek
+adapter, validated structured output, deterministic product-band aggregation,
+atomic PostgreSQL persistence, bounded failure handling, and deterministic
+local, CI, and Docker validation. The learning-loop components below remain
+target designs unless their status says otherwise.
 
 The completed [PHASE1_GRAPH.md](PHASE1_GRAPH.md) remains the historical Phase 1
 execution record. Current work is bounded by the authorized Phase 2 graph;
@@ -37,38 +38,39 @@ The design favors one coordinating learning agent plus deterministic services an
 ```text
 Client
   |
-  v
-FastAPI API layer
+  +--> FastAPI Writing API (implemented)
+  |      -> Writing Evaluation Service
+  |      -> LLM Provider protocol
+  |           `-> DeepSeek adapter
+  |      -> Pydantic structured-output validation
+  |      -> Deterministic product-band aggregation
+  |      -> Atomic SQLAlchemy/PostgreSQL persistence
   |
-  v
-One core IELTS Learning Agent
-  |-- Learner Model
-  |-- Planner
-  |-- Memory
-  |-- Evaluator
-  `-- Tool Layer
-      |-- Writing
-      |-- Speaking       (future)
-      |-- Reading        (future)
-      `-- Listening      (future)
-  |
-  +-- Deterministic services
-  +-- PostgreSQL persistence
-  `-- LLM provider abstraction (future)
+  `--> One core IELTS Learning Agent (future phase)
+         |-- Learner Model
+         |-- Planner
+         |-- Memory
+         |-- Evaluator
+         `-- Tool Layer
+             |-- Writing practice
+             |-- Speaking
+             |-- Reading
+             `-- Listening
 ```
 
 The core agent coordinates the learning loop. Planner, Memory, Evaluator, and IELTS tools are responsibilities within that system, not separate agents by default.
 
-| Component | Target responsibility | Phase 1 status |
+| Component | Responsibility | Current status |
 | --- | --- | --- |
 | Core Learning Agent | Coordinate state, planning, tools, evaluation, and replanning | Deferred |
 | Learner Model | Represent goals, current level, skill mastery, weaknesses, and history as structured persistent data | IELTS band value schema only; learner state and persistence are deferred |
 | Planner | Select the next learning objective using deterministic priorities, with constrained generation where useful | Deferred |
 | Memory | Separate stable profile data, learning events, and derived patterns | Storage logic and retrieval are deferred |
-| Evaluator | Convert learning outcomes into validated structured evidence | Deferred |
-| Tool Layer | Expose focused learning activities behind explicit interfaces | Deferred |
-| API Layer | Validate HTTP boundaries and call application services | FastAPI shell plus liveness/readiness APIs implemented |
-| Persistence | Store durable application data in PostgreSQL through SQLAlchemy and Alembic | Engine/session/base, PostgreSQL service, and empty baseline migration implemented; domain models are deferred |
+| Writing Evaluator | Convert a Task 2 submission into validated structured evidence through the provider protocol | Implemented for Writing Task 2 only |
+| LLM Provider | Isolate vendor HTTP behavior behind a typed contract | Protocol, test fake, and DeepSeek adapter implemented; no runtime fake selection |
+| Tool Layer | Expose focused learning activities behind explicit interfaces | Wider practice tools deferred |
+| API Layer | Validate HTTP boundaries and call application services | Health APIs and `POST /writing/evaluate` implemented |
+| Persistence | Store durable application data in PostgreSQL through SQLAlchemy and Alembic | Writing attempts and evaluations implemented through `0002_writing`; learner data deferred |
 
 ## Responsibility boundaries
 
@@ -81,23 +83,34 @@ The core agent coordinates the learning loop. Planner, Memory, Evaluator, and IE
 
 ## Writing-first MVP target
 
-Writing is the intended first learning domain after the foundation is complete. The target flow is:
+Phase 2 implements this bounded Writing evaluation flow:
 
 ```text
-Writing goal
-  -> Writing task
-  -> Learner submission
-  -> Structured writing evaluation
-  -> Validated evidence
-  -> Learner-state update
-  -> Learning-memory event
-  -> Next-task planning
+Task 2 question + essay (untrusted input)
+  -> strict request validation + deterministic word count
+  -> versioned evaluator request with trusted rubric/output contract
+  -> provider protocol / DeepSeek adapter
+  -> Pydantic validation of structured provider output
+  -> deterministic equal-weight product-band aggregation
+  -> atomic attempt + evaluation transaction
+  -> explicit API response or safe normalized failure
 ```
 
-Phase 2 covers only the writing-evaluation portion defined by its graph.
-Learner-state updates, learning memory, planning, task generation, and the wider
-closed loop remain later-phase targets.
+Provider calls have at most three attempts and retry only normalized timeout,
+rate-limit, or transient failures, with bounded 0.25-second then 0.5-second
+backoff. Account/billing failures are not retried and map to a safe 503 response.
+DeepSeek thinking mode is a strict environment-backed enabled/disabled setting,
+is sent explicitly on every request, and is persisted as application-owned
+metadata. Deterministic FakeProvider tests verify the
+application trust boundary, request construction, structured-output validation,
+and safe handling of untrusted content; they do not prove real-model immunity to
+prompt injection, and perfect prevention is not claimed. The computed product
+band is a documented application policy, not a claim of exact equivalence to an
+official final IELTS Writing band. See [API.md](API.md) for the public contract.
 
+Learner-state updates, learning memory, planning, task generation, and the wider
+
+closed loop remain later-phase targets.
 ## Phase 1 architecture boundary
 
 Phase 1 established the following supporting foundation:
@@ -113,12 +126,15 @@ FastAPI application shell
   + Docker/Docker Compose
 ```
 
-Explicitly deferred capabilities include DeepSeek or other LLM integrations, Writing Evaluator, Planner, Learning Memory behavior, RAG, Redis, LangGraph, multi-agent orchestration, and Speaking, Reading, or Listening modules.
+DeepSeek integration and the Writing Evaluator were explicitly deferred during
+Phase 1 and were later implemented only within the authorized Phase 2 boundary.
+Planner, learner state, Learning Memory behavior, RAG, Redis, LangGraph,
+multi-agent orchestration, and Speaking, Reading, or Listening remain deferred.
 
 ## Evolution rule
 
 Architecture follows verified product requirements. Phase 1 is complete and
-stopped at `P1-11`; Phase 2 is the current authorized graph but its execution
-must not begin automatically. Every phase requires explicit execution authority,
-and a subsequent phase requires separate authorization and its own graph.
+stopped at `P1-11`; Phase 2 implementation follows its authorized graph and stops
+at `P2-15`. Every phase requires explicit execution authority, and Phase 3 or any
+other subsequent phase requires separate authorization and its own graph.
 Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
