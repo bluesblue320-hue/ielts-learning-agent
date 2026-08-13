@@ -11,11 +11,18 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Annotated, Literal
+from typing import Annotated, Final, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    field_serializer,
+    model_validator,
+)
 
-from app.learner.writing_policy import WRITING_SKILLS
+from app.learner.writing_policy import STATE_QUANTUM, STATE_ROUNDING, WRITING_SKILLS
 from app.schemas.common import BandScore
 from app.schemas.writing import EvaluationMetadata
 
@@ -44,6 +51,16 @@ DerivedStateBand = Annotated[
     Decimal,
     Field(ge=Decimal("0"), le=Decimal("9"), multiple_of=Decimal("0.01")),
 ]
+
+# Fields that must be identical across the four LearningEvidence records of a
+# single logical evaluation so a complete set cannot mix unrelated sources.
+_EVIDENCE_IDENTITY_FIELDS: Final[tuple[str, ...]] = (
+    "learning_update_id",
+    "learner_id",
+    "writing_evaluation_id",
+    "source_created_at",
+    "source_attempt_id",
+)
 
 
 class LearnerSchema(BaseModel):
@@ -129,9 +146,28 @@ class LearnerSkillState(LearnerSchema):
                 raise ValueError("observed state must have revision >= 1")
         return self
 
+    @field_serializer("estimated_band", when_used="json")
+    def _serialize_estimated_band(self, value: Decimal | None) -> str | None:
+        """Serialize the derived band as a two-decimal string, never a float.
+
+        P3-02 freezes materialized precision at two decimal places. The Python
+        value remains a Decimal; only JSON output is normalized to exactly two
+        decimal places using the frozen state quantum and rounding.
+        """
+
+        if value is None:
+            return None
+        return str(value.quantize(STATE_QUANTUM, rounding=STATE_ROUNDING))
+
 
 class LearningEvidenceSet(LearnerSchema):
-    """Exactly four canonical evidence records, keyed by skill."""
+    """Exactly four canonical evidence records, keyed by skill.
+
+    All four records must describe the same logical evaluation: they must share
+    the same learning update, learner, evaluation, canonical-order source
+    values, and Phase 2 provenance. Inconsistent input is rejected, never
+    normalized.
+    """
 
     task_response: LearningEvidence
     coherence_and_cohesion: LearningEvidence
@@ -139,16 +175,31 @@ class LearningEvidenceSet(LearnerSchema):
     grammatical_range_and_accuracy: LearningEvidence
 
     @model_validator(mode="after")
-    def _check_skill_keys(self) -> "LearningEvidenceSet":
+    def _check_consistency(self) -> "LearningEvidenceSet":
         for skill in WRITING_SKILLS:
             item = getattr(self, skill)
             if item.skill != skill:
                 raise ValueError(f"evidence under {skill!r} has skill {item.skill!r}")
+
+        first = getattr(self, WRITING_SKILLS[0])
+        for skill in WRITING_SKILLS:
+            item = getattr(self, skill)
+            for field in _EVIDENCE_IDENTITY_FIELDS:
+                if getattr(item, field) != getattr(first, field):
+                    raise ValueError(
+                        f"evidence under {skill!r} has mismatched {field}"
+                    )
+            if item.provenance != first.provenance:
+                raise ValueError(f"evidence under {skill!r} has mismatched provenance")
         return self
 
 
 class LearnerSkillStateSet(LearnerSchema):
-    """Exactly four materialized skill states, keyed by skill."""
+    """Exactly four materialized skill states, keyed by skill.
+
+    All four states must belong to the same learner and the same state-policy
+    version. Inconsistent input is rejected, never normalized.
+    """
 
     task_response: LearnerSkillState
     coherence_and_cohesion: LearnerSkillState
@@ -156,9 +207,19 @@ class LearnerSkillStateSet(LearnerSchema):
     grammatical_range_and_accuracy: LearnerSkillState
 
     @model_validator(mode="after")
-    def _check_skill_keys(self) -> "LearnerSkillStateSet":
+    def _check_consistency(self) -> "LearnerSkillStateSet":
         for skill in WRITING_SKILLS:
             item = getattr(self, skill)
             if item.skill != skill:
                 raise ValueError(f"state under {skill!r} has skill {item.skill!r}")
+
+        first = getattr(self, WRITING_SKILLS[0])
+        for skill in WRITING_SKILLS:
+            item = getattr(self, skill)
+            if item.learner_id != first.learner_id:
+                raise ValueError(f"state under {skill!r} has mismatched learner_id")
+            if item.state_policy_version != first.state_policy_version:
+                raise ValueError(
+                    f"state under {skill!r} has mismatched state_policy_version"
+                )
         return self

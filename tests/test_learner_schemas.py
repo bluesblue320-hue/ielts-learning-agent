@@ -373,6 +373,69 @@ def test_state_set_rejects_missing_or_mismatched_skill() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Set consistency (reject mixed logical sources)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("field", "different"),
+    [
+        ("learner_id", 2),
+        ("learning_update_id", 2),
+        ("writing_evaluation_id", 2),
+        ("source_created_at", datetime(2026, 1, 1, 13, 0, 0)),
+        ("source_attempt_id", 2),
+    ],
+)
+def test_evidence_set_rejects_mixed_identity(field: str, different: object) -> None:
+    payload = {skill: make_evidence(skill).model_dump() for skill in ALL_FOUR}
+    payload["lexical_resource"][field] = different
+    with pytest.raises(ValidationError, match=field):
+        LearningEvidenceSet.model_validate(payload)
+
+
+@pytest.mark.parametrize(
+    ("field", "different"),
+    [
+        ("provider", "other-provider"),
+        ("model", "other-model"),
+        ("prompt_version", "other-prompt"),
+        ("rubric_version", "other-rubric"),
+        ("scoring_policy_version", "other-scoring"),
+        ("thinking_mode", "enabled"),
+    ],
+)
+def test_evidence_set_rejects_mixed_provenance(field: str, different: str) -> None:
+    payload = {skill: make_evidence(skill).model_dump() for skill in ALL_FOUR}
+    payload["lexical_resource"]["provenance"][field] = different
+    with pytest.raises(ValidationError, match="provenance"):
+        LearningEvidenceSet.model_validate(payload)
+
+
+def test_state_set_rejects_mixed_learner_id() -> None:
+    payload = {skill: make_state(skill).model_dump() for skill in ALL_FOUR}
+    payload["lexical_resource"]["learner_id"] = 2
+    with pytest.raises(ValidationError, match="learner_id"):
+        LearnerSkillStateSet.model_validate(payload)
+
+
+def test_state_set_rejects_mixed_state_policy_version() -> None:
+    # state_policy_version is a single-value Literal, so a mixed version is
+    # rejected before it can reach the set-level consistency check.
+    payload = {skill: make_state(skill).model_dump() for skill in ALL_FOUR}
+    payload["lexical_resource"]["state_policy_version"] = "writing-state-ewma-v2"
+    with pytest.raises(ValidationError, match="state_policy_version"):
+        LearnerSkillStateSet.model_validate(payload)
+
+
+def test_state_set_rejects_extra_field() -> None:
+    payload = {skill: make_state(skill).model_dump() for skill in ALL_FOUR}
+    payload["extra"] = make_state("task_response").model_dump()
+    with pytest.raises(ValidationError):
+        LearnerSkillStateSet.model_validate(payload)
+
+
+# ---------------------------------------------------------------------------
 # Version fields and blank rejection
 # ---------------------------------------------------------------------------
 
@@ -440,10 +503,26 @@ def test_evidence_serializes_safely() -> None:
     assert "lexical_resource" in as_json
 
 
-def test_derived_state_serializes_to_two_decimals() -> None:
-    state = make_state("task_response", estimated="6.56")
-    assert state.model_dump()["estimated_band"] == Decimal("6.56")
-    assert '"6.56"' in state.model_dump_json()
+@pytest.mark.parametrize(
+    ("value", "expected_json"),
+    [
+        ("6.50", '"6.50"'),
+        ("6.56", '"6.56"'),
+        ("0.00", '"0.00"'),
+        ("9.00", '"9.00"'),
+    ],
+)
+def test_derived_state_json_serializes_exactly_two_decimals(value: str, expected_json: str) -> None:
+    state = make_state("task_response", estimated=value)
+    assert f'"estimated_band":{expected_json}' in state.model_dump_json()
+
+
+def test_derived_state_python_value_remains_decimal() -> None:
+    state = make_state("task_response", estimated="6.50")
+    assert isinstance(state.estimated_band, Decimal)
+    assert state.estimated_band == Decimal("6.50")
+    assert state.model_dump()["estimated_band"] == Decimal("6.50")
+    assert state.model_dump()["estimated_band"] != "6.50"
 
 
 def test_unobserved_state_serializes_null_estimate() -> None:
@@ -452,3 +531,4 @@ def test_unobserved_state_serializes_null_estimate() -> None:
     assert dumped["estimated_band"] is None
     assert dumped["last_evidence_id"] is None
     assert dumped["evidence_count"] == 0
+    assert '"estimated_band":null' in state.model_dump_json()
