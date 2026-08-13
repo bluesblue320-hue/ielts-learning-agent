@@ -97,7 +97,11 @@ Task 2 question + essay (untrusted input)
 ```
 
 Provider calls have at most three attempts and retry only normalized timeout,
-rate-limit, or transient failures. Deterministic FakeProvider tests verify the
+rate-limit, or transient failures, with bounded 0.25-second then 0.5-second
+backoff. Account/billing failures are not retried and map to a safe 503 response.
+DeepSeek thinking mode is a strict environment-backed enabled/disabled setting,
+is sent explicitly on every request, and is persisted as application-owned
+metadata. Deterministic FakeProvider tests verify the
 application trust boundary, request construction, structured-output validation,
 and safe handling of untrusted content; they do not prove real-model immunity to
 prompt injection, and perfect prevention is not claimed. The computed product

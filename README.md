@@ -12,10 +12,14 @@ implemented.** The repository provides:
 
 - a FastAPI application with liveness, readiness, and Writing Task 2 evaluation;
 - strict Pydantic v2 request, provider-result, response, and error boundaries;
+- pre-provider input ceilings of 2,000 question characters and 20,000 essay
+  characters, while essays below 250 words remain valid;
 - deterministic word counting and product-band aggregation;
 - a vendor-independent provider protocol and environment-configured DeepSeek
   HTTP adapter;
-- bounded provider retries and safe API failure mapping;
+- a versioned `writing-task2-v1` rubric contract and application-owned provider,
+  model, prompt, rubric, scoring-policy, and thinking-mode metadata;
+- bounded provider retries with increasing backoff and safe API failure mapping;
 - atomic Writing attempt/evaluation persistence in PostgreSQL through SQLAlchemy
   2.x and the reversible `0002_writing` Alembic migration;
 - deterministic FakeProvider tests with no live provider or credential

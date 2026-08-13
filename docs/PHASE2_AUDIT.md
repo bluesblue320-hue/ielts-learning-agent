@@ -9,8 +9,9 @@ provider boundary, validates it, computes the product band deterministically,
 and atomically persists the attempt and evaluation before returning the API
 response.
 
-Local, PostgreSQL, migration, and clean-checkout Docker gates passed on
-2026-08-12. The final pull request's GitHub Actions status is the authoritative
+Local, PostgreSQL, migration, and Docker gates passed on 2026-08-13
+after the final review hardening. The final pull request's GitHub Actions
+status is the authoritative
 external CI gate; Phase 2 is accepted only when that status is green. After
 acceptance, execution stops at `P2-15`. No Phase 3 work is authorized by this
 record.
@@ -37,12 +38,14 @@ record.
 
 ## Validation evidence
 
-- Deterministic non-integration command: 330 passed, 38 integration tests
+- Deterministic non-integration command: 342 passed, 41 integration tests
   deselected, with no database URL or DeepSeek key.
-- Focused end-to-end/failure/rollback/migration/retry/health matrix: 54 passed.
-- Complete local suite against the isolated PostgreSQL test database: 368
+- Focused schema/rubric/provider/retry suite: 197 passed.
+- Focused PostgreSQL migration/persistence/API/integration suite: 39 passed.
+- Complete local suite against the isolated PostgreSQL test database: 383
   passed.
-- Complete clean-checkout container suite: 368 passed.
+- Complete container suite against an isolated Compose test database: 383
+  passed.
 - One Alembic head: `0002_writing`.
 - Explicit isolated migration cycle: `0002_writing` downgraded to
   `0001_phase1` (Writing tables absent), then upgraded to `0002_writing`
@@ -61,11 +64,20 @@ One upstream `StarletteDeprecationWarning` is emitted by FastAPI's current
 - Application services depend on `LLMProvider`, not `DeepSeekProvider`.
 - Production composition builds only the DeepSeek adapter; `FakeProvider` is a
   test-only injection seam and cannot be selected by ordinary runtime settings.
+- Request validation caps questions at 2,000 characters and essays at 20,000
+  characters before provider or database work.
+- Evaluator requests carry the versioned `writing-task2-v1` definitions, band
+  anchors, task-length guidance, scoring policy, and output schema; provider
+  payloads cannot set application-owned metadata.
 - Provider output is Pydantic-validated before aggregation or persistence.
 - Word count and the equal-weight four-criterion product band are deterministic;
   exact quarter-band ties round upward to the nearest half band.
 - Provider calls make at most three total attempts and retry only normalized
   timeout, rate-limit, or transient failures.
+- Retry delays increase deterministically from 0.25 to 0.5 seconds through an
+  injected async sleeper; account/billing failures are never retried.
+- DeepSeek thinking mode defaults explicitly to `disabled`, is sent on every
+  request using `thinking.type`, and is persisted as application metadata.
 - Safe API errors do not expose submitted content, raw provider bodies,
   credentials, vendor request identifiers, or database exception details.
 - Attempt and evaluation writes use one transaction; failure cannot leave a

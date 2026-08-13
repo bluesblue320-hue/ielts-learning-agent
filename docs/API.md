@@ -20,10 +20,16 @@ configuration that selects `FakeProvider`.
 }
 ```
 
-Both values must be non-blank strings and unexpected fields are rejected. Word
-count is the number of non-whitespace tokens in the essay. An essay below 250
-words remains a valid submission; the API does not treat 250 words as a request
-validation threshold.
+Both values must be non-blank strings and unexpected fields are rejected.
+`question` accepts at most 2,000 characters and `essay` at most 20,000
+characters; exceeding either limit returns `422 request_invalid` before any
+provider or database work. Word count is the deterministic number of
+non-whitespace tokens in the essay.
+
+An essay below 250 words remains a valid submission. Its word count and the
+versioned rubric's task-length guidance are supplied as evaluation evidence;
+the provider does not decide request validity. This product behavior is not a
+claim of official score equivalence.
 
 ### Successful response
 
@@ -63,7 +69,10 @@ A successful request returns `201 Created`:
     "metadata": {
       "provider": "deepseek",
       "model": "deepseek-v4-pro",
-      "prompt_version": "writing-v1"
+      "prompt_version": "writing-v2",
+      "rubric_version": "writing-task2-v1",
+      "scoring_policy_version": "writing-product-band-v1",
+      "thinking_mode": "disabled"
     },
     "word_count": 276,
     "product_band": {"value": "6.5"}
@@ -73,6 +82,14 @@ A successful request returns `201 Created`:
 
 Provider output cannot supply or override `word_count`, trusted metadata, or
 `product_band`.
+
+The application owns provider/model, prompt, rubric, scoring-policy, and
+thinking-mode metadata. Provider output contains only the qualitative evaluation
+fields. The `writing-task2-v1` request contract includes explicit definitions
+and summarized integer band anchors from 0 through 9 for all four criteria,
+half-band guidance, task-length guidance, the deterministic submission word
+count, scoring policy, and output schema. It is versioned for reproducibility;
+it is not represented as an official IELTS publication.
 
 ## Product-band policy
 
@@ -91,9 +108,11 @@ reproduces an official final IELTS Writing band.
 ## Retry and failure behavior
 
 Provider calls have at most three total attempts. Only normalized `timeout`,
-`rate_limit`, and `transient` failures are retried. Configuration,
-authentication, invalid structured output, and rejected requests are not
-retried. Validation and database failures are never provider-retried.
+`rate_limit`, and `transient` failures are retried, with deterministic bounded
+exponential delays of 0.25 seconds then 0.5 seconds. Configuration,
+authentication, account/billing, invalid structured output, and rejected
+requests are not retried. Validation and database failures are never
+provider-retried.
 
 Errors use this safe response shape and do not include submitted content,
 credentials, raw provider bodies, request IDs, or database exception text:
@@ -115,6 +134,7 @@ credentials, raw provider bodies, request IDs, or database exception text:
 | `502` | `provider_request_rejected` | Provider rejected the request |
 | `503` | `provider_configuration` | Provider configuration is missing or invalid |
 | `503` | `provider_authentication` | Provider authentication failed |
+| `503` | `provider_billing_unavailable` | Provider account or billing cannot process the request |
 | `503` | `provider_rate_limited` | Rate limit persisted after bounded retries |
 | `503` | `provider_unavailable` | Transient failure persisted after bounded retries |
 | `503` | `persistence_unavailable` | Atomic persistence failed and was rolled back |

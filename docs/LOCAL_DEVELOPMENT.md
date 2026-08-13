@@ -60,7 +60,13 @@ IELTS_DEEPSEEK_API_KEY=your-local-key
 IELTS_DEEPSEEK_API_URL=https://api.deepseek.com/chat/completions
 IELTS_DEEPSEEK_MODEL=deepseek-v4-pro
 IELTS_DEEPSEEK_TIMEOUT_SECONDS=30
+IELTS_DEEPSEEK_THINKING_MODE=disabled
 ```
+
+`IELTS_DEEPSEEK_THINKING_MODE` is a strict `enabled`/`disabled` enum. The
+application default is explicitly `disabled`, and every DeepSeek request sends
+that mode using the provider `thinking.type` field. Invalid values fail
+configuration before a provider call.
 
 The key is required only when calling `POST /writing/evaluate`. Without it, the
 application and health endpoints still start, while the writing endpoint returns
