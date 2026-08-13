@@ -154,7 +154,16 @@ def reference_decide(
 
 
 def _snapshot_dump() -> dict:
-    return build_states({s: "6.5" for s in WRITING_SKILLS}).model_dump()
+    # Internally consistent with the default practice decision:
+    # target_skill=task_response, current_estimate=6.0, target=7.0.
+    return build_states(
+        {
+            "task_response": "6.0",
+            "coherence_and_cohesion": "6.5",
+            "lexical_resource": "6.5",
+            "grammatical_range_and_accuracy": "6.5",
+        }
+    ).model_dump()
 
 
 def _decision(**overrides: object) -> PracticeRecommendationDecision:
@@ -185,8 +194,19 @@ def test_evidence_threshold_is_three() -> None:
     assert pp.MIN_ESTABLISHED_EVIDENCE_COUNT == 3
 
 
-def test_tiebreak_priority_matches_canonical_skill_order() -> None:
-    assert pp.PRACTICE_TIEBREAK_PRIORITY == WRITING_SKILLS
+def test_tiebreak_priority_is_independently_frozen() -> None:
+    # Planner priority is frozen explicitly, not derived from WRITING_SKILLS
+    # (whose tuple order is presentation-only per P3-02).
+    assert pp.PRACTICE_TIEBREAK_PRIORITY == (
+        "task_response",
+        "coherence_and_cohesion",
+        "lexical_resource",
+        "grammatical_range_and_accuracy",
+    )
+
+
+def test_tiebreak_priority_contains_exactly_canonical_skills() -> None:
+    assert set(pp.PRACTICE_TIEBREAK_PRIORITY) == set(WRITING_SKILLS)
 
 
 def test_reason_code_taxonomy_is_exact() -> None:
@@ -284,44 +304,142 @@ def test_no_practice_requires_target_band_unless_unset() -> None:
         )
 
 
+def _practice_snapshot(tr_band: str) -> dict:
+    return build_states(
+        {
+            "task_response": tr_band,
+            "coherence_and_cohesion": "6.5",
+            "lexical_resource": "6.5",
+            "grammatical_range_and_accuracy": "6.5",
+        }
+    ).model_dump()
+
+
+def test_no_practice_cannot_use_largest_target_gap() -> None:
+    with pytest.raises(ValidationError, match="reason sequence"):
+        _decision(
+            decision_type="no_practice",
+            target_skill=None,
+            current_estimate=None,
+            reason_codes=["largest_target_gap"],
+        )
+
+
+def test_invalid_qualifier_order_rejected() -> None:
+    with pytest.raises(ValidationError, match="reason sequence"):
+        _decision(
+            reason_codes=[
+                "largest_target_gap",
+                "insufficient_evidence",
+                "priority_tiebreak",
+            ]
+        )
+
+
+def test_empty_reason_codes_rejected() -> None:
+    with pytest.raises(ValidationError, match="reason sequence"):
+        _decision(reason_codes=[])
+
+
 def test_multiple_primary_reasons_rejected() -> None:
-    with pytest.raises(ValidationError, match="primary"):
+    with pytest.raises(ValidationError, match="reason sequence"):
         _decision(reason_codes=["largest_target_gap", "target_achieved"])
 
 
 def test_no_primary_reason_rejected() -> None:
-    with pytest.raises(ValidationError, match="primary"):
+    with pytest.raises(ValidationError, match="reason sequence"):
         _decision(reason_codes=["priority_tiebreak"])
 
 
-def test_primary_must_come_first() -> None:
-    with pytest.raises(ValidationError, match="first"):
-        _decision(reason_codes=["insufficient_evidence", "largest_target_gap"])
-
-
 def test_duplicate_reason_code_rejected() -> None:
-    with pytest.raises(ValidationError, match="duplicate"):
+    with pytest.raises(ValidationError, match="reason sequence"):
         _decision(reason_codes=["largest_target_gap", "largest_target_gap"])
 
 
-def test_priority_tiebreak_requires_largest_gap() -> None:
-    with pytest.raises(ValidationError):
+def test_primary_must_come_first() -> None:
+    with pytest.raises(ValidationError, match="reason sequence"):
+        _decision(reason_codes=["insufficient_evidence", "largest_target_gap"])
+
+
+def test_practice_estimate_must_match_snapshot() -> None:
+    # Default snapshot has task_response = 6.0, so 6.5 mismatches.
+    with pytest.raises(ValidationError, match="snapshot"):
+        _decision(current_estimate="6.5")
+
+
+def test_practice_target_skill_must_be_observed() -> None:
+    unobserved = build_states(
+        {
+            "task_response": None,
+            "coherence_and_cohesion": "6.5",
+            "lexical_resource": "6.5",
+            "grammatical_range_and_accuracy": "6.5",
+        }
+    ).model_dump()
+    with pytest.raises(ValidationError, match="observed"):
+        _decision(state_snapshot=unobserved)
+
+
+def test_practice_estimate_must_be_below_target() -> None:
+    with pytest.raises(ValidationError, match="gap"):
+        _decision(current_estimate="7.0", state_snapshot=_practice_snapshot("7.0"))
+    with pytest.raises(ValidationError, match="gap"):
+        _decision(current_estimate="7.5", state_snapshot=_practice_snapshot("7.5"))
+
+
+def test_invalid_qualifier_combinations_rejected() -> None:
+    with pytest.raises(ValidationError, match="reason sequence"):
         _decision(
             decision_type="no_practice",
             target_skill=None,
             current_estimate=None,
             reason_codes=["target_achieved", "priority_tiebreak"],
         )
-
-
-def test_insufficient_evidence_requires_valid_primary() -> None:
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError, match="reason sequence"):
         _decision(
             decision_type="no_practice",
             target_skill=None,
             current_estimate=None,
             reason_codes=["cold_start", "insufficient_evidence"],
         )
+
+
+@pytest.mark.parametrize(
+    "reason_codes",
+    [
+        ["largest_target_gap"],
+        ["largest_target_gap", "priority_tiebreak"],
+        ["largest_target_gap", "insufficient_evidence"],
+        ["largest_target_gap", "priority_tiebreak", "insufficient_evidence"],
+    ],
+)
+def test_valid_practice_reason_sequences_accepted(reason_codes: list[str]) -> None:
+    decision = _decision(reason_codes=reason_codes)
+    assert decision.decision_type == DecisionType.PRACTICE
+    assert [r.value for r in decision.reason_codes] == reason_codes
+
+
+@pytest.mark.parametrize(
+    "reason_codes",
+    [
+        ["target_achieved"],
+        ["target_achieved", "insufficient_evidence"],
+        ["cold_start"],
+        ["incomplete_state"],
+        ["target_unset"],
+    ],
+)
+def test_valid_no_practice_reason_sequences_accepted(reason_codes: list[str]) -> None:
+    target_band = None if reason_codes == ["target_unset"] else {"value": "7.0"}
+    decision = _decision(
+        decision_type="no_practice",
+        target_skill=None,
+        current_estimate=None,
+        learner_target_band=target_band,
+        reason_codes=reason_codes,
+    )
+    assert decision.decision_type == DecisionType.NO_PRACTICE
+    assert [r.value for r in decision.reason_codes] == reason_codes
 
 
 def test_planner_version_must_match() -> None:

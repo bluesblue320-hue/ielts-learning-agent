@@ -42,38 +42,39 @@ class PlannerReasonCode(StrEnum):
 
 PlannerVersion = Literal["writing-practice-gap-v1"]
 
-# The primary reason codes: exactly one must be present, and it must be first.
-_PRIMARY_REASON_CODES = frozenset(
+# Exact valid reason-code sequences for planner v1. Ordering is fully
+# deterministic: any sequence not listed here is rejected, never reordered.
+_VALID_PRACTICE_REASON_SEQUENCES = frozenset(
     {
-        PlannerReasonCode.LARGEST_TARGET_GAP,
-        PlannerReasonCode.TARGET_ACHIEVED,
-        PlannerReasonCode.COLD_START,
-        PlannerReasonCode.INCOMPLETE_STATE,
-        PlannerReasonCode.TARGET_UNSET,
+        (PlannerReasonCode.LARGEST_TARGET_GAP,),
+        (PlannerReasonCode.LARGEST_TARGET_GAP, PlannerReasonCode.PRIORITY_TIEBREAK),
+        (PlannerReasonCode.LARGEST_TARGET_GAP, PlannerReasonCode.INSUFFICIENT_EVIDENCE),
+        (
+            PlannerReasonCode.LARGEST_TARGET_GAP,
+            PlannerReasonCode.PRIORITY_TIEBREAK,
+            PlannerReasonCode.INSUFFICIENT_EVIDENCE,
+        ),
     }
 )
 
-# Qualifiers and the primary reason codes they may accompany.
-_QUALIFIER_VALID_PRIMARY = {
-    PlannerReasonCode.PRIORITY_TIEBREAK: frozenset(
-        {PlannerReasonCode.LARGEST_TARGET_GAP}
-    ),
-    PlannerReasonCode.INSUFFICIENT_EVIDENCE: frozenset(
-        {
-            PlannerReasonCode.LARGEST_TARGET_GAP,
-            PlannerReasonCode.TARGET_ACHIEVED,
-        }
-    ),
-}
+_VALID_NO_PRACTICE_REASON_SEQUENCES = frozenset(
+    {
+        (PlannerReasonCode.TARGET_ACHIEVED,),
+        (PlannerReasonCode.TARGET_ACHIEVED, PlannerReasonCode.INSUFFICIENT_EVIDENCE),
+        (PlannerReasonCode.COLD_START,),
+        (PlannerReasonCode.INCOMPLETE_STATE,),
+        (PlannerReasonCode.TARGET_UNSET,),
+    }
+)
 
 
 class PracticeRecommendationDecision(BaseModel):
     """The structured, auditable planner decision for one learning update.
 
     A valid decision is either ``practice`` with a required ``target_skill`` and
-    estimate, or ``no_practice`` with a null ``target_skill``. It always carries
-    exactly one primary reason, a full decision-time state snapshot, and the
-    frozen planner version.
+    estimate that matches the state snapshot, or ``no_practice`` with a null
+    ``target_skill``. It always carries exactly one valid reason-code sequence,
+    a full decision-time state snapshot, and the frozen planner version.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -88,42 +89,47 @@ class PracticeRecommendationDecision(BaseModel):
 
     @model_validator(mode="after")
     def _check_decision_contract(self) -> "PracticeRecommendationDecision":
-        reasons = self.reason_codes
-
-        if len(set(reasons)) != len(reasons):
-            raise ValueError("reason codes must not contain duplicates")
-
-        primaries = [code for code in reasons if code in _PRIMARY_REASON_CODES]
-        if len(primaries) != 1:
-            raise ValueError("decision must have exactly one primary reason")
-        primary = primaries[0]
-        if reasons[0] != primary:
-            raise ValueError("the primary reason must be the first reason code")
-
-        for code in reasons:
-            allowed = _QUALIFIER_VALID_PRIMARY.get(code)
-            if allowed is not None and primary not in allowed:
-                raise ValueError(
-                    f"qualifier {code.value!r} is invalid with primary "
-                    f"{primary.value!r}"
-                )
+        sequence = tuple(self.reason_codes)
 
         if self.decision_type == DecisionType.PRACTICE:
+            if sequence not in _VALID_PRACTICE_REASON_SEQUENCES:
+                raise ValueError(
+                    "invalid practice reason sequence: "
+                    f"{[code.value for code in self.reason_codes]}"
+                )
             if self.target_skill is None:
                 raise ValueError("practice decision requires target_skill")
             if self.learner_target_band is None:
                 raise ValueError("practice decision requires learner_target_band")
             if self.current_estimate is None:
                 raise ValueError("practice decision requires current_estimate")
-            if PlannerReasonCode.LARGEST_TARGET_GAP not in reasons:
+
+            snapshot_state = getattr(self.state_snapshot, self.target_skill)
+            if snapshot_state.estimated_band is None:
                 raise ValueError(
-                    "practice decision requires largest_target_gap reason"
+                    "practice target skill must be observed in the state snapshot"
+                )
+            if self.current_estimate != snapshot_state.estimated_band:
+                raise ValueError(
+                    "current_estimate must equal the snapshot estimate for "
+                    "target_skill"
+                )
+            if self.current_estimate >= self.learner_target_band.value:
+                raise ValueError(
+                    "practice requires a strictly positive target gap"
                 )
         else:
+            if sequence not in _VALID_NO_PRACTICE_REASON_SEQUENCES:
+                raise ValueError(
+                    "invalid no_practice reason sequence: "
+                    f"{[code.value for code in self.reason_codes]}"
+                )
             if self.target_skill is not None:
                 raise ValueError("no_practice decision must have null target_skill")
             if self.current_estimate is not None:
                 raise ValueError("no_practice decision must have null current_estimate")
+
+            primary = self.reason_codes[0]
             if primary == PlannerReasonCode.TARGET_UNSET:
                 if self.learner_target_band is not None:
                     raise ValueError(
