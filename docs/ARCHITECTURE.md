@@ -13,8 +13,10 @@ local, CI, and Docker validation. The learning-loop components below remain
 target designs unless their status says otherwise.
 
 The completed [PHASE1_GRAPH.md](PHASE1_GRAPH.md) remains the historical Phase 1
-execution record. Current work is bounded by the authorized Phase 2 graph;
-components outside it require a later explicit phase authorization.
+execution record, and [PHASE2_GRAPH.md](PHASE2_GRAPH.md) records the completed
+Phase 2 implementation. [PHASE3_GRAPH.md](PHASE3_GRAPH.md) defines the planned
+Phase 3 scope and dependency order, but Phase 3 runtime node execution has not
+been authorized or started.
 
 ## Architecture goal
 
@@ -134,7 +136,8 @@ multi-agent orchestration, and Speaking, Reading, or Listening remain deferred.
 ## Evolution rule
 
 Architecture follows verified product requirements. Phase 1 is complete and
-stopped at `P1-11`; Phase 2 implementation follows its authorized graph and stops
-at `P2-15`. Every phase requires explicit execution authority, and Phase 3 or any
-other subsequent phase requires separate authorization and its own graph.
+stopped at `P1-11`; Phase 2 is complete and stopped at `P2-15`. The authorized
+Phase 3 graph defines planned scope, while node execution still requires
+separate explicit authority. Every later phase likewise requires explicit
+execution authority and its own graph.
 Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).

@@ -40,15 +40,19 @@ Always inspect the current phase documentation before implementing features.
 Current phase:
 
 ```text
-Phase 2 — Writing Evaluation Pipeline
+Phase 3 — Learner State & Adaptive Planning
 ```
 
 Read:
 
 ```text
-docs/PHASE2_GRAPH.md
+docs/PHASE3_GRAPH.md
 docs/DEVELOPMENT_LOOP.md
 ```
+
+The Phase 3 graph is approved for design and defines the current authorized
+scope. Phase 3 runtime implementation has not started; a `READY` node still
+requires explicit execution authorization before it becomes `ACTIVE`.
 
 The graph defines WHAT should be implemented.
 

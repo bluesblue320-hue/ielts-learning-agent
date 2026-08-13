@@ -7,8 +7,10 @@ it is not intended to be only a chatbot or a thin LLM wrapper.
 
 ## Current status
 
-**Phase 1 — Foundation is complete. Phase 2 — Writing Evaluation Pipeline is
-implemented.** The repository provides:
+**Phase 1 — Foundation and Phase 2 — Writing Evaluation Pipeline are complete.**
+Phase 3 — Learner State & Adaptive Planning is planned and its graph is
+authorized, but no Phase 3 runtime node has been executed. The repository
+currently provides:
 
 - a FastAPI application with liveness, readiness, and Writing Task 2 evaluation;
 - strict Pydantic v2 request, provider-result, response, and error boundaries;
@@ -26,10 +28,12 @@ implemented.** The repository provides:
   requirement;
 - runtime/test Docker targets and isolated development/test Compose databases.
 
-The authorized dependency graph is documented in
-[docs/PHASE2_GRAPH.md](docs/PHASE2_GRAPH.md). Phase 2 does not implement learner
-state, planning, learning memory, an agent runtime, RAG, frontend behavior, or
-Speaking, Reading, and Listening workflows.
+The completed Phase 2 dependency graph is preserved in
+[docs/PHASE2_GRAPH.md](docs/PHASE2_GRAPH.md). The planned Phase 3 scope and
+dependency order are documented in [docs/PHASE3_GRAPH.md](docs/PHASE3_GRAPH.md).
+Learner state and planning are not implemented yet, and learning memory, an
+agent runtime, RAG, frontend behavior, and Speaking, Reading, and Listening
+workflows remain outside the implemented system.
 
 ## Technology stack
 
@@ -124,14 +128,15 @@ practice implementation is present.
 Before changing the project, read these documents in order:
 
 1. [AGENTS.md](AGENTS.md)
-2. [Phase 2 graph](docs/PHASE2_GRAPH.md)
+2. [Phase 3 graph](docs/PHASE3_GRAPH.md)
 3. [Development loop](docs/DEVELOPMENT_LOOP.md)
 4. [Target architecture](docs/ARCHITECTURE.md)
 
 Phase 1 remains complete and preserved in
-[docs/PHASE1_GRAPH.md](docs/PHASE1_GRAPH.md). Phase 2 implementation and its
-final audit follow the Phase 2 graph node by node. A later phase still requires
-separate authorization and its own graph.
+[docs/PHASE1_GRAPH.md](docs/PHASE1_GRAPH.md). Phase 2 is complete and preserved
+in [docs/PHASE2_GRAPH.md](docs/PHASE2_GRAPH.md), with its accepted evidence in
+the final audit. The Phase 3 graph defines planned scope only: `P3-01` is
+`READY`, but execution still requires separate explicit authorization.
 
 The completed validation evidence is recorded in the
 [Phase 2 final audit](docs/PHASE2_AUDIT.md).
