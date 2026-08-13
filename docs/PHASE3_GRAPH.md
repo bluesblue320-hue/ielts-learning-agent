@@ -175,13 +175,15 @@ This graph's initial state at design approval was:
 - `P3-01`: `READY`
 - `P3-02` through `P3-15`: `NOT_STARTED`
 
-After the accepted P3-01 baseline transition, the current state is:
+After the accepted P3-02 writing-state-policy transition, the current state is:
 
 - `P3-01`: `COMPLETE`
-- `P3-02`: `READY`
-- `P3-03` through `P3-15`: `NOT_STARTED`
+- `P3-02`: `COMPLETE`
+- `P3-03`: `READY`
+- `P3-08`: `READY`
+- `P3-04` through `P3-07` and `P3-09` through `P3-15`: `NOT_STARTED`
 
-Completing P3-01 does not authorize or activate P3-02.
+Completing P3-02 does not authorize or activate P3-03 or P3-08.
 
 ## Dependency graph
 
