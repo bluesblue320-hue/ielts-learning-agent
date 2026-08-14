@@ -2,10 +2,15 @@
 
 These tests prove that concurrent applications cannot double-apply, corrupt
 state, or let transaction completion order override canonical evidence order.
+Controlled schedules additionally prove with real PostgreSQL wait-state
+observation (``pg_stat_activity.wait_event_type = 'Lock'``) that the follower
+backend is actually blocked on the owner's learner row lock before the owner
+commits.
 """
 
 import os
 import threading
+import time
 from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
@@ -341,34 +346,71 @@ def test_concurrent_equals_sequential_and_late_arrival(factory) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _wait_until_backend_waits_on_lock(
+    factory,
+    backend_pid: int,
+    timeout: float = 10.0,
+) -> bool:
+    """Poll PostgreSQL until the backend with ``backend_pid`` is demonstrably
+    waiting on a lock.
+
+    Uses a dedicated observer connection to inspect ``pg_stat_activity`` and
+    returns ``True`` only when ``wait_event_type = 'Lock'`` is observed for
+    that backend. A short bounded polling interval keeps the wait tight; on
+    timeout it returns ``False`` so the caller fails the test explicitly.
+    """
+
+    deadline = time.monotonic() + timeout
+    with factory() as observer:
+        while time.monotonic() < deadline:
+            wait_type = observer.execute(
+                text(
+                    "SELECT wait_event_type FROM pg_stat_activity "
+                    "WHERE pid = :pid"
+                ),
+                {"pid": backend_pid},
+            ).scalar()
+            if wait_type == "Lock":
+                return True
+            time.sleep(0.02)
+    return False
+
+
 def _controlled_schedule(
     factory,
     *,
     learner_id: int,
     lock_owner_eval: int,
     follower_eval: int,
-) -> list[int]:
+) -> tuple[list[int], bool]:
     """Deterministically make ``lock_owner_eval`` acquire the learner row lock
-    first and complete first; ``follower_eval`` blocks on that lock until the
-    owner commits. Returns the observed completion order of evaluation ids."""
+    first, then prove with PostgreSQL wait-state observation that the follower
+    backend is actually blocked on that lock before the owner is released.
 
-    lock_held = threading.Event()
-    start_follower = threading.Event()
+    Returns ``(completion_order, lock_wait_observed)``. ``lock_wait_observed``
+    is ``True`` only when ``pg_stat_activity`` confirmed the follower backend
+    waiting on a lock while the owner still held it.
+    """
+
+    owner_lock_acquired = threading.Event()
+    release_owner = threading.Event()
+    follower_ready = threading.Event()
+    follower_backend_pid: list[int] = []
     completion: list[int] = []
     errors: list[BaseException] = []
 
-    def lock_owner() -> None:
+    def owner() -> None:
         try:
             with factory() as session:
+                # Acquire the learner row lock and KEEP the same transaction
+                # open until apply runs; the service commits and releases it.
                 session.execute(
                     select(Learner.id)
                     .where(Learner.id == learner_id)
                     .with_for_update()
                 )
-                lock_held.set()
-                # Hold the lock until the follower is guaranteed to be waiting
-                # on it, then apply inside the same transaction.
-                assert start_follower.wait(timeout=10)
+                owner_lock_acquired.set()
+                assert release_owner.wait(timeout=15)
                 apply_writing_evaluation(
                     session,
                     learner_id=learner_id,
@@ -380,9 +422,14 @@ def _controlled_schedule(
 
     def follower() -> None:
         try:
-            assert lock_held.wait(timeout=10)
+            assert owner_lock_acquired.wait(timeout=15)
             with factory() as session:
-                # Blocks on the learner row lock until the owner commits.
+                # Publish this backend's PostgreSQL PID, then call apply; the
+                # apply must block on the owner's learner row lock. No
+                # artificial sleep simulates waiting: the lock is the blocker.
+                pid = session.execute(text("SELECT pg_backend_pid()")).scalar()
+                follower_backend_pid.append(pid)
+                follower_ready.set()
                 apply_writing_evaluation(
                     session,
                     learner_id=learner_id,
@@ -392,17 +439,31 @@ def _controlled_schedule(
         except BaseException as error:  # pragma: no cover - failure must fail test
             errors.append(error)
 
-    owner_thread = threading.Thread(target=lock_owner)
+    owner_thread = threading.Thread(target=owner)
     owner_thread.start()
-    assert lock_held.wait(timeout=10), "lock owner never acquired the learner lock"
+    assert owner_lock_acquired.wait(timeout=15), (
+        "owner never acquired the learner row lock"
+    )
+
     follower_thread = threading.Thread(target=follower)
     follower_thread.start()
-    start_follower.set()
+    assert follower_ready.wait(timeout=15), (
+        "follower never published its backend pid"
+    )
+
+    # Central acceptance step: prove PostgreSQL sees the follower backend
+    # blocked on a lock while the owner still holds the learner row lock.
+    lock_wait_observed = _wait_until_backend_waits_on_lock(
+        factory,
+        follower_backend_pid[0],
+    )
+
+    release_owner.set()
     owner_thread.join(timeout=20)
     follower_thread.join(timeout=20)
     assert not owner_thread.is_alive() and not follower_thread.is_alive()
     assert not errors, errors
-    return completion
+    return completion, lock_wait_observed
 
 
 def test_controlled_schedule_a_first(factory) -> None:
@@ -417,10 +478,13 @@ def test_controlled_schedule_a_first(factory) -> None:
         )
         session.commit()
 
-    completion = _controlled_schedule(
+    completion, lock_wait_observed = _controlled_schedule(
         factory, learner_id=20, lock_owner_eval=300, follower_eval=301
     )
 
+    # PostgreSQL proved the follower (B) backend was blocked on the learner
+    # lock before the owner (A) committed.
+    assert lock_wait_observed is True
     assert completion == [300, 301]
     with factory() as session:
         state = _tr_state(session, 20)
@@ -443,10 +507,13 @@ def test_controlled_schedule_b_first(factory) -> None:
         )
         session.commit()
 
-    completion = _controlled_schedule(
+    completion, lock_wait_observed = _controlled_schedule(
         factory, learner_id=21, lock_owner_eval=311, follower_eval=310
     )
 
+    # PostgreSQL proved the follower (A) backend was blocked on the learner
+    # lock before the owner (B) committed.
+    assert lock_wait_observed is True
     # Application/completion order is B then A, but canonical source order is
     # still A -> B, so the final state must equal canonical replay(A, B).
     assert completion == [311, 310]
@@ -494,7 +561,7 @@ def test_controlled_schedules_equal_canonical_replay(factory) -> None:
     with factory() as session:
         late = _tr_state(session, 31).estimated_band
 
-    # Controlled A-first on learner 32.
+    # Controlled A-first on learner 32 (lock wait observed).
     with factory() as session:
         _add_learner(session, 32)
         _add_evaluation(
@@ -504,11 +571,14 @@ def test_controlled_schedules_equal_canonical_replay(factory) -> None:
             session, evaluation_id=421, attempt_id=321, created_at=TB, bands=BANDS_B
         )
         session.commit()
-    _controlled_schedule(factory, learner_id=32, lock_owner_eval=420, follower_eval=421)
+    _, a_first_observed = _controlled_schedule(
+        factory, learner_id=32, lock_owner_eval=420, follower_eval=421
+    )
+    assert a_first_observed is True
     with factory() as session:
         a_first = _tr_state(session, 32).estimated_band
 
-    # Controlled B-first on learner 33.
+    # Controlled B-first on learner 33 (lock wait observed).
     with factory() as session:
         _add_learner(session, 33)
         _add_evaluation(
@@ -518,7 +588,10 @@ def test_controlled_schedules_equal_canonical_replay(factory) -> None:
             session, evaluation_id=431, attempt_id=331, created_at=TB, bands=BANDS_B
         )
         session.commit()
-    _controlled_schedule(factory, learner_id=33, lock_owner_eval=431, follower_eval=430)
+    _, b_first_observed = _controlled_schedule(
+        factory, learner_id=33, lock_owner_eval=431, follower_eval=430
+    )
+    assert b_first_observed is True
     with factory() as session:
         b_first = _tr_state(session, 33).estimated_band
 
