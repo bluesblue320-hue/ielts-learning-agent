@@ -276,6 +276,30 @@ always produce the same logical decision, independent of input dictionary order,
 database row order, ORM iteration order, request order, and transaction commit
 order. No LLM or random behavior is permitted.
 
+### 1.18 Snapshot / reason consistency
+
+The decision contract guarantees that reason semantics agree with the persisted
+state snapshot. Inconsistent input is rejected, never normalized.
+
+- **target_achieved** requires `learner_target_band` non-null, all four canonical
+  skills observed, and every `estimated_band >= learner_target_band.value`.
+  `insufficient_evidence` is bidirectional with the snapshot: present exactly
+  when at least one skill has `evidence_count < MIN_ESTABLISHED_EVIDENCE_COUNT`.
+- **cold_start** requires all four skills UNOBSERVED (`estimated_band` null,
+  `evidence_count` 0, `last_evidence_id` null, `revision` 0).
+- **incomplete_state** requires a mixed snapshot: at least one observed and at
+  least one unobserved skill.
+- **target_unset** places no requirement on the snapshot shape; the absence of a
+  learner target takes precedence, and any valid four-skill snapshot may be
+  retained for auditability.
+- For **practice**, `insufficient_evidence` is bidirectional with the selected
+  skill: present exactly when
+  `state_snapshot[target_skill].evidence_count < MIN_ESTABLISHED_EVIDENCE_COUNT`.
+
+The schema validates only these local invariants. It does not recompute all
+skill gaps or re-run tie-break selection to prove that `target_skill` is the
+largest-gap skill; that selection algorithm belongs to P3-09.
+
 ---
 
 ## 2. Required policy examples

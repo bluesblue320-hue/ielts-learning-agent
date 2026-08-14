@@ -304,13 +304,36 @@ def test_no_practice_requires_target_band_unless_unset() -> None:
         )
 
 
-def _practice_snapshot(tr_band: str) -> dict:
+ONE_COUNT = {skill: 1 for skill in WRITING_SKILLS}
+
+
+def _practice_snapshot(tr_band: str, counts: dict[str, int] | None = None) -> dict:
     return build_states(
         {
             "task_response": tr_band,
             "coherence_and_cohesion": "6.5",
             "lexical_resource": "6.5",
             "grammatical_range_and_accuracy": "6.5",
+        },
+        counts,
+    ).model_dump()
+
+
+def _all_observed_above(band: str, counts: dict[str, int] | None = None) -> dict:
+    return build_states({skill: band for skill in WRITING_SKILLS}, counts).model_dump()
+
+
+def _all_unobserved_snapshot() -> dict:
+    return build_states({skill: None for skill in WRITING_SKILLS}).model_dump()
+
+
+def _mixed_snapshot() -> dict:
+    return build_states(
+        {
+            "task_response": "7.0",
+            "coherence_and_cohesion": "7.0",
+            "lexical_resource": None,
+            "grammatical_range_and_accuracy": "7.0",
         }
     ).model_dump()
 
@@ -405,41 +428,212 @@ def test_invalid_qualifier_combinations_rejected() -> None:
 
 
 @pytest.mark.parametrize(
-    "reason_codes",
+    ("reason_codes", "counts"),
     [
-        ["largest_target_gap"],
-        ["largest_target_gap", "priority_tiebreak"],
-        ["largest_target_gap", "insufficient_evidence"],
-        ["largest_target_gap", "priority_tiebreak", "insufficient_evidence"],
+        (["largest_target_gap"], None),
+        (["largest_target_gap", "priority_tiebreak"], None),
+        (["largest_target_gap", "insufficient_evidence"], ONE_COUNT),
+        (
+            ["largest_target_gap", "priority_tiebreak", "insufficient_evidence"],
+            ONE_COUNT,
+        ),
     ],
 )
-def test_valid_practice_reason_sequences_accepted(reason_codes: list[str]) -> None:
-    decision = _decision(reason_codes=reason_codes)
+def test_valid_practice_reason_sequences_accepted(
+    reason_codes: list[str],
+    counts: dict[str, int] | None,
+) -> None:
+    decision = _decision(
+        reason_codes=reason_codes,
+        state_snapshot=_practice_snapshot("6.0", counts),
+    )
     assert decision.decision_type == DecisionType.PRACTICE
     assert [r.value for r in decision.reason_codes] == reason_codes
 
 
-@pytest.mark.parametrize(
-    "reason_codes",
-    [
-        ["target_achieved"],
-        ["target_achieved", "insufficient_evidence"],
-        ["cold_start"],
-        ["incomplete_state"],
-        ["target_unset"],
-    ],
-)
-def test_valid_no_practice_reason_sequences_accepted(reason_codes: list[str]) -> None:
-    target_band = None if reason_codes == ["target_unset"] else {"value": "7.0"}
+def test_target_achieved_rejects_skill_below_target() -> None:
+    snapshot = build_states(
+        {
+            "task_response": "6.0",
+            "coherence_and_cohesion": "7.0",
+            "lexical_resource": "7.0",
+            "grammatical_range_and_accuracy": "7.0",
+        }
+    ).model_dump()
+    with pytest.raises(ValidationError, match="target_achieved"):
+        _decision(
+            decision_type="no_practice",
+            target_skill=None,
+            current_estimate=None,
+            learner_target_band={"value": "7.0"},
+            reason_codes=["target_achieved"],
+            state_snapshot=snapshot,
+        )
+
+
+def test_target_achieved_rejects_unobserved_skill() -> None:
+    snapshot = build_states(
+        {
+            "task_response": None,
+            "coherence_and_cohesion": "7.0",
+            "lexical_resource": "7.0",
+            "grammatical_range_and_accuracy": "7.0",
+        }
+    ).model_dump()
+    with pytest.raises(ValidationError, match="target_achieved"):
+        _decision(
+            decision_type="no_practice",
+            target_skill=None,
+            current_estimate=None,
+            learner_target_band={"value": "7.0"},
+            reason_codes=["target_achieved"],
+            state_snapshot=snapshot,
+        )
+
+
+def test_target_achieved_requires_insufficient_evidence_for_low_count() -> None:
+    with pytest.raises(ValidationError, match="insufficient_evidence"):
+        _decision(
+            decision_type="no_practice",
+            target_skill=None,
+            current_estimate=None,
+            learner_target_band={"value": "7.0"},
+            reason_codes=["target_achieved"],
+            state_snapshot=_all_observed_above("7.0", ONE_COUNT),
+        )
+
+
+def test_target_achieved_rejects_insufficient_evidence_when_established() -> None:
+    with pytest.raises(ValidationError, match="insufficient_evidence"):
+        _decision(
+            decision_type="no_practice",
+            target_skill=None,
+            current_estimate=None,
+            learner_target_band={"value": "7.0"},
+            reason_codes=["target_achieved", "insufficient_evidence"],
+            state_snapshot=_all_observed_above("7.0"),
+        )
+
+
+def test_cold_start_rejects_observed_skill() -> None:
+    with pytest.raises(ValidationError, match="cold_start"):
+        _decision(
+            decision_type="no_practice",
+            target_skill=None,
+            current_estimate=None,
+            learner_target_band={"value": "7.0"},
+            reason_codes=["cold_start"],
+            state_snapshot=_mixed_snapshot(),
+        )
+
+
+def test_incomplete_state_rejects_all_observed() -> None:
+    with pytest.raises(ValidationError, match="incomplete_state"):
+        _decision(
+            decision_type="no_practice",
+            target_skill=None,
+            current_estimate=None,
+            learner_target_band={"value": "7.0"},
+            reason_codes=["incomplete_state"],
+            state_snapshot=_all_observed_above("7.0"),
+        )
+
+
+def test_incomplete_state_rejects_all_unobserved() -> None:
+    with pytest.raises(ValidationError, match="incomplete_state"):
+        _decision(
+            decision_type="no_practice",
+            target_skill=None,
+            current_estimate=None,
+            learner_target_band={"value": "7.0"},
+            reason_codes=["incomplete_state"],
+            state_snapshot=_all_unobserved_snapshot(),
+        )
+
+
+def test_practice_rejects_low_count_without_insufficient_evidence() -> None:
+    with pytest.raises(ValidationError, match="insufficient_evidence"):
+        _decision(
+            reason_codes=["largest_target_gap"],
+            state_snapshot=_practice_snapshot("6.0", ONE_COUNT),
+        )
+
+
+def test_practice_rejects_insufficient_evidence_when_established() -> None:
+    with pytest.raises(ValidationError, match="insufficient_evidence"):
+        _decision(
+            reason_codes=["largest_target_gap", "insufficient_evidence"],
+            state_snapshot=_practice_snapshot("6.0"),
+        )
+
+
+def test_valid_target_achieved_snapshot() -> None:
     decision = _decision(
         decision_type="no_practice",
         target_skill=None,
         current_estimate=None,
-        learner_target_band=target_band,
-        reason_codes=reason_codes,
+        learner_target_band={"value": "7.0"},
+        reason_codes=["target_achieved"],
+        state_snapshot=_all_observed_above("7.0"),
     )
     assert decision.decision_type == DecisionType.NO_PRACTICE
-    assert [r.value for r in decision.reason_codes] == reason_codes
+    assert [r.value for r in decision.reason_codes] == ["target_achieved"]
+
+
+def test_valid_target_achieved_with_insufficient_evidence() -> None:
+    decision = _decision(
+        decision_type="no_practice",
+        target_skill=None,
+        current_estimate=None,
+        learner_target_band={"value": "7.0"},
+        reason_codes=["target_achieved", "insufficient_evidence"],
+        state_snapshot=_all_observed_above("7.0", ONE_COUNT),
+    )
+    assert decision.decision_type == DecisionType.NO_PRACTICE
+    assert [r.value for r in decision.reason_codes] == [
+        "target_achieved",
+        "insufficient_evidence",
+    ]
+
+
+def test_valid_cold_start_snapshot() -> None:
+    decision = _decision(
+        decision_type="no_practice",
+        target_skill=None,
+        current_estimate=None,
+        learner_target_band={"value": "7.0"},
+        reason_codes=["cold_start"],
+        state_snapshot=_all_unobserved_snapshot(),
+    )
+    assert decision.decision_type == DecisionType.NO_PRACTICE
+    assert [r.value for r in decision.reason_codes] == ["cold_start"]
+
+
+def test_valid_incomplete_state_snapshot() -> None:
+    decision = _decision(
+        decision_type="no_practice",
+        target_skill=None,
+        current_estimate=None,
+        learner_target_band={"value": "7.0"},
+        reason_codes=["incomplete_state"],
+        state_snapshot=_mixed_snapshot(),
+    )
+    assert decision.decision_type == DecisionType.NO_PRACTICE
+    assert [r.value for r in decision.reason_codes] == ["incomplete_state"]
+
+
+def test_valid_target_unset_snapshot() -> None:
+    decision = _decision(
+        decision_type="no_practice",
+        target_skill=None,
+        current_estimate=None,
+        learner_target_band=None,
+        reason_codes=["target_unset"],
+        state_snapshot=_snapshot_dump(),
+    )
+    assert decision.decision_type == DecisionType.NO_PRACTICE
+    assert decision.learner_target_band is None
+    assert [r.value for r in decision.reason_codes] == ["target_unset"]
 
 
 def test_planner_version_must_match() -> None:
@@ -455,8 +649,6 @@ def test_decision_rejects_extra_fields() -> None:
 # ---------------------------------------------------------------------------
 # Required policy examples
 # ---------------------------------------------------------------------------
-
-ONE_COUNT = {skill: 1 for skill in WRITING_SKILLS}
 
 
 @pytest.mark.parametrize(
