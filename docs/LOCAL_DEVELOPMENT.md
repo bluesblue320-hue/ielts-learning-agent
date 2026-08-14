@@ -115,8 +115,35 @@ test supplies an explicit mocked client.
 
 Apply or inspect development migrations with `alembic upgrade head`,
 `alembic current`, and `alembic downgrade base`; `IELTS_DATABASE_URL` controls
-that target. The current head is `0002_writing`. Pytest migration checks instead
+that target. The current head is `0003_learning`. Pytest migration checks instead
 use `IELTS_TEST_DATABASE_URL` and must point to the isolated test database.
+
+## Phase 3 learner-state commands
+
+Phase 3 adds deterministic learner state and planning on top of the Writing
+pipeline. The isolated test database must be migrated to `head`
+(`0003_learning`) before the learner integration suites run; the test fixtures
+handle this automatically via `IELTS_TEST_DATABASE_URL`.
+
+Focused Phase 3 suites (all require the isolated test database):
+
+```bash
+python -m pytest tests/test_learning_application.py -q --strict-markers
+python -m pytest tests/test_learning_concurrency.py -q --strict-markers
+python -m pytest tests/test_learning_api.py -q --strict-markers
+python -m pytest tests/test_phase3_consolidated.py -q --strict-markers
+```
+
+The learner APIs are:
+
+```text
+POST /learners
+GET  /learners/{learner_id}/state
+POST /learners/{learner_id}/writing/evaluations/{evaluation_id}/apply
+```
+
+No DeepSeek key is required: learner-state updates and planning are fully
+deterministic and never call a provider.
 
 ## Windows Docker Desktop note
 
