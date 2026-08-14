@@ -175,12 +175,16 @@ This graph's initial state at design approval was:
 - `P3-01`: `READY`
 - `P3-02` through `P3-15`: `NOT_STARTED`
 
-After the accepted P3-15 final-audit transition, Phase 3 is complete:
+After the accepted P3-15 final-audit transition, the Phase 3 implementation
+nodes are complete:
 
-- `P3-01` through `P3-15`: `COMPLETE`
+- `P3-01` through `P3-14`: `COMPLETE`
+- `P3-15`: `VERIFYING` / `FINAL_REVIEW_FIXING`
 
-Phase 3 = STOP. The final audit is recorded in
-[docs/PHASE3_AUDIT.md](docs/PHASE3_AUDIT.md). Phase 4 has not started.
+The initial internal audit is recorded in
+[PHASE3_AUDIT.md](PHASE3_AUDIT.md). The branch is under external final review;
+Phase 3 status is `FINAL_REVIEW_PENDING` until that review and the pull-request
+CI gate complete. Phase 4 has not started.
 
 ## Dependency graph
 
