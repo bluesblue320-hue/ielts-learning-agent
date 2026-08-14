@@ -175,7 +175,7 @@ This graph's initial state at design approval was:
 - `P3-01`: `READY`
 - `P3-02` through `P3-15`: `NOT_STARTED`
 
-After the accepted P3-06 evidence-extraction transition, the current state is:
+After the accepted P3-07 state-replay-engine transition, the current state is:
 
 - `P3-01`: `COMPLETE`
 - `P3-02`: `COMPLETE`
@@ -183,11 +183,12 @@ After the accepted P3-06 evidence-extraction transition, the current state is:
 - `P3-04`: `COMPLETE`
 - `P3-05`: `COMPLETE`
 - `P3-06`: `COMPLETE`
+- `P3-07`: `COMPLETE`
 - `P3-08`: `COMPLETE`
-- `P3-07` and `P3-09` through `P3-15`: `NOT_STARTED`
+- `P3-09`: `READY`
+- `P3-10` through `P3-15`: `NOT_STARTED`
 
-Completing P3-06 authorizes P3-07 but not P3-09; P3-09 remains locked until
-P3-07 is also complete.
+Completing P3-07, together with the already-complete P3-08, authorizes P3-09.
 
 ## Dependency graph
 
