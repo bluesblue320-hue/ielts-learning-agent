@@ -175,17 +175,17 @@ This graph's initial state at design approval was:
 - `P3-01`: `READY`
 - `P3-02` through `P3-15`: `NOT_STARTED`
 
-After the accepted P3-08 practice-planning-policy transition, the current state
-is:
+After the accepted P3-04 persistence-model transition, the current state is:
 
 - `P3-01`: `COMPLETE`
 - `P3-02`: `COMPLETE`
 - `P3-03`: `COMPLETE`
 - `P3-08`: `COMPLETE`
-- `P3-04`: `READY`
-- `P3-05` through `P3-07` and `P3-09` through `P3-15`: `NOT_STARTED`
+- `P3-04`: `COMPLETE`
+- `P3-05`: `READY`
+- `P3-06` through `P3-07` and `P3-09` through `P3-15`: `NOT_STARTED`
 
-Completing P3-08 does not authorize or activate P3-04 or P3-09.
+Completing P3-04 does not authorize or activate P3-05.
 
 ## Dependency graph
 
