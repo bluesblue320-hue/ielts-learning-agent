@@ -19,10 +19,13 @@ def alembic_config(database_url: str | None = None) -> Config:
     return config
 
 
-def test_writing_revision_is_the_only_alembic_head() -> None:
+def test_writing_revision_is_part_of_linear_history() -> None:
     script = ScriptDirectory.from_config(alembic_config())
 
-    assert script.get_heads() == ["0002_writing"]
+    assert script.get_heads() == ["0003_learning"]
+    walk = {revision.revision: revision.down_revision for revision in script.walk_revisions()}
+    assert walk["0003_learning"] == "0002_writing"
+    assert walk["0002_writing"] == "0001_phase1"
 
 
 @pytest.mark.integration
@@ -42,7 +45,7 @@ def test_writing_migration_upgrades_downgrades_and_reupgrades(
             )
             assert not WRITING_TABLES & set(inspect(connection).get_table_names())
 
-        command.upgrade(config, "head")
+        command.upgrade(config, "0002_writing")
         with engine.connect() as connection:
             inspector = inspect(connection)
             assert (
@@ -126,7 +129,7 @@ def test_writing_migration_upgrades_downgrades_and_reupgrades(
             )
             assert not WRITING_TABLES & set(inspect(connection).get_table_names())
 
-        command.upgrade(config, "head")
+        command.upgrade(config, "0002_writing")
         with engine.connect() as connection:
             assert (
                 connection.scalar(text("SELECT version_num FROM alembic_version"))
