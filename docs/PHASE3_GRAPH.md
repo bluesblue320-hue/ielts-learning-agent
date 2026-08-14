@@ -175,7 +175,7 @@ This graph's initial state at design approval was:
 - `P3-01`: `READY`
 - `P3-02` through `P3-15`: `NOT_STARTED`
 
-After the accepted P3-11 API transition, the current state is:
+After the accepted P3-12 concurrency-hardening transition, the current state is:
 
 - `P3-01`: `COMPLETE`
 - `P3-02`: `COMPLETE`
@@ -188,10 +188,11 @@ After the accepted P3-11 API transition, the current state is:
 - `P3-09`: `COMPLETE`
 - `P3-10`: `COMPLETE`
 - `P3-11`: `COMPLETE`
-- `P3-12`: `READY`
-- `P3-13` through `P3-15`: `NOT_STARTED`
+- `P3-12`: `COMPLETE`
+- `P3-13`: `READY`
+- `P3-14` and `P3-15`: `NOT_STARTED`
 
-Completing P3-11 authorizes P3-12 (concurrency hardening on real PostgreSQL).
+Completing P3-12 authorizes P3-13 (consolidated validation).
 
 ## Dependency graph
 

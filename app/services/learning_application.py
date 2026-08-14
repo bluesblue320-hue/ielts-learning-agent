@@ -220,6 +220,34 @@ def apply_writing_evaluation(
         raise LearningSourceError(str(error)) from error
 
     try:
+        # Serialize concurrent applications to the same learner with a row
+        # lock on the learner itself. This guarantees that the full canonical
+        # rebuild below observes every committed evidence row for the learner,
+        # so transaction completion order can never override canonical source
+        # order. Different learners never contend and there is no lock-ordering
+        # cycle, so bounded deadlock risk is avoided by construction.
+        session.execute(
+            select(Learner.id)
+            .where(Learner.id == learner_id)
+            .with_for_update()
+        )
+
+        # Idempotency re-check under the learner lock: a concurrent duplicate
+        # application that committed before we acquired the lock is resolved
+        # here without attempting any Phase 3 write.
+        existing = session.scalar(
+            select(LearningUpdate).where(
+                LearningUpdate.writing_evaluation_id == writing_evaluation_id
+            )
+        )
+        if existing is not None:
+            session.rollback()
+            return _resolve_existing(
+                session,
+                learner_id=learner_id,
+                writing_evaluation_id=writing_evaluation_id,
+            )
+
         learning_update = LearningUpdate(
             learner_id=learner_id,
             writing_evaluation_id=writing_evaluation_id,
