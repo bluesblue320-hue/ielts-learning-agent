@@ -175,7 +175,7 @@ This graph's initial state at design approval was:
 - `P3-01`: `READY`
 - `P3-02` through `P3-15`: `NOT_STARTED`
 
-After the accepted P3-07 state-replay-engine transition, the current state is:
+After the accepted P3-09 practice-planner transition, the current state is:
 
 - `P3-01`: `COMPLETE`
 - `P3-02`: `COMPLETE`
@@ -185,10 +185,11 @@ After the accepted P3-07 state-replay-engine transition, the current state is:
 - `P3-06`: `COMPLETE`
 - `P3-07`: `COMPLETE`
 - `P3-08`: `COMPLETE`
-- `P3-09`: `READY`
-- `P3-10` through `P3-15`: `NOT_STARTED`
+- `P3-09`: `COMPLETE`
+- `P3-10`: `READY`
+- `P3-11` through `P3-15`: `NOT_STARTED`
 
-Completing P3-07, together with the already-complete P3-08, authorizes P3-09.
+Completing P3-09 authorizes P3-10 (the atomic learning application service).
 
 ## Dependency graph
 
