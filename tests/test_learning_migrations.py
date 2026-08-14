@@ -202,14 +202,15 @@ def test_migrated_schema_contains_accepted_constraints(database_url: str) -> Non
             "uq_learning_update_learner_identity",
             "uq_learning_update_identity",
         } <= update_uniques
-        assert any(
-            constraint["name"] == "uq_learning_update_writing_evaluation_id"
+        # SQLAlchemy Inspector returns column_names as a list of column-name
+        # strings; assert the named evaluation-uniqueness candidate key with
+        # its exact columns.
+        update_unique_columns = {
+            constraint["name"]: set(constraint["column_names"])
             for constraint in inspector.get_unique_constraints("learning_updates")
-        ) or {
+        }
+        assert update_unique_columns["uq_learning_update_writing_evaluation_id"] == {
             "writing_evaluation_id"
-            for constraint in inspector.get_unique_constraints("learning_updates")
-            if {column["name"] for column in constraint["column_names"]}
-            == {"writing_evaluation_id"}
         }
 
         evidence_uniques = {
@@ -355,6 +356,31 @@ def _valid_evidence(skill: str = "task_response", learner_id: int = 1) -> dict:
     }
 
 
+def _valid_state_snapshot() -> dict[str, object]:
+    """A state snapshot satisfying every DB constraint unrelated to the
+    invariant under test.
+
+    The snapshot column is JSONB; the migration contract requires a JSON
+    object carrying the four canonical top-level keys.  The values are opaque
+    to the database layer, so plain empty objects are sufficient here.
+    """
+    return {
+        "task_response": {},
+        "coherence_and_cohesion": {},
+        "lexical_resource": {},
+        "grammatical_range_and_accuracy": {},
+    }
+
+
+def _violated_constraint(exc: IntegrityError) -> str | None:
+    """Extract the exact violated PostgreSQL constraint name.
+
+    psycopg3 exposes structured diagnostic metadata on the wrapped DBAPI
+    exception; we rely on that instead of parsing error-message text.
+    """
+    return getattr(getattr(exc.orig, "diag", None), "constraint_name", None)
+
+
 @pytest.mark.integration
 def test_database_rejects_recommendation_of_another_learner(
     database_url: str,
@@ -365,7 +391,12 @@ def test_database_rejects_recommendation_of_another_learner(
     transaction = connection.begin()
     try:
         _fixture_tables(connection)
-        with pytest.raises(IntegrityError):
+        # The ONLY intended inconsistency is the ownership pair
+        # (learning_update_id=10, learner_id=2) against LearningUpdate 10 which
+        # belongs to learner_id=1.  Every other value satisfies the DB
+        # contract, so the composite ownership FK is the only constraint that
+        # can reject the row.
+        with pytest.raises(IntegrityError) as exc_info:
             with connection.begin_nested():
                 connection.execute(
                     PracticeRecommendation.__table__.insert().values(
@@ -376,11 +407,14 @@ def test_database_rejects_recommendation_of_another_learner(
                         target_skill=None,
                         learner_target_band="7.0",
                         current_estimate=None,
-                        reason_codes='["cold_start"]',
+                        reason_codes=["cold_start"],
                         planner_version="writing-practice-gap-v1",
-                        state_snapshot="{}",
+                        state_snapshot=_valid_state_snapshot(),
                     )
                 )
+        assert _violated_constraint(exc_info.value) == (
+            "fk_practice_recommendation_learning_update_ownership"
+        )
         transaction.rollback()
     finally:
         connection.close()
@@ -397,13 +431,21 @@ def test_database_rejects_evidence_with_inconsistent_ownership(
     transaction = connection.begin()
     try:
         _fixture_tables(connection)
-        with pytest.raises(IntegrityError):
+        # The ONLY intended inconsistency is the ownership triple
+        # (learning_update_id, learner_id, writing_evaluation_id) against
+        # LearningUpdate 10 which belongs to learner_id=1.  Everything else is
+        # valid, so the composite evidence ownership FK must be the rejecting
+        # constraint.
+        with pytest.raises(IntegrityError) as exc_info:
             with connection.begin_nested():
                 connection.execute(
                     LearningEvidence.__table__.insert().values(
                         id=1, **_valid_evidence(learner_id=2)
                     )
                 )
+        assert _violated_constraint(exc_info.value) == (
+            "fk_learning_evidence_learning_update_ownership"
+        )
         transaction.rollback()
     finally:
         connection.close()
@@ -418,13 +460,16 @@ def test_database_rejects_invalid_canonical_skill(database_url: str) -> None:
     transaction = connection.begin()
     try:
         _fixture_tables(connection)
-        with pytest.raises(IntegrityError):
+        # The ONLY invalid field is skill="grammar"; the canonical-skill
+        # CheckConstraint must be the rejecting constraint.
+        with pytest.raises(IntegrityError) as exc_info:
             with connection.begin_nested():
                 connection.execute(
                     LearningEvidence.__table__.insert().values(
                         id=2, **_valid_evidence(skill="grammar")
                     )
                 )
+        assert _violated_constraint(exc_info.value) == "ck_learning_evidence_skill"
         transaction.rollback()
     finally:
         connection.close()
@@ -439,7 +484,12 @@ def test_database_rejects_invalid_practice_decision_shape(database_url: str) -> 
     transaction = connection.begin()
     try:
         _fixture_tables(connection)
-        with pytest.raises(IntegrityError):
+        # The ONLY invalid field is target_skill=None on a practice decision.
+        # Every other value satisfies the DB contract (ownership, JSONB types,
+        # frozen reason sequence, decision/reason compatibility, band range,
+        # snapshot shape), so the decision-shape CheckConstraint must be the
+        # rejecting constraint.
+        with pytest.raises(IntegrityError) as exc_info:
             with connection.begin_nested():
                 connection.execute(
                     PracticeRecommendation.__table__.insert().values(
@@ -449,12 +499,15 @@ def test_database_rejects_invalid_practice_decision_shape(database_url: str) -> 
                         decision_type="practice",
                         target_skill=None,
                         learner_target_band="7.0",
-                        current_estimate="6.0",
-                        reason_codes='["largest_target_gap"]',
+                        current_estimate="6.00",
+                        reason_codes=["largest_target_gap"],
                         planner_version="writing-practice-gap-v1",
-                        state_snapshot="{}",
+                        state_snapshot=_valid_state_snapshot(),
                     )
                 )
+        assert _violated_constraint(exc_info.value) == (
+            "ck_practice_recommendation_decision_shape"
+        )
         transaction.rollback()
     finally:
         connection.close()
