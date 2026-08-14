@@ -16,6 +16,10 @@ class APIErrorCode(StrEnum):
     PROVIDER_INVALID_RESPONSE = "provider_invalid_response"
     PROVIDER_REQUEST_REJECTED = "provider_request_rejected"
     PERSISTENCE_UNAVAILABLE = "persistence_unavailable"
+    LEARNER_NOT_FOUND = "learner_not_found"
+    EVALUATION_NOT_FOUND = "evaluation_not_found"
+    EVALUATION_CONFLICT = "evaluation_conflict"
+    LEARNING_SOURCE_INVALID = "learning_source_invalid"
 
 
 class APIErrorDetail(BaseModel):
