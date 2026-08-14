@@ -133,6 +133,13 @@ PostgreSQL tests prove, for canonical source order `A` (older) then `B`
   revision/evidence effects;
 - no deadlocks observed across repeated race rounds.
 
+PostgreSQL wait-state observation (`pg_stat_activity.wait_event_type =
+'Lock'`) confirmed that in both controlled schedules the follower backend
+actually entered PostgreSQL and was blocked on the owner's learner row lock
+before the owner was released and committed; the lock, not thread scheduling,
+was the blocking mechanism. The controlled-schedule tests pass three
+consecutive runs.
+
 ## 7a. Safe persistence failure boundary
 
 Unexpected Phase 3 database failures — database read/write failure, unexpected
