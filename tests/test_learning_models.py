@@ -284,6 +284,36 @@ def test_composite_recommendation_update_ownership_foreign_key() -> None:
     )
 
 
+def test_learning_update_exposes_recommendation_ownership_candidate_key() -> None:
+    update_constraints = {
+        constraint.name: constraint
+        for constraint in LearningUpdate.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+    }
+
+    # PostgreSQL requires the exact referenced column set (id, learner_id) to be
+    # backed by a matching unique candidate key on learning_updates.
+    candidate = update_constraints["uq_learning_update_learner_identity"]
+    assert candidate.name == "uq_learning_update_learner_identity"
+    assert {column.name for column in candidate.columns} == {"id", "learner_id"}
+
+    # The recommendation composite FK must reference exactly this candidate key.
+    fk = foreign_key_constraints("practice_recommendations")[
+        "fk_practice_recommendation_learning_update_ownership"
+    ]
+    assert {column.name for column in fk.columns} == {"learning_update_id", "learner_id"}
+    assert {element.column.name for element in fk.elements} == {"id", "learner_id"}
+    assert fk.referred_table.name == "learning_updates"
+
+    # The pre-existing 3-column candidate key is preserved alongside it.
+    assert "uq_learning_update_identity" in update_constraints
+    assert {column.name for column in update_constraints["uq_learning_update_identity"].columns} == {
+        "id",
+        "learner_id",
+        "writing_evaluation_id",
+    }
+
+
 def test_last_evidence_ownership_foreign_key() -> None:
     fk = foreign_key_constraints("learner_skill_states")[
         "fk_learner_skill_state_last_evidence_ownership"

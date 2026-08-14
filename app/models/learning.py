@@ -137,8 +137,15 @@ class LearningUpdate(Base):
 
     __tablename__ = "learning_updates"
     __table_args__ = (
-        # The composite candidate key that evidence and recommendations use as
-        # their ownership target.
+        # Two-column candidate key backing the PracticeRecommendation composite
+        # ownership FK (learning_update_id, learner_id) -> (id, learner_id).
+        UniqueConstraint(
+            "id",
+            "learner_id",
+            name="uq_learning_update_learner_identity",
+        ),
+        # The composite candidate key that evidence uses as its ownership
+        # target.
         UniqueConstraint(
             "id",
             "learner_id",
