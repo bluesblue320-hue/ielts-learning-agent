@@ -175,12 +175,12 @@ This graph's initial state at design approval was:
 - `P3-01`: `READY`
 - `P3-02` through `P3-15`: `NOT_STARTED`
 
-After the accepted P3-14 Docker/documentation transition, the current state is:
+After the accepted P3-15 final-audit transition, Phase 3 is complete:
 
-- `P3-01` through `P3-14`: `COMPLETE`
-- `P3-15`: `READY`
+- `P3-01` through `P3-15`: `COMPLETE`
 
-Completing P3-14 authorizes P3-15 (the final Phase 3 audit).
+Phase 3 = STOP. The final audit is recorded in
+[docs/PHASE3_AUDIT.md](docs/PHASE3_AUDIT.md). Phase 4 has not started.
 
 ## Dependency graph
 

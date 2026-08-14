@@ -54,9 +54,9 @@ The Phase 3 graph is approved and its runtime nodes have been executed:
 learner-state policy and schemas, persistence models and migration, evidence
 extraction, the deterministic EWMA replay engine, the practice planner, the
 atomic learning-application service, learner/learning APIs, and concurrency
-hardening are implemented and validated against isolated PostgreSQL. See
-[docs/PHASE3_GRAPH.md](docs/PHASE3_GRAPH.md) for the per-node status and the
-consolidated validation coverage in `tests/test_phase3_consolidated.py`.
+hardening are implemented and validated against isolated PostgreSQL. Phase 3
+is complete; see [docs/PHASE3_GRAPH.md](docs/PHASE3_GRAPH.md) for the per-node
+status and [docs/PHASE3_AUDIT.md](docs/PHASE3_AUDIT.md) for the final audit.
 
 The graph defines WHAT should be implemented.
 
