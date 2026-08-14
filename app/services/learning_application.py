@@ -16,7 +16,10 @@ Semantics:
 - late arrival: every apply rebuilds the four skill states from the complete
   accepted evidence set under canonical source order, so arrival order never
   controls state;
-- failure: any Phase 3 stage failure rolls back all Phase 3 writes;
+- failure: any Phase 3 stage failure rolls back all Phase 3 writes; only the
+  accepted idempotency uniqueness violation is interpreted as the concurrent
+  duplicate race, and every other unexpected database failure is reported as
+  ``LearningPersistenceError`` (never raw SQL/constraint/exception text);
 - the transaction contains no provider/LLM call.
 """
 
@@ -25,9 +28,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import Decimal
+from typing import Final
 
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.learner.planning_policy import PLANNER_VERSION
@@ -85,6 +89,24 @@ class LearningSourceError(LearningApplicationError):
     """The persisted source data cannot produce canonical evidence."""
 
 
+class LearningPersistenceError(LearningApplicationError):
+    """An unexpected SQLAlchemy/PostgreSQL persistence failure.
+
+    This represents database read/write failure, unexpected constraint
+    violations that are not the accepted idempotency race, and any other
+    unexpected persistence infrastructure failure. The API must map it to a
+    safe generic 503 response; it never exposes raw SQL, constraint names,
+    database URLs, exception text, or source contents.
+    """
+
+
+# The only IntegrityError that may be interpreted as the concurrent duplicate
+# application race: learning_updates.writing_evaluation_id is globally unique,
+# so a duplicate insert of the same evaluation is the idempotency anchor
+# collision. Every other IntegrityError is an unexpected persistence failure.
+IDEMPOTENCY_CONSTRAINT: Final[str] = "uq_learning_update_writing_evaluation_id"
+
+
 @dataclass(frozen=True)
 class AppliedLearningResult:
     """The logical outcome of applying one evaluation to a learner."""
@@ -98,6 +120,16 @@ def _set_items(
     evidence_set: ExtractedWritingEvidenceSet,
 ) -> list[ExtractedWritingEvidence]:
     return [getattr(evidence_set, skill) for skill in WRITING_SKILLS]
+
+
+def _violated_constraint(error: IntegrityError) -> str | None:
+    """Return the exact violated PostgreSQL constraint name.
+
+    psycopg3 exposes structured diagnostics on the wrapped DBAPI exception;
+    human-readable error text is never parsed.
+    """
+    diag = getattr(error.orig, "diag", None)
+    return getattr(diag, "constraint_name", None)
 
 
 def _extracted_from_row(row: LearningEvidence) -> ExtractedWritingEvidence:
@@ -148,13 +180,24 @@ def _resolve_existing(
     learner_id: int,
     writing_evaluation_id: int,
 ) -> AppliedLearningResult:
-    """Resolve an already-persisted update: idempotent replay or conflict."""
+    """Resolve an already-persisted update: idempotent replay or conflict.
 
-    existing = session.scalar(
-        select(LearningUpdate).where(
-            LearningUpdate.writing_evaluation_id == writing_evaluation_id
+    A genuine database failure while resolving is reported as
+    ``LearningPersistenceError``; persisted-invariant inconsistency keeps a
+    deterministic internal application error whose API output stays safe.
+    """
+
+    try:
+        existing = session.scalar(
+            select(LearningUpdate).where(
+                LearningUpdate.writing_evaluation_id == writing_evaluation_id
+            )
         )
-    )
+    except SQLAlchemyError as error:
+        session.rollback()
+        raise LearningPersistenceError(
+            "learning data persistence failure"
+        ) from error
     if existing is None:
         raise LearningApplicationError(
             "existing learning update disappeared during application"
@@ -164,18 +207,31 @@ def _resolve_existing(
             f"writing evaluation {writing_evaluation_id} is already applied "
             f"to learner {existing.learner_id}"
         )
-    recommendation = session.scalar(
-        select(PracticeRecommendation).where(
-            PracticeRecommendation.learning_update_id == existing.id
+    try:
+        recommendation = session.scalar(
+            select(PracticeRecommendation).where(
+                PracticeRecommendation.learning_update_id == existing.id
+            )
         )
-    )
+    except SQLAlchemyError as error:
+        session.rollback()
+        raise LearningPersistenceError(
+            "learning data persistence failure"
+        ) from error
     if recommendation is None:
         raise LearningApplicationError(
             f"learning update {existing.id} has no persisted recommendation"
         )
+    try:
+        decision = _reconstruct_decision(recommendation)
+    except SQLAlchemyError as error:
+        session.rollback()
+        raise LearningPersistenceError(
+            "learning data persistence failure"
+        ) from error
     return AppliedLearningResult(
         learning_update_id=existing.id,
-        recommendation=_reconstruct_decision(recommendation),
+        recommendation=decision,
         reused=True,
     )
 
@@ -192,34 +248,35 @@ def apply_writing_evaluation(
     state replay (P3-07), and planning (P3-09) remain pure deterministic
     components. No provider/LLM call occurs inside the transaction.
 
-    The read path autobegins a session transaction, so the write path joins
-    that same transaction and commits it explicitly; any failure rolls back
-    all Phase 3 writes. A uniqueness violation (concurrent duplicate) is
-    resolved to idempotent replay or an explicit cross-owner conflict.
+    Expected domain outcomes (not found, cross-owner, invalid source) stay
+    distinct. Only the accepted idempotency uniqueness violation
+    (``uq_learning_update_writing_evaluation_id``) is resolved as the
+    concurrent duplicate race; every other unexpected database failure becomes
+    ``LearningPersistenceError`` after rollback.
     """
 
-    learner = session.get(Learner, learner_id)
-    if learner is None:
-        raise LearnerNotFoundError(f"learner {learner_id} not found")
-
-    evaluation = session.get(WritingEvaluation, writing_evaluation_id)
-    if evaluation is None:
-        raise EvaluationNotFoundError(
-            f"writing evaluation {writing_evaluation_id} not found"
-        )
-    attempt = session.get(WritingAttempt, evaluation.attempt_id)
-    if attempt is None:
-        raise EvaluationNotFoundError(
-            f"attempt {evaluation.attempt_id} for evaluation "
-            f"{writing_evaluation_id} not found"
-        )
-
     try:
-        extracted = extract_writing_evidence(evaluation, attempt)
-    except WritingEvidenceExtractionError as error:
-        raise LearningSourceError(str(error)) from error
+        learner = session.get(Learner, learner_id)
+        if learner is None:
+            raise LearnerNotFoundError(f"learner {learner_id} not found")
 
-    try:
+        evaluation = session.get(WritingEvaluation, writing_evaluation_id)
+        if evaluation is None:
+            raise EvaluationNotFoundError(
+                f"writing evaluation {writing_evaluation_id} not found"
+            )
+        attempt = session.get(WritingAttempt, evaluation.attempt_id)
+        if attempt is None:
+            raise EvaluationNotFoundError(
+                f"attempt {evaluation.attempt_id} for evaluation "
+                f"{writing_evaluation_id} not found"
+            )
+
+        try:
+            extracted = extract_writing_evidence(evaluation, attempt)
+        except WritingEvidenceExtractionError as error:
+            raise LearningSourceError(str(error)) from error
+
         # Serialize concurrent applications to the same learner with a row
         # lock on the learner itself. This guarantees that the full canonical
         # rebuild below observes every committed evidence row for the learner,
@@ -368,16 +425,27 @@ def apply_writing_evaluation(
             recommendation=decision,
             reused=False,
         )
-    except IntegrityError:
-        # A concurrent duplicate application hit a uniqueness constraint; the
-        # transaction is rolled back. Resolve to idempotent replay or an
-        # explicit cross-owner conflict based on persisted truth.
+    except LearningApplicationError:
+        raise
+    except IntegrityError as error:
         session.rollback()
-        return _resolve_existing(
-            session,
-            learner_id=learner_id,
-            writing_evaluation_id=writing_evaluation_id,
-        )
+        if _violated_constraint(error) == IDEMPOTENCY_CONSTRAINT:
+            # Concurrent duplicate application of the same evaluation: resolve
+            # to idempotent replay or an explicit cross-owner conflict based on
+            # persisted truth.
+            return _resolve_existing(
+                session,
+                learner_id=learner_id,
+                writing_evaluation_id=writing_evaluation_id,
+            )
+        raise LearningPersistenceError(
+            "unexpected database constraint violation during learning update"
+        ) from error
+    except SQLAlchemyError as error:
+        session.rollback()
+        raise LearningPersistenceError(
+            "learning data persistence failure"
+        ) from error
     except BaseException:
         session.rollback()
         raise

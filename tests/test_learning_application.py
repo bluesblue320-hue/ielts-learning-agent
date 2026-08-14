@@ -3,11 +3,13 @@
 import os
 from datetime import datetime, timezone
 from decimal import Decimal
+from types import SimpleNamespace
 
 import pytest
 from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine, delete, func, select
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
 from app.db.session import create_session_factory
@@ -23,13 +25,28 @@ from app.schemas.planning import DecisionType
 from app.services.learning_application import (
     CrossOwnerConflictError,
     EvaluationNotFoundError,
+    IDEMPOTENCY_CONSTRAINT,
+    LearningPersistenceError,
     LearningSourceError,
     LearnerNotFoundError,
+    AppliedLearningResult,
+    _violated_constraint,
     apply_writing_evaluation,
 )
 from tests.support.database import validate_test_database_url
 
 DT = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
+
+
+def _integrity_error(constraint_name: str | None) -> IntegrityError:
+    """Build a fake IntegrityError carrying structured PostgreSQL diagnostics."""
+    diag = SimpleNamespace(constraint_name=constraint_name)
+    return IntegrityError("INSERT ...", {}, SimpleNamespace(diag=diag))
+
+
+def _no_diag_integrity_error() -> IntegrityError:
+    """Build an IntegrityError whose driver origin exposes no diagnostics."""
+    return IntegrityError("INSERT ...", {}, SimpleNamespace())
 
 
 def alembic_config(database_url: str) -> Config:
@@ -502,3 +519,154 @@ def test_phase2_rows_unchanged_after_apply(session_factory) -> None:
         assert evaluation_after.task_response_band == evaluation_before.task_response_band
         assert evaluation_after.provider == evaluation_before.provider
         _cleanup(session)
+
+
+# ---------------------------------------------------------------------------
+# Persistence failure boundary (final review hardening)
+# ---------------------------------------------------------------------------
+
+
+def test_violated_constraint_reads_structured_diagnostics() -> None:
+    assert _violated_constraint(_integrity_error(IDEMPOTENCY_CONSTRAINT)) == (
+        IDEMPOTENCY_CONSTRAINT
+    )
+    assert _violated_constraint(_integrity_error("uq_other")) == "uq_other"
+
+
+def test_violated_constraint_is_defensive_without_diagnostics() -> None:
+    assert _violated_constraint(_no_diag_integrity_error()) is None
+
+
+def test_idempotency_constraint_name_matches_migration() -> None:
+    # The frozen idempotency anchor must equal the named unique constraint on
+    # learning_updates.writing_evaluation_id as materialized by the accepted
+    # migration (the database-enforced authority).
+    import pathlib
+
+    migration = pathlib.Path(
+        "migrations/versions/0003_learning_phase3_tables.py"
+    ).read_text(encoding="utf-8")
+    assert f'name="{IDEMPOTENCY_CONSTRAINT}"' in migration
+
+
+def test_accepted_idempotency_constraint_enters_duplicate_resolution(
+    session_factory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import app.services.learning_application as service_module
+
+    with session_factory() as session:
+        _cleanup(session)
+        _add_learner(session, 1)
+        _add_attempt(session, attempt_id=100)
+        _add_evaluation(
+            session,
+            evaluation_id=200,
+            attempt_id=100,
+            bands={
+                "task_response": "6.0",
+                "coherence_and_cohesion": "6.5",
+                "lexical_resource": "6.5",
+                "grammatical_range_and_accuracy": "6.5",
+            },
+        )
+        session.commit()
+
+        calls: list[dict] = []
+        canned = AppliedLearningResult(
+            learning_update_id=1,
+            recommendation=None,  # type: ignore[arg-type]
+            reused=True,
+        )
+
+        def fake_resolve(_session, *, learner_id, writing_evaluation_id):
+            calls.append(
+                {"learner_id": learner_id, "evaluation_id": writing_evaluation_id}
+            )
+            return canned
+
+        def failing_commit(*_args, **_kwargs):
+            raise _integrity_error(IDEMPOTENCY_CONSTRAINT)
+
+        monkeypatch.setattr(service_module, "_resolve_existing", fake_resolve)
+        monkeypatch.setattr(session, "commit", failing_commit)
+
+        result = apply_writing_evaluation(
+            session, learner_id=1, writing_evaluation_id=200
+        )
+
+        assert result.reused is True
+        assert calls == [{"learner_id": 1, "evaluation_id": 200}]
+        assert not session.in_transaction()
+
+
+def test_non_idempotency_integrity_error_becomes_persistence_error(
+    session_factory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import app.services.learning_application as service_module
+
+    with session_factory() as session:
+        _cleanup(session)
+        _add_learner(session, 1)
+        _add_attempt(session, attempt_id=100)
+        _add_evaluation(
+            session,
+            evaluation_id=200,
+            attempt_id=100,
+            bands={
+                "task_response": "6.0",
+                "coherence_and_cohesion": "6.5",
+                "lexical_resource": "6.5",
+                "grammatical_range_and_accuracy": "6.5",
+            },
+        )
+        session.commit()
+
+        resolve_calls: list = []
+
+        def fake_resolve(*_args, **_kwargs):
+            resolve_calls.append("unexpected")
+
+        def failing_commit(*_args, **_kwargs):
+            raise _integrity_error("uq_learning_evidence_update_skill")
+
+        monkeypatch.setattr(service_module, "_resolve_existing", fake_resolve)
+        monkeypatch.setattr(session, "commit", failing_commit)
+
+        with pytest.raises(LearningPersistenceError):
+            apply_writing_evaluation(session, learner_id=1, writing_evaluation_id=200)
+        # Duplicate resolution must NOT be entered for a foreign constraint.
+        assert resolve_calls == []
+        # Rollback occurred: session is no longer inside a transaction.
+        assert not session.in_transaction()
+        assert _counts(session)["updates"] == 0
+
+
+def test_general_sqlalchemy_error_becomes_persistence_error(
+    session_factory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    with session_factory() as session:
+        _cleanup(session)
+        _add_learner(session, 1)
+        _add_attempt(session, attempt_id=100)
+        _add_evaluation(
+            session,
+            evaluation_id=200,
+            attempt_id=100,
+            bands={
+                "task_response": "6.0",
+                "coherence_and_cohesion": "6.5",
+                "lexical_resource": "6.5",
+                "grammatical_range_and_accuracy": "6.5",
+            },
+        )
+        session.commit()
+
+        def failing_commit(*_args, **_kwargs):
+            raise OperationalError("UPDATE ...", {}, Exception("boom"))
+
+        monkeypatch.setattr(session, "commit", failing_commit)
+
+        with pytest.raises(LearningPersistenceError):
+            apply_writing_evaluation(session, learner_id=1, writing_evaluation_id=200)
+        assert not session.in_transaction()
+        assert _counts(session)["updates"] == 0

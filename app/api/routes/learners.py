@@ -2,13 +2,17 @@
 
 Routes delegate all policy and transaction work to the application service and
 the persistence layer. No business rules live here; every successful apply
-response exposes exactly one auditable planning decision.
+response exposes exactly one auditable planning decision. Unexpected database
+failures are converted to ``LearningPersistenceError`` so the centralized safe
+503 handler applies; they never leak raw SQL, constraint names, or exception
+text.
 """
 
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db_session
@@ -29,6 +33,7 @@ from app.schemas.learning_api import (
 )
 from app.services.learning_application import (
     LearnerNotFoundError,
+    LearningPersistenceError,
     apply_writing_evaluation,
 )
 
@@ -45,10 +50,16 @@ def create_learner(
     session: Session = Depends(get_db_session),
 ) -> Learner:
     """Create a learner with a Writing target band."""
-    row = LearnerModel(writing_target_band=payload.writing_target_band.value)
-    session.add(row)
-    session.commit()
-    session.refresh(row)
+    try:
+        row = LearnerModel(writing_target_band=payload.writing_target_band.value)
+        session.add(row)
+        session.commit()
+        session.refresh(row)
+    except SQLAlchemyError as error:
+        session.rollback()
+        raise LearningPersistenceError(
+            "learning data persistence failure"
+        ) from error
     return Learner(
         id=row.id,
         writing_target_band=payload.writing_target_band,
@@ -65,45 +76,52 @@ def get_learner_state(
     """Return the four-skill materialized state for one learner.
 
     A learner with no accepted evidence yet is reported as a fully UNOBSERVED
-    state set (evidence_count 0, null estimates, revision 0).
+    state set (evidence_count 0, null estimates, revision 0). A missing learner
+    stays a 404; a real database failure becomes a safe 503.
     """
-    learner = session.get(LearnerModel, learner_id)
-    if learner is None:
-        raise LearnerNotFoundError(f"learner {learner_id} not found")
+    try:
+        learner = session.get(LearnerModel, learner_id)
+        if learner is None:
+            raise LearnerNotFoundError(f"learner {learner_id} not found")
 
-    rows = {
-        row.skill: row
-        for row in session.scalars(
-            select(LearnerSkillStateModel).where(
-                LearnerSkillStateModel.learner_id == learner_id
-            )
-        ).all()
-    }
-    states: dict[str, LearnerSkillStateSchema] = {}
-    for skill in WRITING_SKILLS:
-        row = rows.get(skill)
-        if row is None:
-            states[skill] = LearnerSkillStateSchema(
-                learner_id=learner_id,
-                skill=skill,
-                estimated_band=None,
-                evidence_count=0,
-                last_evidence_id=None,
-                state_policy_version=WRITING_STATE_POLICY_VERSION,
-                revision=0,
-                updated_at=learner.created_at,
-            )
-        else:
-            states[skill] = LearnerSkillStateSchema(
-                learner_id=row.learner_id,
-                skill=row.skill,
-                estimated_band=row.estimated_band,
-                evidence_count=row.evidence_count,
-                last_evidence_id=row.last_evidence_id,
-                state_policy_version=row.state_policy_version,
-                revision=row.revision,
-                updated_at=row.updated_at,
-            )
+        rows = {
+            row.skill: row
+            for row in session.scalars(
+                select(LearnerSkillStateModel).where(
+                    LearnerSkillStateModel.learner_id == learner_id
+                )
+            ).all()
+        }
+        states: dict[str, LearnerSkillStateSchema] = {}
+        for skill in WRITING_SKILLS:
+            row = rows.get(skill)
+            if row is None:
+                states[skill] = LearnerSkillStateSchema(
+                    learner_id=learner_id,
+                    skill=skill,
+                    estimated_band=None,
+                    evidence_count=0,
+                    last_evidence_id=None,
+                    state_policy_version=WRITING_STATE_POLICY_VERSION,
+                    revision=0,
+                    updated_at=learner.created_at,
+                )
+            else:
+                states[skill] = LearnerSkillStateSchema(
+                    learner_id=row.learner_id,
+                    skill=row.skill,
+                    estimated_band=row.estimated_band,
+                    evidence_count=row.evidence_count,
+                    last_evidence_id=row.last_evidence_id,
+                    state_policy_version=row.state_policy_version,
+                    revision=row.revision,
+                    updated_at=row.updated_at,
+                )
+    except SQLAlchemyError as error:
+        session.rollback()
+        raise LearningPersistenceError(
+            "learning data persistence failure"
+        ) from error
     return LearnerStateResponse(
         learner_id=learner_id,
         states=LearnerSkillStateSet(**states),

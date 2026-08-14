@@ -14,6 +14,7 @@ from app.services.learning_application import (
     CrossOwnerConflictError,
     EvaluationNotFoundError,
     LearnerNotFoundError,
+    LearningPersistenceError,
     LearningSourceError,
 )
 from app.services.writing_persistence import WritingPersistenceError
@@ -181,6 +182,18 @@ async def learning_source_error_handler(
     )
 
 
+async def learning_persistence_error_handler(
+    request: Request,
+    error: LearningPersistenceError,
+) -> JSONResponse:
+    del request, error
+    return _response(
+        status.HTTP_503_SERVICE_UNAVAILABLE,
+        APIErrorCode.PERSISTENCE_UNAVAILABLE,
+        "Learning data is temporarily unavailable.",
+    )
+
+
 def register_error_handlers(application: FastAPI) -> None:
     """Register centralized error responses without exposing exception text."""
 
@@ -214,4 +227,8 @@ def register_learning_error_handlers(application: FastAPI) -> None:
     application.add_exception_handler(
         LearningSourceError,
         learning_source_error_handler,
+    )
+    application.add_exception_handler(
+        LearningPersistenceError,
+        learning_persistence_error_handler,
     )

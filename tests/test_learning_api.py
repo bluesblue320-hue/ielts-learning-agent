@@ -285,3 +285,88 @@ def test_error_responses_do_not_leak_internals(client: TestClient) -> None:
     assert body["error"]["fields"] == []
     assert "NotFoundError" not in body["error"]["message"]
     assert "Traceback" not in str(body)
+
+
+# ---------------------------------------------------------------------------
+# Safe 503 persistence-failure boundary (final review hardening)
+# ---------------------------------------------------------------------------
+
+
+def _failing_client(engine: Engine, *, fail_get: bool = False, fail_commit: bool = False):
+    from sqlalchemy import event
+    from sqlalchemy.exc import OperationalError
+
+    session_factory = create_session_factory(engine)
+
+    def reject_commit(_session) -> None:
+        raise OperationalError("COMMIT", {}, Exception("boom"))
+
+    def session_override():
+        with session_factory() as session:
+            if fail_commit:
+                event.listen(session, "before_commit", reject_commit)
+            if fail_get:
+                original_get = session.get
+
+                def failing_get(*args, **kwargs):
+                    raise OperationalError("SELECT ...", {}, Exception("boom"))
+
+                session.get = failing_get  # type: ignore[method-assign]
+            try:
+                yield session
+            finally:
+                if fail_commit:
+                    event.remove(session, "before_commit", reject_commit)
+
+    application = create_app()
+    application.dependency_overrides[get_db_session] = session_override
+    return TestClient(application)
+
+
+def _assert_safe_503(response) -> None:
+    assert response.status_code == 503
+    body = response.json()
+    assert set(body) == {"error"}
+    assert set(body["error"]) == {"code", "message", "fields"}
+    assert body["error"]["code"] == "persistence_unavailable"
+    assert body["error"]["message"] == "Learning data is temporarily unavailable."
+    assert body["error"]["fields"] == []
+    text_body = str(body)
+    for forbidden in (
+        "IntegrityError",
+        "SQLAlchemyError",
+        "OperationalError",
+        "Traceback",
+        "postgresql",
+        "boom",
+    ):
+        assert forbidden not in text_body
+
+
+def test_create_learner_db_failure_returns_safe_503(engine: Engine) -> None:
+    with _failing_client(engine, fail_commit=True) as client:
+        response = client.post(
+            "/learners", json={"writing_target_band": {"value": "7.0"}}
+        )
+    _assert_safe_503(response)
+
+
+def test_learner_state_db_failure_returns_safe_503(engine: Engine) -> None:
+    _seed_learner(engine)
+    with _failing_client(engine, fail_get=True) as client:
+        response = client.get("/learners/1/state")
+    _assert_safe_503(response)
+
+
+def test_apply_db_failure_returns_safe_503(engine: Engine) -> None:
+    _seed_evaluation(engine)
+    with _failing_client(engine, fail_get=True) as client:
+        response = client.post("/learners/1/writing/evaluations/200/apply")
+    _assert_safe_503(response)
+
+
+def test_learner_state_missing_learner_stays_404_not_503(client: TestClient) -> None:
+    # "row does not exist" must remain a 404; only real database failure is 503.
+    response = client.get("/learners/999/state")
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "learner_not_found"
