@@ -334,3 +334,196 @@ def test_concurrent_equals_sequential_and_late_arrival(factory) -> None:
     assert late == Decimal("6.50")
     assert concurrent == Decimal("6.50")
     assert sequential == late == concurrent
+
+
+# ---------------------------------------------------------------------------
+# Controlled transaction/lock-completion schedules (final review hardening)
+# ---------------------------------------------------------------------------
+
+
+def _controlled_schedule(
+    factory,
+    *,
+    learner_id: int,
+    lock_owner_eval: int,
+    follower_eval: int,
+) -> list[int]:
+    """Deterministically make ``lock_owner_eval`` acquire the learner row lock
+    first and complete first; ``follower_eval`` blocks on that lock until the
+    owner commits. Returns the observed completion order of evaluation ids."""
+
+    lock_held = threading.Event()
+    start_follower = threading.Event()
+    completion: list[int] = []
+    errors: list[BaseException] = []
+
+    def lock_owner() -> None:
+        try:
+            with factory() as session:
+                session.execute(
+                    select(Learner.id)
+                    .where(Learner.id == learner_id)
+                    .with_for_update()
+                )
+                lock_held.set()
+                # Hold the lock until the follower is guaranteed to be waiting
+                # on it, then apply inside the same transaction.
+                assert start_follower.wait(timeout=10)
+                apply_writing_evaluation(
+                    session,
+                    learner_id=learner_id,
+                    writing_evaluation_id=lock_owner_eval,
+                )
+                completion.append(lock_owner_eval)
+        except BaseException as error:  # pragma: no cover - failure must fail test
+            errors.append(error)
+
+    def follower() -> None:
+        try:
+            assert lock_held.wait(timeout=10)
+            with factory() as session:
+                # Blocks on the learner row lock until the owner commits.
+                apply_writing_evaluation(
+                    session,
+                    learner_id=learner_id,
+                    writing_evaluation_id=follower_eval,
+                )
+                completion.append(follower_eval)
+        except BaseException as error:  # pragma: no cover - failure must fail test
+            errors.append(error)
+
+    owner_thread = threading.Thread(target=lock_owner)
+    owner_thread.start()
+    assert lock_held.wait(timeout=10), "lock owner never acquired the learner lock"
+    follower_thread = threading.Thread(target=follower)
+    follower_thread.start()
+    start_follower.set()
+    owner_thread.join(timeout=20)
+    follower_thread.join(timeout=20)
+    assert not owner_thread.is_alive() and not follower_thread.is_alive()
+    assert not errors, errors
+    return completion
+
+
+def test_controlled_schedule_a_first(factory) -> None:
+    # Learner 20: A = evaluation 300 (attempt 200, older), B = 301 (attempt 201).
+    with factory() as session:
+        _add_learner(session, 20)
+        _add_evaluation(
+            session, evaluation_id=300, attempt_id=200, created_at=TA, bands=BANDS_A
+        )
+        _add_evaluation(
+            session, evaluation_id=301, attempt_id=201, created_at=TB, bands=BANDS_B
+        )
+        session.commit()
+
+    completion = _controlled_schedule(
+        factory, learner_id=20, lock_owner_eval=300, follower_eval=301
+    )
+
+    assert completion == [300, 301]
+    with factory() as session:
+        state = _tr_state(session, 20)
+        assert state.estimated_band == Decimal("6.50")
+        assert state.evidence_count == 2
+        assert state.revision == 2
+        last = session.get(LearningEvidence, state.last_evidence_id)
+        assert last.source_attempt_id == 201
+
+
+def test_controlled_schedule_b_first(factory) -> None:
+    # Learner 21: A = evaluation 310 (attempt 210, older), B = 311 (attempt 211).
+    with factory() as session:
+        _add_learner(session, 21)
+        _add_evaluation(
+            session, evaluation_id=310, attempt_id=210, created_at=TA, bands=BANDS_A
+        )
+        _add_evaluation(
+            session, evaluation_id=311, attempt_id=211, created_at=TB, bands=BANDS_B
+        )
+        session.commit()
+
+    completion = _controlled_schedule(
+        factory, learner_id=21, lock_owner_eval=311, follower_eval=310
+    )
+
+    # Application/completion order is B then A, but canonical source order is
+    # still A -> B, so the final state must equal canonical replay(A, B).
+    assert completion == [311, 310]
+    with factory() as session:
+        state = _tr_state(session, 21)
+        assert state.estimated_band == Decimal("6.50")
+        assert state.evidence_count == 2
+        assert state.revision == 2
+        last = session.get(LearningEvidence, state.last_evidence_id)
+        assert last.source_attempt_id == 211
+
+
+def test_controlled_schedules_equal_canonical_replay(factory) -> None:
+    # Sequential A -> B on learner 30.
+    with factory() as session:
+        _add_learner(session, 30)
+        _add_evaluation(
+            session, evaluation_id=400, attempt_id=300, created_at=TA, bands=BANDS_A
+        )
+        _add_evaluation(
+            session, evaluation_id=401, attempt_id=301, created_at=TB, bands=BANDS_B
+        )
+        session.commit()
+    with factory() as session:
+        apply_writing_evaluation(session, learner_id=30, writing_evaluation_id=400)
+    with factory() as session:
+        apply_writing_evaluation(session, learner_id=30, writing_evaluation_id=401)
+    with factory() as session:
+        sequential = _tr_state(session, 30).estimated_band
+
+    # Late B -> A on learner 31.
+    with factory() as session:
+        _add_learner(session, 31)
+        _add_evaluation(
+            session, evaluation_id=410, attempt_id=310, created_at=TA, bands=BANDS_A
+        )
+        _add_evaluation(
+            session, evaluation_id=411, attempt_id=311, created_at=TB, bands=BANDS_B
+        )
+        session.commit()
+    with factory() as session:
+        apply_writing_evaluation(session, learner_id=31, writing_evaluation_id=411)
+    with factory() as session:
+        apply_writing_evaluation(session, learner_id=31, writing_evaluation_id=410)
+    with factory() as session:
+        late = _tr_state(session, 31).estimated_band
+
+    # Controlled A-first on learner 32.
+    with factory() as session:
+        _add_learner(session, 32)
+        _add_evaluation(
+            session, evaluation_id=420, attempt_id=320, created_at=TA, bands=BANDS_A
+        )
+        _add_evaluation(
+            session, evaluation_id=421, attempt_id=321, created_at=TB, bands=BANDS_B
+        )
+        session.commit()
+    _controlled_schedule(factory, learner_id=32, lock_owner_eval=420, follower_eval=421)
+    with factory() as session:
+        a_first = _tr_state(session, 32).estimated_band
+
+    # Controlled B-first on learner 33.
+    with factory() as session:
+        _add_learner(session, 33)
+        _add_evaluation(
+            session, evaluation_id=430, attempt_id=330, created_at=TA, bands=BANDS_A
+        )
+        _add_evaluation(
+            session, evaluation_id=431, attempt_id=331, created_at=TB, bands=BANDS_B
+        )
+        session.commit()
+    _controlled_schedule(factory, learner_id=33, lock_owner_eval=431, follower_eval=430)
+    with factory() as session:
+        b_first = _tr_state(session, 33).estimated_band
+
+    assert sequential == Decimal("6.50")
+    assert late == Decimal("6.50")
+    assert a_first == Decimal("6.50")
+    assert b_first == Decimal("6.50")
+    assert sequential == late == a_first == b_first
