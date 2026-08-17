@@ -132,6 +132,15 @@ another LLM prompt.
   Phase 4 never implements a second update mechanism.
 - Generation is SUCCESS-ONLY persistence: a durable `writing_practices` row
   exists only for a successfully generated practice.
+- **Database-enforced ownership:** `writing_practices(recommendation_id,
+  learner_id)` must reference `practice_recommendations(id, learner_id)`
+  through a composite foreign key (RESTRICT). The database, not only the
+  service, guarantees a recommendation belongs to the same learner as the
+  practice. This requires one narrow additive candidate key
+  `UNIQUE(id, learner_id)` on `practice_recommendations` (section 12).
+- **Practice owns the question:** the generated IELTS Task 2 question is
+  authoritative; a Phase 4 submission is essay-only and can never replace the
+  practice question (section 12a).
 - Auditability: the practice history must answer which recommendation created
   which practice, which learner received it, whether it was submitted, which
   attempt/evaluation/update resulted, and what the next recommendation was.
@@ -344,11 +353,14 @@ following invariants are frozen now):
 - identity (PK);
 - learner ownership (`learner_id` FK -> `learners`);
 - originating recommendation (`recommendation_id` FK ->
-  `practice_recommendations`, `UNIQUE(recommendation_id)`, RESTRICT);
+  `practice_recommendations`); the DB must guarantee the recommendation
+  belongs to the same learner (composite ownership FK below);
 - authoritative `target_skill` (copied from the recommendation; generator
   output must match it);
 - generated content (`question`, `focus_objective`, `instructions`,
   `checkpoints`, `practice_type`) — exists ONLY for successful generation;
+  `question` is the authoritative Task 2 question used for any later
+  evaluation of this practice;
 - generator provenance (`provider`, `model`, `prompt_version`,
   `thinking_mode`) and generation policy version;
 - submission lifecycle/claim state, submission fingerprint, claim
@@ -360,11 +372,37 @@ following invariants are frozen now):
 
 No generic memory/events table. No failed-generation rows.
 
+**Composite ownership FK (frozen):** `writing_practices` must persist BOTH
+`recommendation_id` and `learner_id`, and the database must enforce that the
+recommendation belongs to the same learner — NOT service-layer validation
+alone. Using the accepted Phase 3 composite ownership pattern (the
+`LearningUpdate` ownership candidate key precedent):
+
+```text
+FOREIGN KEY (recommendation_id, learner_id)
+  REFERENCES practice_recommendations (id, learner_id)
+  ON DELETE RESTRICT
+```
+
+This requires ONE minimal additive schema hardening to the existing
+`practice_recommendations` table: the candidate key
+`UNIQUE(id, learner_id)`. This does NOT change planner behavior, state
+behavior, decision semantics, recommendation identity, or Phase 3
+application logic; it exists only to support database-enforced Phase 4
+ownership. Exact constraint names belong to P4-05/P4-06.
+
 ### 12.1 Required database invariants (design level)
 
-- `UNIQUE(recommendation_id)`.
+- `UNIQUE(recommendation_id)` — at most one durable practice per eligible
+  practice recommendation (idempotency anchor; the composite FK does NOT
+  replace it; both are required).
+- `UNIQUE(id, learner_id)` candidate key on `practice_recommendations`
+  (Phase 4-added; referenced by the composite FK).
+- Composite ownership FK: `writing_practices(recommendation_id, learner_id)
+  -> practice_recommendations(id, learner_id)` `ON DELETE RESTRICT` — a row
+  cannot claim a recommendation from Learner A while storing
+  `learner_id` of Learner B.
 - One practice belongs to one learner.
-- Recommendation ownership must match learner ownership.
 - Only `decision_type = practice` recommendations are eligible for a row.
 - `attempt_id` nullable before submission; once attached it cannot be
   replaced; `attempt_id` unique.
@@ -374,6 +412,34 @@ No generic memory/events table. No failed-generation rows.
 - A submitted practice cannot be overwritten with a new essay.
 - The submission claim prevents two simultaneous evaluator executions.
 - All exact constraint names belong to P4-05/P4-06.
+
+## 12a. Submission question authority (frozen)
+
+A Phase 4 practice already contains the authoritative generated IELTS Task 2
+question. The learner submission API MUST NOT accept a client-controlled
+replacement question.
+
+- Phase 4 submission input conceptually contains **essay only** (plus
+  identifiers from route/context); it never duplicates a trusted question.
+- The service constructs the existing Phase 2 `WritingSubmission`
+  internally:
+
+  ```text
+  WritingSubmission(
+      question=persisted_practice.question,   # authoritative
+      essay=validated_user_essay,             # untrusted
+  )
+  ```
+
+  This preserves the existing Phase 2 evaluation contract unchanged while
+  preventing the client from changing the practice question after generation.
+- The deterministic submission fingerprint is based on the authoritative
+  validated submission payload; because the question comes from the persisted
+  practice, the fingerprint conceptually covers practice identity + persisted
+  authoritative question + validated essay (or an equivalent deterministic
+  representation). The client cannot alter the question used for evaluation.
+  Exact fingerprint encoding/hash belongs to P4-02/P4-04 implementation
+  policy; the invariant is frozen now.
 
 ## 13. Closed-loop completion (frozen definition)
 
@@ -490,7 +556,15 @@ Required coverage:
 - retry-wrapper tests for the focused `RetryingPracticeGenerator`;
 - real PostgreSQL persistence tests (ownership, unique anchors, FKs,
   RESTRICT semantics);
-- migration upgrade/downgrade/re-upgrade + drift + single head;
+- **real PostgreSQL cross-owner FK failure test (required):** Learner A owns
+  Recommendation RA; Learner B exists; persisting
+  `writing_practices(recommendation_id = RA.id, learner_id = B.id)` MUST fail
+  at the DATABASE level (composite ownership FK violation). Accepting only a
+  service-layer rejection is insufficient — the database constraint itself
+  must be proven. Also test that a valid same-owner insert succeeds;
+- migration upgrade/downgrade/re-upgrade + drift + single head (including the
+  Phase 4-added candidate key on `practice_recommendations` being added by
+  upgrade and removed by downgrade);
 - generation idempotency: first generate, retry returns same practice,
   concurrent race -> at most one durable row, losing request resolves winner
   (documented: provider may be invoked more than once);
@@ -523,6 +597,12 @@ a `practice` and a `no_practice` next recommendation are valid outcomes.
 All nodes are currently `NOT_STARTED`; nothing is authorized to run until a
 separate explicit execution authorization activates `P4-01`.
 
+**Graph execution rule (frozen):** a node becomes `READY` only when EVERY
+dependency listed for that node is `COMPLETE`. "Unlocks" means the dependency
+may become satisfiable; it does NOT override other unmet dependencies. In
+particular `P4-09` becomes `READY` only when `P4-04`, `P4-06`, AND `P4-08`
+are all `COMPLETE` — `P4-06` alone or `P4-08` alone is insufficient.
+
 ## 20. Dependency graph
 
 ```text
@@ -533,10 +613,8 @@ P4-02 Adaptive Writing Practice Product Contract
   -> P4-03
 
 P4-03 Writing Practice Generation Policy
-  -> P4-04
-  -> P4-05
-  -> P4-06
-  -> P4-07
+  -> P4-04 -> P4-05 -> P4-06
+  -> P4-07 -> P4-08
 
 P4-04 Practice Domain / API Schemas
   -> P4-05
@@ -581,8 +659,10 @@ P4-16
 
 Dependency reasons:
 
-- `P4-03 -> P4-04/P4-05/P4-06`: the generation policy is the single authority
-  for both schema shape and the eligibility rules the model/migration encode.
+- `P4-03` is the single authority for schema shape (`P4-04`), the
+  persistence contract (`P4-05`), the migration (`P4-06`), and the generator
+  contract (`P4-07`); it does NOT directly unlock `P4-05`/`P4-06`, which
+  depend on `P4-04`/`P4-05` respectively.
 - `P4-03 -> P4-07`: the policy defines the generator contract.
 - `P4-07 -> P4-08 -> P4-09`: P4-09 requires an implemented generator plus the
   deterministic fake (P4-07 alone is only the interface).
@@ -616,17 +696,25 @@ Dependency reasons:
 - **Purpose:** Freeze exactly what Phase 4 means by Practice, Submission,
   completion, and closed-loop result; the decision-gated semantics
   (`practice` vs `no_practice`, cold-start boundary from section 6); the
-  lifecycle vocabulary from section 9; and the smallest useful user story.
+  lifecycle vocabulary from section 9; the submission-question authority rule
+  from section 12a (the practice owns the generated question; submission means
+  the learner submits an essay for that persisted practice; the persisted
+  question is reused during evaluation; a caller cannot substitute another
+  question); and the smallest useful user story.
 - **Dependencies:** `P4-01`.
 - **Inputs / authority:** Phase 3 recommendation contract; Phase 2 evaluation
   pipeline.
 - **Deliverables:** accepted definitions, status vocabulary, submission-claim
-  and completion semantics; the primary end-to-end acceptance story starting
-  from an ESTABLISHED learner state that yields `decision_type = practice`
-  (see section 24).
+  and completion semantics; the submission question-authority rule; the
+  primary end-to-end acceptance story starting from an ESTABLISHED learner
+  state that yields `decision_type = practice` (see section 24), reflecting
+  `Practice(question) -> learner submits essay -> server constructs
+  WritingSubmission(question from Practice, essay from user) -> Phase 2
+  evaluation`.
 - **Acceptance criteria:** the story is unambiguous, testable end-to-end with
   fakes, and all Phase 4 API behavior traces to it; no_practice/cold-start
-  behavior is explicit.
+  behavior is explicit; the submission API accepts an essay, never a
+  replacement question.
 - **Forbidden scope:** lesson generation, curriculum, bootstrap practice,
   other skills.
 - **Failure / FIXING:** ambiguous session/completion semantics keep `P4-02` in
@@ -653,7 +741,7 @@ Dependency reasons:
   no_practice generation.
 - **Failure / FIXING:** free-form contract, missing limits, eligibility
   ambiguity, or state-authority ambiguity keeps `P4-03` in `FIXING`.
-- **Unlocks:** `P4-04`, `P4-05`, `P4-06`, `P4-07`.
+- **Unlocks:** `P4-04`, `P4-07`.
 
 ### P4-04 — Practice Domain / API Schemas
 
@@ -665,30 +753,47 @@ Dependency reasons:
 - **Inputs / authority:** generation policy; `P4-02` product contract.
 - **Deliverables:** schemas for `GeneratedWritingPractice`, submission
   claim/response, fingerprint, practice response, closed-loop result, and safe
-  error mapping additions only if required.
+  error mapping additions only if required. The schema design MUST distinguish
+  Phase 2 `WritingSubmission` (question + essay) from Phase 4
+  `PracticeSubmission` (**essay only**, plus identifiers from route/context,
+  never a duplicated trusted question); the Phase 4 service composes the
+  trusted practice question with the untrusted essay into the existing Phase 2
+  `WritingSubmission` internally. `WritingSubmission` itself is NOT redesigned.
 - **Acceptance criteria:** schema tests pass; no ORM/service/LLM behavior in
   schemas.
-- **Forbidden scope:** planner/state schema redesign.
+- **Forbidden scope:** planner/state schema redesign; redesigning
+  `WritingSubmission`.
 - **Failure / FIXING:** mutable defaults, missing constraints, or leakage of
   provider internals keeps `P4-04` in `FIXING`.
-- **Unlocks:** `P4-05`, `P4-09`.
+- **Unlocks:** `P4-05` (a dependency of `P4-09`; `P4-09` becomes READY only
+  when `P4-04`, `P4-06`, and `P4-08` are all COMPLETE).
 
 ### P4-05 — Practice Persistence Models
 
 - **Type:** database
-- **Purpose:** Implement the minimal `writing_practices` model (section 12).
+- **Purpose:** Implement the minimal `writing_practices` model (section 12)
+  plus the Phase 4 ownership hardening.
 - **Dependencies:** `P4-04`.
-- **Inputs / authority:** frozen schemas; section 12.1 invariants; Phase 3
-  model conventions.
-- **Deliverables:** SQLAlchemy 2.x model with FKs, ownership anchors,
-  `UNIQUE (recommendation_id)`, claim/fingerprint columns, `attempt_id`
-  RESTRICT semantics, timestamps, provenance columns.
+- **Inputs / authority:** frozen schemas; section 12/12a invariants (including
+  the composite ownership FK and the `practice_recommendations` candidate
+  key); Phase 3 composite ownership pattern (the `LearningUpdate` ownership
+  candidate-key precedent).
+- **Deliverables:** SQLAlchemy 2.x `writing_practices` model with learner
+  ownership, `recommendation_id` + `learner_id`, the composite ownership FK
+  design `(recommendation_id, learner_id) ->
+  practice_recommendations(id, learner_id)` RESTRICT, `UNIQUE
+  (recommendation_id)`, `UNIQUE(attempt_id)` if retained by accepted design,
+  claim/fingerprint columns, `attempt_id` RESTRICT semantics, timestamps,
+  provenance columns; plus the narrow additive candidate key
+  `UNIQUE(id, learner_id)` on the `practice_recommendations` model.
 - **Acceptance criteria:** model tests (constraints, anchors, ownership,
-  RESTRICT semantics) pass; no business logic in models.
+  composite FK structure, RESTRICT semantics) pass; no business logic in
+  models; the model structure supports the composite ownership invariant.
 - **Forbidden scope:** memory/events tables, curriculum tables,
-  failed-generation rows.
+  failed-generation rows, planner/state policy changes.
 - **Failure / FIXING:** broken anchors, missing ownership, SET NULL attempt
-  FK, or generic-history design keeps `P4-05` in `FIXING`.
+  FK, missing composite ownership support, or generic-history design keeps
+  `P4-05` in `FIXING`.
 - **Unlocks:** `P4-06`.
 
 ### P4-06 — Alembic Migration
@@ -696,15 +801,28 @@ Dependency reasons:
 - **Type:** database
 - **Purpose:** Add reversible migration `0004_writing_practice` (single head).
 - **Dependencies:** `P4-05`.
-- **Inputs / authority:** accepted model.
+- **Inputs / authority:** accepted model; section 12/12a invariants.
 - **Deliverables:** upgrade/downgrade/re-upgrade verified on real PostgreSQL;
-  drift check; constraint tests (unique anchors, RESTRICT FKs).
+  drift check; constraint tests (unique anchors, composite ownership FK,
+  RESTRICT FKs). The migration MAY perform exactly TWO additive changes:
+  (1) create `writing_practices` and its Phase 4 constraints; (2) add the ONE
+  narrow additive Phase 3 candidate key
+  `UNIQUE(id, learner_id)` on `practice_recommendations` to support the
+  Phase 4 composite ownership FK.
 - **Acceptance criteria:** linear history `0001 -> 0002 -> 0003 -> 0004`,
-  single head, downgrade removes only Phase 4 tables.
-- **Forbidden scope:** schema changes to Phase 2/3 tables.
-- **Failure / FIXING:** drift, non-reversible downgrade, or head conflicts
-  keep `P4-06` in `FIXING`.
-- **Unlocks:** `P4-09`, `P4-10`.
+  single head; upgrade -> downgrade -> re-upgrade valid on real PostgreSQL.
+  Downgrade removes ONLY Phase 4 additions: drop `writing_practices` and its
+  Phase 4 constraints, THEN drop the Phase 4-added
+  `UNIQUE(id, learner_id)` candidate key from `practice_recommendations`; no
+  pre-existing Phase 3 constraint is removed or altered.
+- **Forbidden scope:** any other Phase 2/3 schema change: Phase 2 scoring,
+  Writing evaluation structure/meaning, Phase 3 state policy, Phase 3 planner
+  policy, `LearningEvidence` semantics, `LearnerSkillState` semantics,
+  `PracticeRecommendation` decision semantics.
+- **Failure / FIXING:** drift, non-reversible downgrade, head conflicts, or
+  unauthorized Phase 2/3 alteration keeps `P4-06` in `FIXING`.
+- **Unlocks:** `P4-09` (a dependency of `P4-09`, which becomes READY only
+  when `P4-04`, `P4-06`, and `P4-08` are all COMPLETE).
 
 ### P4-07 — Practice Generator Contract
 
@@ -749,9 +867,11 @@ Dependency reasons:
 - **Purpose:** Orchestrate one SUCCESS-ONLY, decision-gated, idempotent
   practice generation: `recommendation -> generated persisted practice`. STOPS
   there (no submission, no apply, no replan).
-- **Dependencies:** `P4-06`, `P4-04`, `P4-08` (implemented generator + fake).
+- **Dependencies:** `P4-04` + `P4-06` + `P4-08` (an implemented generator AND
+  deterministic fake are required; the `P4-07` interface alone is not enough).
+  `P4-09` becomes `READY` only when ALL THREE are `COMPLETE`.
 - **Inputs / authority:** persisted recommendation, learner, generator,
-  session, unique anchor.
+  session, unique anchor, composite ownership FK.
 - **Deliverables:** service that validates learner/recommendation ownership
   and `decision_type = practice`, returns an existing practice on retry,
   returns a deterministic no-practice outcome for `no_practice`, runs the
@@ -761,8 +881,9 @@ Dependency reasons:
 - **Acceptance criteria:** PostgreSQL tests for first generate, idempotent
   retry, no_practice -> zero rows, cold_start -> zero rows + no generator
   call, cross-learner conflict, provider failure -> no row, rollback,
-  provenance retention, and concurrent first-generation -> exactly one durable
-  row (losing request resolves the winner).
+  provenance retention, concurrent first-generation -> exactly one durable
+  row (losing request resolves the winner), and the database-level ownership
+  mismatch negative case (section 18).
 - **Forbidden scope:** LLM inside transaction; state mutation; submission or
   apply orchestration.
 - **Failure / FIXING:** duplicate practices, partial writes, no_practice
@@ -778,23 +899,30 @@ Dependency reasons:
 - **Dependencies:** `P4-09`, `P4-02`, `P4-06`.
 - **Inputs / authority:** practice identity, validated essay payload, Phase 2
   evaluation pipeline, session.
-- **Deliverables:** claim acquisition (practice `FOR UPDATE`, state,
-  fingerprint, claim token), provider evaluation OUTSIDE the transaction, and
-  one atomic finalization transaction creating `WritingAttempt` +
+- **Deliverables:** the explicit submission flow — load persisted practice,
+  verify ownership, take `persisted_practice.question` as AUTHORITATIVE,
+  validate the learner essay, compute the submission fingerprint, claim the
+  practice (`FOR UPDATE`, state, fingerprint, claim token), construct the
+  Phase 2 `WritingSubmission(question=persisted_practice.question,
+  essay=validated_user_essay)` internally, evaluate OUTSIDE the transaction,
+  then one atomic finalization transaction creating `WritingAttempt` +
   `WritingEvaluation` + `practice.attempt_id` + `submitted` together — via a
   small focused composition refactor of Phase 2 persistence internals (allowed
-  by section 11) that leaves `/writing/evaluate` unchanged.
+  by section 11) that leaves `/writing/evaluate` unchanged. Never accept a
+  replacement client question for a Phase 4 practice submission.
 - **Acceptance criteria:** real-PostgreSQL tests for first submit,
   same-fingerprint retry (existing result, no provider call),
   different-fingerprint conflict, in-progress safe outcome, claim-failure
   reset to generated, atomic finalization (no orphan attempt/evaluation),
-  RESTRICT deletion semantics, and concurrent submission -> one claim/one
-  evaluator/one attempt/one evaluation.
+  RESTRICT deletion semantics, question-authority (client cannot substitute a
+  question), and concurrent submission -> one claim/one evaluator/one
+  attempt/one evaluation.
 - **Forbidden scope:** changing Phase 2 scoring/rubric/evaluation semantics;
   duplicating a second Writing persistence implementation; process-local
-  correctness locks.
+  correctness locks; accepting a client-controlled question.
 - **Failure / FIXING:** broken attempt link, duplicate submission, orphan
-  writing records, or Phase 2 bypass keeps `P4-10` in `FIXING`.
+  writing records, question substitution, or Phase 2 bypass keeps `P4-10` in
+  `FIXING`.
 - **Unlocks:** `P4-11`.
 
 ### P4-11 — Closed-loop Completion & Replan Service
@@ -966,11 +1094,13 @@ recommends `task_response`.
 
 ```text
 existing Phase 3 recommendation (practice, task_response)
-  -> P4 generate targeted Task Response practice
+  -> P4 generate targeted Task Response practice (persisted question)
   -> persist one writing_practices row
-  -> human submission
+  -> human submission (learner submits ESSAY only; the practice question is
+     authoritative and reused, never replaced by the client)
   -> claim submission (fingerprint + claim token)
-  -> Fake/evaluation provider OUTSIDE DB transaction
+  -> server constructs WritingSubmission(question from practice, essay from
+     user) -> Fake/evaluation provider OUTSIDE DB transaction
   -> atomically persist WritingAttempt + WritingEvaluation + practice link
   -> existing Phase 3 apply
   -> new LearnerSkillState
