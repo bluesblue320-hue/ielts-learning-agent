@@ -388,6 +388,13 @@ class PracticeRecommendation(Base):
 
     __tablename__ = "practice_recommendations"
     __table_args__ = (
+        # Phase 4 ownership candidate key: referenced by the
+        # writing_practices(recommendation_id, learner_id) composite FK.
+        UniqueConstraint(
+            "id",
+            "learner_id",
+            name="uq_practice_recommendation_id_learner",
+        ),
         # A recommendation belongs to the same learner as its LearningUpdate.
         ForeignKeyConstraint(
             ["learning_update_id", "learner_id"],

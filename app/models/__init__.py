@@ -7,6 +7,7 @@ from app.models.learning import (
     LearningUpdate,
     PracticeRecommendation,
 )
+from app.models.practice import WritingPractice
 from app.models.writing import WritingAttempt, WritingEvaluation
 
 __all__ = [
@@ -17,4 +18,5 @@ __all__ = [
     "PracticeRecommendation",
     "WritingAttempt",
     "WritingEvaluation",
+    "WritingPractice",
 ]
