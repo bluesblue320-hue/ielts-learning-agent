@@ -1167,3 +1167,25 @@ transactional practice history only — not a generic memory or events system.
 **Design status:** GRAPH READY FOR EXTERNAL REVIEW — no runtime execution
 authorized. All `P4-01` … `P4-16` nodes are `NOT_STARTED`. Phase 5 remains
 `NOT_STARTED`.
+
+---
+
+## 30. Execution record
+
+### P4-01 — Phase 4 Baseline & Transition — `COMPLETE`
+
+Baseline verified before any Phase 4 runtime work (commit
+`docs: record Phase 4 baseline transition`):
+
+- branch `phase/4-adaptive-writing-practice` based on accepted `master` @
+  `8cb0b73` (`feat: complete Phase 3 learner state and adaptive planning
+  (#7)`); Phase 3 merged and master CI accepted.
+- single Alembic head `0003_learning`; history linear
+  `0001_phase1 -> 0002_writing -> 0003_learning`.
+- full Phase 1/2/3 regression on isolated PostgreSQL: **705 passed, 1 warning**
+  (recorded Starlette `httpx` deprecation); required PostgreSQL integration
+  tests executed, none skipped.
+- no Phase 4 runtime implementation present; branch clean before
+  implementation.
+
+`P4-02` is now `READY`.
