@@ -2,19 +2,54 @@
 
 ## Document status
 
-This document distinguishes the **implemented Phase 2 architecture** from the
+This document distinguishes the **implemented architecture** from the
 long-term adaptive-learning target. Phase 1 foundation is implemented: FastAPI,
 typed configuration, PostgreSQL/SQLAlchemy/Alembic infrastructure, foundation
 schemas, health APIs, tests, and Docker integration. Phase 2 adds the Writing
 Task 2 evaluation API, a vendor-independent provider boundary with a DeepSeek
 adapter, validated structured output, deterministic product-band aggregation,
 atomic PostgreSQL persistence, bounded failure handling, and deterministic
-local, CI, and Docker validation. The learning-loop components below remain
-target designs unless their status says otherwise.
+local, CI, and Docker validation. Phase 3 adds the deterministic learner-state
+path: learner creation and four-skill materialized state, canonical evidence
+extraction, an exact-Decimal EWMA replay engine, a target-gap practice planner,
+an atomic idempotent learning-application service, learner/learning REST APIs,
+and database-safe concurrency hardening. The learning-loop components below
+remain target designs unless their status says otherwise.
 
 The completed [PHASE1_GRAPH.md](PHASE1_GRAPH.md) remains the historical Phase 1
-execution record. Current work is bounded by the authorized Phase 2 graph;
-components outside it require a later explicit phase authorization.
+execution record, and [PHASE2_GRAPH.md](PHASE2_GRAPH.md) records the completed
+Phase 2 implementation. [PHASE3_GRAPH.md](PHASE3_GRAPH.md) is the executed
+Phase 3 execution record with per-node status.
+
+## Phase 3 components (implemented)
+
+```text
+Client
+  |
+  +--> FastAPI Learner/Learning API (implemented)
+  |      -> POST /learners
+  |      -> GET  /learners/{id}/state
+  |      -> POST /learners/{id}/writing/evaluations/{evaluation_id}/apply
+  |
+  +--> app/learner/ (deterministic domain components)
+  |      -> writing_policy.py    frozen taxonomy/state-policy constants (P3-02)
+  |      -> planning_policy.py   frozen planner constants (P3-08)
+  |      -> writing_evidence.py  canonical 4-skill evidence extraction (P3-06)
+  |      -> state_engine.py      EWMA replay/rebuild, quantization (P3-07)
+  |      -> planner.py           target-gap practice planner (P3-09)
+  |
+  +--> app/services/learning_application.py (P3-10)
+  |      -> atomic transaction: 1 update + 4 evidence + 4 states + 1 decision
+  |      -> idempotent replay, cross-owner conflict, per-learner row lock
+  |
+  `--> app/models/learning.py + migration 0003_learning (P3-04/P3-05)
+         -> learners, learning_updates, learning_evidence,
+            learner_skill_states, practice_recommendations
+```
+
+All learner-state computation is deterministic and provider-free: no LLM is
+used for state updates or planning. Planner policy and decision contracts are
+frozen in docs/WRITING_STATE_POLICY.md and docs/PRACTICE_PLANNING_POLICY.md.
 
 ## Architecture goal
 
@@ -134,7 +169,8 @@ multi-agent orchestration, and Speaking, Reading, or Listening remain deferred.
 ## Evolution rule
 
 Architecture follows verified product requirements. Phase 1 is complete and
-stopped at `P1-11`; Phase 2 implementation follows its authorized graph and stops
-at `P2-15`. Every phase requires explicit execution authority, and Phase 3 or any
-other subsequent phase requires separate authorization and its own graph.
+stopped at `P1-11`; Phase 2 is complete and stopped at `P2-15`. The authorized
+Phase 3 graph defines planned scope, while node execution still requires
+separate explicit authority. Every later phase likewise requires explicit
+execution authority and its own graph.
 Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).

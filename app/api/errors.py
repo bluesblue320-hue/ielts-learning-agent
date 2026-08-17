@@ -10,6 +10,13 @@ from fastapi.responses import JSONResponse
 
 from app.llm.provider import ProviderError, ProviderErrorCategory
 from app.schemas.errors import APIErrorCode, APIErrorDetail, APIErrorResponse
+from app.services.learning_application import (
+    CrossOwnerConflictError,
+    EvaluationNotFoundError,
+    LearnerNotFoundError,
+    LearningPersistenceError,
+    LearningSourceError,
+)
 from app.services.writing_persistence import WritingPersistenceError
 
 
@@ -127,6 +134,66 @@ async def request_validation_error_handler(
     )
 
 
+async def learner_not_found_handler(
+    request: Request,
+    error: LearnerNotFoundError,
+) -> JSONResponse:
+    del request, error
+    return _response(
+        status.HTTP_404_NOT_FOUND,
+        APIErrorCode.LEARNER_NOT_FOUND,
+        "Learner not found.",
+    )
+
+
+async def evaluation_not_found_handler(
+    request: Request,
+    error: EvaluationNotFoundError,
+) -> JSONResponse:
+    del request, error
+    return _response(
+        status.HTTP_404_NOT_FOUND,
+        APIErrorCode.EVALUATION_NOT_FOUND,
+        "Writing evaluation not found.",
+    )
+
+
+async def cross_owner_conflict_handler(
+    request: Request,
+    error: CrossOwnerConflictError,
+) -> JSONResponse:
+    del request, error
+    return _response(
+        status.HTTP_409_CONFLICT,
+        APIErrorCode.EVALUATION_CONFLICT,
+        "Writing evaluation is already applied to another learner.",
+    )
+
+
+async def learning_source_error_handler(
+    request: Request,
+    error: LearningSourceError,
+) -> JSONResponse:
+    del request, error
+    return _response(
+        status.HTTP_422_UNPROCESSABLE_CONTENT,
+        APIErrorCode.LEARNING_SOURCE_INVALID,
+        "Persisted evaluation source data is invalid.",
+    )
+
+
+async def learning_persistence_error_handler(
+    request: Request,
+    error: LearningPersistenceError,
+) -> JSONResponse:
+    del request, error
+    return _response(
+        status.HTTP_503_SERVICE_UNAVAILABLE,
+        APIErrorCode.PERSISTENCE_UNAVAILABLE,
+        "Learning data is temporarily unavailable.",
+    )
+
+
 def register_error_handlers(application: FastAPI) -> None:
     """Register centralized error responses without exposing exception text."""
 
@@ -138,4 +205,30 @@ def register_error_handlers(application: FastAPI) -> None:
     application.add_exception_handler(
         RequestValidationError,
         request_validation_error_handler,
+    )
+    register_learning_error_handlers(application)
+
+
+def register_learning_error_handlers(application: FastAPI) -> None:
+    """Register safe Phase 3 learning-application error responses."""
+
+    application.add_exception_handler(
+        LearnerNotFoundError,
+        learner_not_found_handler,
+    )
+    application.add_exception_handler(
+        EvaluationNotFoundError,
+        evaluation_not_found_handler,
+    )
+    application.add_exception_handler(
+        CrossOwnerConflictError,
+        cross_owner_conflict_handler,
+    )
+    application.add_exception_handler(
+        LearningSourceError,
+        learning_source_error_handler,
+    )
+    application.add_exception_handler(
+        LearningPersistenceError,
+        learning_persistence_error_handler,
     )

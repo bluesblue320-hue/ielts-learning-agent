@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from app.api.errors import register_error_handlers
 from app.api.routes.health import router as health_router
+from app.api.routes.learners import router as learners_router
 from app.api.routes.writing import router as writing_router
 
 
@@ -13,6 +14,7 @@ def create_app() -> FastAPI:
     register_error_handlers(application)
     application.include_router(health_router)
     application.include_router(writing_router)
+    application.include_router(learners_router)
     return application
 
 

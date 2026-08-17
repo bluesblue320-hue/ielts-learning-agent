@@ -40,15 +40,23 @@ Always inspect the current phase documentation before implementing features.
 Current phase:
 
 ```text
-Phase 2 — Writing Evaluation Pipeline
+Phase 3 — Learner State & Adaptive Planning
 ```
 
 Read:
 
 ```text
-docs/PHASE2_GRAPH.md
+docs/PHASE3_GRAPH.md
 docs/DEVELOPMENT_LOOP.md
 ```
+
+The Phase 3 graph is approved and its runtime nodes have been executed:
+learner-state policy and schemas, persistence models and migration, evidence
+extraction, the deterministic EWMA replay engine, the practice planner, the
+atomic learning-application service, learner/learning APIs, and concurrency
+hardening are implemented and validated against isolated PostgreSQL. Phase 3
+is complete; see [docs/PHASE3_GRAPH.md](docs/PHASE3_GRAPH.md) for the per-node
+status and [docs/PHASE3_AUDIT.md](docs/PHASE3_AUDIT.md) for the final audit.
 
 The graph defines WHAT should be implemented.
 

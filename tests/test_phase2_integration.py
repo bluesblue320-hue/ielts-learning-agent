@@ -7,6 +7,7 @@ from decimal import Decimal
 import pytest
 from alembic import command
 from alembic.config import Config
+from alembic.script import ScriptDirectory
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine, event, func, select, text
 from sqlalchemy.exc import SQLAlchemyError
@@ -138,7 +139,7 @@ def test_submission_traverses_api_and_stores_complete_migrated_pair(
             .options(selectinload(WritingAttempt.evaluation))
             .where(WritingAttempt.id == 1)
         )
-        assert revision == "0002_writing"
+        assert revision == ScriptDirectory.from_config(Config("alembic.ini")).get_current_head()
         assert attempt is not None
         assert attempt.word_count == 5
         assert attempt.evaluation is not None
