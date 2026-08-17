@@ -45,44 +45,48 @@ Observe -> Plan -> Practice -> Evaluate -> Update -> Replan
 **Central invariant:**
 
 - Phase 3 decides **WHAT** the learner should practice (`target_skill`,
-  `reason`, learner target, planner version).
-- Phase 4 may use an LLM to decide **HOW** to instantiate that practice: an
-  IELTS Writing Task 2 question, a focused practice objective, and a small set
-  of targeted instructions/checkpoints, plus metadata proving which
-  recommendation produced the practice.
+  `reason`, learner target, planner version, decision type).
+- Phase 4 may use an LLM to decide **HOW** to instantiate a **practice**
+  decision: an IELTS Writing Task 2 question, a focused practice objective,
+  and a small set of targeted instructions/checkpoints, plus metadata proving
+  which recommendation produced the practice.
 
 The generator MUST NOT override `target_skill`, learner target, planner
-reason, learner state, or planner version. LLM output is generated content,
-never learner-state authority. No Phase 4 model call may directly mutate
-`LearnerSkillState`.
+reason, learner state, planner version, or decision type. LLM output is
+generated content, never learner-state authority. No Phase 4 model call may
+directly mutate `LearnerSkillState`.
 
 ## 3. Scope
 
 ### 3.1 In scope
 
-- Targeted Writing Task 2 practice generation.
+- Targeted Writing Task 2 practice generation **for `practice` decisions
+  only**.
 - Versioned practice-generation policy (`writing-practice-generation-v1`).
 - Structured practice schemas, practice persistence, learner ownership, and
   association with the originating `PracticeRecommendation`.
-- Practice submission tracking integrated with the existing Writing evaluation
-  pipeline and the existing Phase 3 learning apply.
-- Closed-loop replan result exposure (the next `PracticeRecommendation`).
+- A frozen submission-claim protocol integrating with the existing Writing
+  evaluation pipeline and the existing Phase 3 learning apply.
+- Closed-loop completion / replan result exposure (the next
+  `PracticeRecommendation`).
 - DeepSeek practice generator plus a deterministic Fake generator for tests.
-- Safe generation failures, idempotency, PostgreSQL concurrency correctness,
-  REST APIs, Docker/test/documentation work.
+- Safe generation and submission failures, idempotency, PostgreSQL
+  concurrency correctness, REST APIs, Docker/test/documentation work.
 
 ### 3.2 Non-goals (forbidden Phase 4 scope)
 
 - LangGraph / LangChain / generic Agent Runtime / generic Loop Runtime /
   multi-agent architecture.
 - RAG, pgvector, vector memory, semantic retrieval.
-- Redis, Celery, Kafka, background-job frameworks.
+- Redis, Celery, Kafka, background-job frameworks, distributed job
+  infrastructure, leases/queues.
 - Speaking, Reading, Listening.
 - Frontend / Next.js.
 - Long-term learning memory, reflection engine, memory retrieval.
 - Fine-tuning, RL, complex ontology, complex skill graph.
 - Automatic multi-week curriculum, full course generation, unbounded lesson
   generation.
+- Bootstrap/diagnostic practice generation for cold-start learners.
 - Redesigning Phase 2 scoring.
 - Redesigning Phase 3 state/planner policies.
 
@@ -111,32 +115,62 @@ another LLM prompt.
 
 ## 5. Accepted invariants (must not be broken)
 
-- Phase 2 evaluation and provider boundary unchanged.
+- Phase 2 evaluation and provider boundary unchanged (scoring, rubric,
+  evaluation semantics untouched).
 - Phase 3 state/planner policies unchanged (`writing-state-ewma-v1`,
   `writing-practice-gap-v1`, taxonomy `writing-core-v1`).
 - `PracticeRecommendation` controls WHAT; generator controls HOW.
+- **Decision-gated practice:** only `decision_type = practice` may produce a
+  durable `writing_practices` row; `decision_type = no_practice` MUST produce
+  zero rows, zero generator calls, and a deterministic no-practice outcome.
+- **Cold-start boundary:** a learner with `cold_start` (no eligible Phase 3
+  recommendation) receives NO Phase 4 practice; they obtain Writing evidence
+  through the existing submission/evaluation path first.
 - No provider/network call inside a database transaction.
 - A persisted evaluation remains reusable without calling the LLM again.
-- One logical practice per originating recommendation (deterministic
-  idempotency, see section 8).
+- Phase 3 apply idempotency remains the authority for learner-state updates;
+  Phase 4 never implements a second update mechanism.
+- Generation is SUCCESS-ONLY persistence: a durable `writing_practices` row
+  exists only for a successfully generated practice.
 - Auditability: the practice history must answer which recommendation created
   which practice, which learner received it, whether it was submitted, which
   attempt/evaluation/update resulted, and what the next recommendation was.
 
-## 6. Conceptual closed-loop flow
+## 6. Decision semantics (no_practice / cold_start)
+
+Phase 3 produces two decision classes, and Phase 4 treats them asymmetrically:
+
+- **`practice`** — `target_skill` is authoritative; Phase 4 MAY generate
+  exactly one targeted Writing practice (at most one durable row; see 8).
+- **`no_practice`** — Phase 4 MUST:
+  - NOT call the PracticeGenerator;
+  - NOT create a `writing_practices` row;
+  - NOT invent a `target_skill`;
+  - NOT ask an LLM what should be practiced;
+  - return/expose a deterministic no-practice outcome based on the persisted
+    Phase 3 recommendation (reason codes `cold_start`, `incomplete_state`,
+    `target_achieved`, `target_unset` remain Phase 3-owned and are never
+    reinterpreted).
+
+**Frozen Phase 4 v1 decision — cold start:** Phase 4 does NOT implement
+bootstrap/diagnostic practice generation. A cold-start learner must obtain
+Writing evidence through the already-existing Writing submission/evaluation
+path before adaptive targeted practice is available. Therefore
+`cold_start -> no targeted Phase 4 practice -> no generator call -> no
+writing_practices row`. Bootstrap/onboarding practice generation is
+explicitly OUT OF SCOPE. Do NOT invent a generic starter lesson.
+
+## 7. Conceptual closed-loop flow
 
 ```text
-PracticeRecommendation (Phase 3)
+PracticeRecommendation (Phase 3; decision_type = practice only)
         |
         v
-PracticeTask (generated Writing practice; one durable concept, see 7)
+Targeted Writing Practice (generated; one durable writing_practices row)
         |
+        |   HUMAN PRACTICE TIME (minutes/hours/days)
         v
-PracticeSession (lightweight association = the practice row + status;
-                 not a separate table, see 7)
-        |
-        v
-Learner submits essay -> WritingAttempt (Phase 2)
+Learner submits essay -> Submission Claim -> WritingAttempt (Phase 2)
         |
         v
 WritingEvaluation (Phase 2, provider outside transaction)
@@ -148,132 +182,348 @@ LearningUpdate (existing Phase 3 apply; 4 evidence + 4 states + 1 decision)
 next PracticeRecommendation (exposed as closed-loop result)
 ```
 
-## 7. Persistence design decision
+## 8. Generation idempotency (frozen semantics)
 
-Do NOT blindly create separate tables for `PracticeTask` and
-`PracticeSession`. The minimum durable model that provides auditability,
-idempotency, ownership, and closed-loop traceability is **one table**:
+**SUCCESS-ONLY practice persistence.** A `writing_practices` row is NEVER
+persisted before the generator succeeds, and a failed generation leaves no
+row (no durable failed-generation state; no error-category column).
 
-`writing_practices`
+```text
+load + validate recommendation (learner ownership, decision_type = practice)
+if existing practice for recommendation: return it
+if no_practice: return deterministic no-practice outcome
+call generator OUTSIDE DB transaction
+validate structured generated output (target_skill must equal the
+  recommendation's target_skill; mismatch = invalid provider response)
+short persistence transaction
+  insert writing_practices  (UNIQUE(recommendation_id) decides the winner)
+commit
+```
 
-- `id` PK.
-- `learner_id` FK -> `learners` (RESTRICT); ownership anchor.
-- `recommendation_id` FK -> `practice_recommendations` (RESTRICT), with a
-  global `UNIQUE (recommendation_id)` idempotency anchor: one originating
-  recommendation yields exactly one practice.
-- `target_skill` (authoritative copy of the recommendation's target), and
-  generator-policy version.
-- Generated content: `question`, `focus_objective`, `instructions` (JSONB),
-  `checkpoints` (JSONB), `practice_type`.
-- Provenance: `provider`, `model`, `prompt_version`, `thinking_mode`,
-  generation status / error category (safe only).
-- Submission link: `attempt_id` FK -> `writing_attempts` (SET NULL / NULL
-  until submitted; a completed submission references exactly one attempt).
+**Concurrency truth (v1):** concurrent first-generation requests for the same
+recommendation MAY both temporarily invoke the provider. Phase 4 v1
+guarantees: at most one durable `writing_practices` row per recommendation;
+`UNIQUE(recommendation_id)` decides the winner; the losing request resolves
+the already-persisted winner and returns that same durable practice; no
+duplicate durable practice survives. **Exactly-once provider invocation is NOT
+guaranteed and is a documented v1 limitation.** Network side effects are
+at-least-once within a bounded retry policy.
+
+The database uniqueness anchor prevents multiple durable practices; it does
+NOT authorize generation for `no_practice` decisions — service/application
+validation must verify eligibility BEFORE any model call.
+
+## 9. Practice lifecycle (frozen semantics)
+
+The durable practice exists only after generation succeeds. The lifecycle is
+around SUBMISSION, not generation:
+
+```text
+generated -> submission_in_progress -> submitted
+```
+
+- `generated`: row exists, no claim, `attempt_id` NULL.
+- `submission_in_progress`: a claim is active (claim token + fingerprint),
+  evaluator may run; a second claim request returns a safe in-progress
+  outcome.
+- `submitted`: `WritingAttempt` + `WritingEvaluation` + `attempt_id` link are
+  atomically finalized; the practice cannot be re-submitted with a different
+  essay.
+
+Do NOT add a redundant `completed` field to mirror Phase 3. Closed-loop
+completion is DERIVED from the trace `practice -> attempt -> evaluation ->
+LearningUpdate -> next PracticeRecommendation` (see 13). Exact enum/schema
+names are frozen by P4-02/P4-04; the semantics above are fixed now.
+
+## 10. Submission claim protocol (frozen)
+
+The Phase 2 route is NOT idempotent for repeated submissions: each successful
+invocation creates a new `WritingAttempt` + `WritingEvaluation`. Phase 4
+therefore MUST NOT claim that reusing Phase 2 persistence alone gives
+"same practice retry -> same attempt/evaluation". Phase 4 v1 allows exactly
+ONE logical submission per Writing practice; the practice ID is the
+ownership/idempotency anchor.
+
+```text
+Request submission
+  validate learner/practice ownership
+  compute deterministic submission fingerprint from the validated essay payload
+  BEGIN short DB transaction
+    SELECT practice FOR UPDATE
+    inspect practice state
+    if submitted:
+        resolve existing result (same fingerprint) or conflict (different)
+    if submission_in_progress:
+        return safe submission-in-progress outcome (no new evaluator call)
+    claim submission: state = submission_in_progress
+      store submission fingerprint + opaque claim token/identity
+    COMMIT
+  provider evaluation happens OUTSIDE the DB transaction
+  validated evaluation result
+  BEGIN short finalization transaction
+    re-lock practice
+    verify claim ownership/token
+    atomically create WritingAttempt + WritingEvaluation,
+      attach attempt_id to practice, mark submitted
+    COMMIT
+```
+
+No provider/network call happens while the practice row-lock transaction is
+open.
+
+### 10.1 Fingerprint semantics
+
+The fingerprint distinguishes retry of the same submitted essay from an
+attempt to replace a practice submission with a different essay:
+
+- after successful submission, same fingerprint -> return the existing
+  persisted attempt/evaluation result, no new provider call;
+- different fingerprint -> explicit practice-already-submitted conflict, no
+  provider call;
+- during `submission_in_progress`, same or different request -> MUST NOT start
+  another evaluator/provider call; return a stable safe in-progress/conflict
+  outcome.
+
+Exact HTTP status/error codes are frozen at P4-12; semantics are frozen now.
+Do NOT use a process-local mutex for correctness.
+
+### 10.2 Claim failure semantics
+
+If provider evaluation returns a normalized failure while the current process
+owns the active claim:
+
+```text
+short transaction: re-lock practice, verify claim token,
+  reset practice to generated, clear active claim information, commit
+```
+
+This permits a later retry. An already-finalized submission is never erased.
+
+A process crash between claim acquisition and normal cleanup is a known
+Phase 4 v1 operational limitation: there is no lease/queue/background
+recovery in this Phase. Do NOT invent leases, queues, Celery, Redis, or
+distributed job infrastructure. Document abandoned-claim recovery as a known
+limitation; correctness is preferred over an unsafe timeout that could start
+two provider evaluations simultaneously.
+
+## 11. Atomic attempt/evaluation/link finalization
+
+A provider result MUST NOT be persisted as `WritingAttempt + WritingEvaluation`
+and only afterward separately linked to the practice (that could orphan
+attempts/evaluations if the link fails). One atomic finalization transaction
+must commit together:
+
+```text
+WritingAttempt
++ WritingEvaluation
++ practice.attempt_id association
++ practice submitted state
+```
+
+This may require a SMALL, focused, Phase 4-compatible refactor of the existing
+Writing persistence internals so the accepted Phase 2 validation/model
+mapping can participate in an externally owned transaction. The preferred
+direction: extract/reuse validated model-building or transaction-neutral
+persistence helpers from the existing Phase 2 persistence service, preserving
+`/writing/evaluate` behavior unchanged. This requirement is frozen in P4-10.
+
+**Authorized by the Graph:** the focused composition refactor above.
+**NOT authorized:** changing Phase 2 scoring, evaluation semantics, rubric
+policy, `WritingEvaluation` data, or duplicating a second unrelated Writing
+persistence implementation.
+
+## 12. Persistence design
+
+One main durable Phase 4 table: `writing_practices`. No separate
+`PracticeSession` table by default (a practice row plus its status IS the
+session association).
+
+Conceptual responsibilities (exact schema shape belongs to P4-04/P4-05; the
+following invariants are frozen now):
+
+- identity (PK);
+- learner ownership (`learner_id` FK -> `learners`);
+- originating recommendation (`recommendation_id` FK ->
+  `practice_recommendations`, `UNIQUE(recommendation_id)`, RESTRICT);
+- authoritative `target_skill` (copied from the recommendation; generator
+  output must match it);
+- generated content (`question`, `focus_objective`, `instructions`,
+  `checkpoints`, `practice_type`) — exists ONLY for successful generation;
+- generator provenance (`provider`, `model`, `prompt_version`,
+  `thinking_mode`) and generation policy version;
+- submission lifecycle/claim state, submission fingerprint, claim
+  identity/token;
+- `attempt_id` FK -> `writing_attempts`, nullable before submission,
+  **`ON DELETE RESTRICT` / NO ACTION** (never SET NULL), unique if one
+  attempt cannot belong to two practices, and never replaced once attached;
 - `created_at`, `updated_at`.
 
-Closed-loop traceability is then a query path, not extra tables:
-`practice.recommendation_id` -> originating decision;
-`practice.attempt_id` -> `WritingAttempt` -> `WritingEvaluation`
-(evaluation.attempt_id) -> `LearningUpdate` (by writing_evaluation_id) ->
-`PracticeRecommendation` (by learning_update_id) = next decision.
+No generic memory/events table. No failed-generation rows.
 
-`PracticeSession` is a derived association (the practice row plus its status),
-not a durable table. Status values are frozen by `P4-02` (e.g. `generated`,
-`submitted`, and any completion semantics the product contract requires).
+### 12.1 Required database invariants (design level)
 
-## 8. Idempotency semantics (frozen answers)
+- `UNIQUE(recommendation_id)`.
+- One practice belongs to one learner.
+- Recommendation ownership must match learner ownership.
+- Only `decision_type = practice` recommendations are eligible for a row.
+- `attempt_id` nullable before submission; once attached it cannot be
+  replaced; `attempt_id` unique.
+- Practice attempt FK uses RESTRICT/NO ACTION (auditability: deleting the
+  attempt must not silently destroy `practice -> attempt -> evaluation ->
+  learning update` traceability).
+- A submitted practice cannot be overwritten with a new essay.
+- The submission claim prevents two simultaneous evaluator executions.
+- All exact constraint names belong to P4-05/P4-06.
 
-- **Retry "generate next practice" for the same originating recommendation →
-  the SAME practice** (deterministic product semantics; duplicate generation
-  is accidental and prevented by `UNIQUE (recommendation_id)` plus an
-  under-lock re-check).
-- Same practice submission retry -> returns the existing `WritingAttempt` /
-  evaluation result; no duplicate submission effects.
-- Same evaluation apply retry -> existing Phase 3 idempotency (unchanged).
-- Practice ownership: a practice belongs to exactly one learner; applying it
-  to another learner is an explicit conflict.
-- Cross-learner reuse of an originating recommendation is impossible by
-  construction (recommendation already learner-owned via Phase 3).
-- Concurrency: per-learner row locking plus the unique anchors, mirroring the
-  accepted Phase 3 approach; no process-local correctness locks.
+## 13. Closed-loop completion (frozen definition)
 
-## 9. Generator contract boundary
+Phase 4 closed-loop completion is the authoritative trace:
+
+```text
+practice has a persisted WritingAttempt
+  and that attempt has one persisted WritingEvaluation
+  and that evaluation has been applied through Phase 3 (LearningUpdate exists)
+  and the resulting PracticeRecommendation exists
+```
+
+No duplicated `practice.completed` flag unless a later implementation node
+demonstrates a real need.
+
+The next recommendation produced by completion may itself be `practice` or
+`no_practice`; both are valid successful closed-loop results. If it is
+`no_practice`, completion still succeeds and returns/exposes that
+recommendation; it does NOT automatically call the generator. **Never create
+an automatic `complete -> generate next practice` loop.** Generation remains
+an explicit later client/application action.
+
+## 14. Generator contract boundary
 
 Free-form model text never becomes the database contract. The generation
 policy (`P4-03`) freezes a structured boundary before implementation:
 
 - Input authority: the accepted `PracticeRecommendation` (target skill,
-  learner target, reason codes, planner version, snapshot) — read-only.
+  learner target, reason codes, planner version, decision type, snapshot) —
+  read-only.
 - Structured output: `GeneratedWritingPractice` with `practice_type`,
   `target_skill`, `question`, `focus_objective`, `instructions`, `checkpoints`,
   and generator policy version + provider/model/prompt/thinking provenance.
+- **Authority mirroring:** any generated field that mirrors
+  application-owned authority (e.g. `target_skill`) is validated against the
+  persisted recommendation; mismatch = invalid provider response, no row,
+  safe normalized failure.
 - Prompt ownership: application-owned prompt templates with a frozen
   `prompt_version`; the policy defines supported skills, Task 2 scope, content
   constraints, maximum sizes, safety constraints, fallback behavior, retry
   classes, idempotency, and provenance requirements.
 
-## 10. LLM architecture decision
+## 15. LLM architecture decision
 
-The existing Phase 2 `LLMProvider` protocol is Writing-evaluator-specific
-(`evaluate_writing`); do not bend it into a generation gateway. Add the
-smallest focused abstraction:
+The existing Phase 2 `LLMProvider` protocol and `RetryingProvider` are
+Writing-evaluator-specific (`evaluate_writing`); they cannot directly wrap a
+generator. Phase 4 reuses `ProviderError`, `ProviderErrorCategory`,
+`ProviderErrorContext`, `ProviderRetryPolicy`, accepted retryable category
+semantics, and bounded retry/backoff rules — but adds the smallest focused
+abstraction:
 
 ```text
 PracticeGenerator (Protocol, async)
   generate_practice(request: PracticeGenerationRequest) -> GeneratedWritingPractice
 ```
 
-- Reuses the accepted `ProviderError` / `ProviderErrorCategory` /
-  `ProviderRetryPolicy` / `RetryingProvider` failure normalization and the
-  DeepSeek `httpx.AsyncClient` injection pattern.
+with the frozen retry composition:
+
+```text
+PracticeGenerator
+  -> RetryingPracticeGenerator (small focused wrapper implementing the
+     PracticeGenerator protocol, reusing ProviderRetryPolicy/backoff rules)
+  -> DeepSeekPracticeGenerator
+```
+
 - `DeepSeekPracticeGenerator` implements the protocol using application-owned
-  prompt templates.
-- `FakePracticeGenerator` provides deterministic generated practices for
+  prompt templates and the accepted `httpx.AsyncClient` injection pattern.
+- `FakePracticeGenerator` provides deterministic, policy-valid practices for
   tests and CI (no live key, no network).
 - No second generic model gateway, no Agent framework, no Tool framework.
+- No generic retry-framework refactor unless a later implementation node
+  proves it materially simpler AND external review approves it; the default
+  plan is the focused `RetryingPracticeGenerator`.
 
-## 11. Provider/network rules
+## 16. Service boundaries (frozen; human-time separation)
+
+Generation and learner submission are separated by HUMAN TIME. The learner
+may receive a practice and submit it minutes/hours/days later. These are
+separate services, never one synchronous orchestration:
+
+- **P4-09 — Practice Generation Service**: `recommendation -> generated
+  persisted practice`. STOPS there.
+- **P4-10 — Practice Submission Integration**: `existing practice ->
+  submission claim -> provider evaluation -> atomic
+  attempt/evaluation/practice-link finalization`. STOPS there.
+- **P4-11 — Closed-loop Completion & Replan Service**: `persisted submitted
+  practice -> persisted WritingEvaluation -> existing Phase 3 apply -> new
+  Learner State -> next PracticeRecommendation -> expose closed-loop result`.
+  P4-11 MUST NOT generate a new practice. A future client call may use the
+  resulting next recommendation to call P4-09.
+
+The accepted lifecycle is `Generate -> HUMAN PRACTICE TIME -> Submit/Evaluate
+-> Apply/Replan`. Do not build one giant synchronous workflow endpoint.
+
+## 17. Provider/network rules
 
 - All provider/network calls happen OUTSIDE database transactions.
-- Boundaries: generate -> persist practice (two phases); submit -> existing
-  Phase 2 evaluation (provider outside transaction); apply persisted
-  evaluation -> existing Phase 3 service; then expose the new recommendation.
-- A persisted evaluation is reusable without re-invoking the LLM.
+- Generation: generate (outside txn) -> short persist transaction.
+- Submission: claim (short txn) -> provider evaluation (outside txn) ->
+  atomic finalization (short txn).
+- A persisted evaluation is reusable without re-invoking the LLM (Phase 3
+  idempotency remains authority).
 - No live DeepSeek key is required for any Phase 4 test or CI run.
 
-## 12. Test strategy
+## 18. Test strategy
 
 Required coverage:
 
-- pure generation-policy tests (frozen branches, constraints, provenance);
+- pure generation-policy tests (frozen branches, eligibility gating,
+  no_practice/cold-start semantics, provenance, constraints);
 - schema tests;
 - generator-contract tests and Fake-generator determinism;
 - provider adapter tests without live network (injected client);
-- real PostgreSQL persistence tests (ownership, unique anchors, FKs);
+- retry-wrapper tests for the focused `RetryingPracticeGenerator`;
+- real PostgreSQL persistence tests (ownership, unique anchors, FKs,
+  RESTRICT semantics);
 - migration upgrade/downgrade/re-upgrade + drift + single head;
-- idempotency, ownership, cross-learner conflict, rollback;
+- generation idempotency: first generate, retry returns same practice,
+  concurrent race -> at most one durable row, losing request resolves winner
+  (documented: provider may be invoked more than once);
+- submission idempotency: first submit, same-fingerprint retry returns
+  existing result, different-fingerprint conflict, in-progress safe outcome;
+- submission concurrency: two concurrent submissions -> only one claim, only
+  one authorized evaluator execution, only one `WritingAttempt`, only one
+  `WritingEvaluation`, one `practice.attempt_id`, no orphan writing records
+  (real PostgreSQL; no process-local lock; if PostgreSQL row-lock waiting is
+  central, prove it with PostgreSQL-native observation as in Phase 3);
+- rollback (generation failure leaves no row; claim failure resets to
+  generated; finalization atomicity);
 - safe API failure tests (no raw leakage; stable error contract);
-- concurrency tests where shared mutable state exists (same recommendation
-  generate race; same practice submit race);
 - full Phase 1/2/3/4 regression, no required skip, no live model;
 - Docker clean-checkout validation; PR CI with no DeepSeek credentials.
 
 The final closed-loop integration test must demonstrate, without a live model:
 
 ```text
-Recommendation -> Practice -> Submission -> Evaluation -> Learning Apply
--> New State -> New Recommendation
+Recommendation (practice) -> Practice -> Submission -> Evaluation
+-> Learning Apply -> New State -> New Recommendation
 ```
 
-using the Fake generator and the existing Fake/isolated evaluation path.
+using the Fake generator and the existing Fake/isolated evaluation path. Both
+a `practice` and a `no_practice` next recommendation are valid outcomes.
 
-## 13. Node state model
+## 19. Node state model
 
 `NOT_STARTED` / `READY` / `ACTIVE` / `COMPLETE` / `FIXING`, mirroring Phase 3.
 All nodes are currently `NOT_STARTED`; nothing is authorized to run until a
 separate explicit execution authorization activates `P4-01`.
 
-## 14. Dependency graph
+## 20. Dependency graph
 
 ```text
 P4-01 Phase 4 Baseline & Transition
@@ -281,10 +531,11 @@ P4-01 Phase 4 Baseline & Transition
 
 P4-02 Adaptive Writing Practice Product Contract
   -> P4-03
-  -> P4-10 (submission / closed-loop semantics)
 
 P4-03 Writing Practice Generation Policy
   -> P4-04
+  -> P4-05
+  -> P4-06
   -> P4-07
 
 P4-04 Practice Domain / API Schemas
@@ -296,33 +547,52 @@ P4-05 Practice Persistence Models
 P4-07 Practice Generator Contract
   -> P4-08
 
-P4-06 + P4-04 + P4-07 -> P4-09
+P4-08 DeepSeek Practice Generator + deterministic test fake
+  (required by P4-09: an implemented generator + fake, not merely the
+   interface)
 
-P4-09 + P4-02 -> P4-10
+P4-06 + P4-04 + P4-08
+  -> P4-09  Practice Generation Service
 
-P4-10 -> P4-11
+P4-09 + P4-02 + P4-06
+  -> P4-10  Practice Submission Integration
 
-P4-11 -> P4-12
+P4-10
+  -> P4-11  Closed-loop Completion & Replan Service
 
-P4-12 -> P4-13
+P4-11
+  -> P4-12  Practice APIs
 
-P4-13 -> P4-14
+P4-12
+  -> P4-13  Idempotency / Failure / Concurrency Hardening
 
-P4-14 -> P4-15
+P4-13
+  -> P4-14  Closed-loop Integration Validation
 
-P4-15 -> P4-16
+P4-14
+  -> P4-15  Docker / Documentation / Reproducibility
 
-P4-16 -> STOP
+P4-15
+  -> P4-16  Internal Final Audit & External Review Handoff
+
+P4-16
+  -> WORKBUDDY STOP / EXTERNAL REVIEW HANDOFF
 ```
 
-P4-03 -> P4-04 and P4-03 -> P4-07 both follow from the generation policy
-being the single authority for both schema shape and generator contract.
-P4-02 -> P4-10 is added because submission and closed-loop semantics are
-product-contract decisions, not implementation details.
+Dependency reasons:
+
+- `P4-03 -> P4-04/P4-05/P4-06`: the generation policy is the single authority
+  for both schema shape and the eligibility rules the model/migration encode.
+- `P4-03 -> P4-07`: the policy defines the generator contract.
+- `P4-07 -> P4-08 -> P4-09`: P4-09 requires an implemented generator plus the
+  deterministic fake (P4-07 alone is only the interface).
+- `P4-09 + P4-02 + P4-06 -> P4-10`: submission semantics come from the product
+  contract, the practice table must exist, and generation must be usable.
+- No new nodes are added merely to fix dependency arrows.
 
 ---
 
-## 15. Node definitions
+## 21. Node definitions
 
 ### P4-01 — Phase 4 Baseline & Transition
 
@@ -343,22 +613,25 @@ product-contract decisions, not implementation details.
 ### P4-02 — Adaptive Writing Practice Product Contract
 
 - **Type:** design / policy
-- **Purpose:** Freeze exactly what Phase 4 means by Practice, Practice Session,
-  Submission, completion, and closed-loop result; smallest useful user story.
+- **Purpose:** Freeze exactly what Phase 4 means by Practice, Submission,
+  completion, and closed-loop result; the decision-gated semantics
+  (`practice` vs `no_practice`, cold-start boundary from section 6); the
+  lifecycle vocabulary from section 9; and the smallest useful user story.
 - **Dependencies:** `P4-01`.
 - **Inputs / authority:** Phase 3 recommendation contract; Phase 2 evaluation
   pipeline.
-- **Deliverables:** accepted definitions and status vocabulary; the primary
-  end-to-end acceptance story: learner target 7.0 with TR 6.0 / CC 6.5 / LR
-  6.5 / GRA 6.5 -> Phase 3 recommends `task_response` -> Phase 4 generates one
-  Task-Response-focused Task 2 practice -> learner submits -> Phase 2
-  evaluates -> Phase 3 applies -> new state -> new recommendation.
+- **Deliverables:** accepted definitions, status vocabulary, submission-claim
+  and completion semantics; the primary end-to-end acceptance story starting
+  from an ESTABLISHED learner state that yields `decision_type = practice`
+  (see section 24).
 - **Acceptance criteria:** the story is unambiguous, testable end-to-end with
-  fakes, and all Phase 4 API behavior traces to it.
-- **Forbidden scope:** lesson generation, curriculum, other skills.
+  fakes, and all Phase 4 API behavior traces to it; no_practice/cold-start
+  behavior is explicit.
+- **Forbidden scope:** lesson generation, curriculum, bootstrap practice,
+  other skills.
 - **Failure / FIXING:** ambiguous session/completion semantics keep `P4-02` in
   `FIXING`.
-- **Unlocks:** `P4-03`, `P4-10`.
+- **Unlocks:** `P4-03`.
 
 ### P4-03 — Writing Practice Generation Policy
 
@@ -368,48 +641,54 @@ product-contract decisions, not implementation details.
 - **Dependencies:** `P4-02`.
 - **Inputs / authority:** accepted recommendation contract.
 - **Deliverables:** `docs/WRITING_PRACTICE_GENERATION_POLICY.md` defining input
-  authority, supported target skills, Task 2 scope, structured output
-  requirements, prompt ownership + version, provider provenance, retry
-  classes, content limits, safety constraints, idempotency behavior, failure
-  semantics. Explicit: no LLM chooses `target_skill`.
+  authority (decision-gated: `practice` only), supported target skills, Task 2
+  scope, structured output requirements, authority-mirroring validation,
+  prompt ownership + version, provider provenance, retry classes, content
+  limits, safety constraints, SUCCESS-ONLY idempotency behavior, and failure
+  semantics. Explicit: no LLM chooses `target_skill`; no generation for
+  `no_practice`.
 - **Acceptance criteria:** every frozen rule is testable; the policy states
   "Recommendation controls WHAT; generator controls HOW."
-- **Forbidden scope:** state/planner override, multi-skill content.
-- **Failure / FIXING:** free-form contract, missing limits, or state-authority
-  ambiguity keeps `P4-03` in `FIXING`.
-- **Unlocks:** `P4-04`, `P4-07`.
+- **Forbidden scope:** state/planner override, multi-skill content,
+  no_practice generation.
+- **Failure / FIXING:** free-form contract, missing limits, eligibility
+  ambiguity, or state-authority ambiguity keeps `P4-03` in `FIXING`.
+- **Unlocks:** `P4-04`, `P4-05`, `P4-06`, `P4-07`.
 
 ### P4-04 — Practice Domain / API Schemas
 
 - **Type:** schema
 - **Purpose:** Freeze strict Pydantic v2 schemas for generated practice,
-  submission, and API boundaries (mirroring Phase 2/3 schema discipline).
+  submission claim, submission fingerprint, lifecycle state, and API
+  boundaries (mirroring Phase 2/3 schema discipline).
 - **Dependencies:** `P4-03`.
 - **Inputs / authority:** generation policy; `P4-02` product contract.
 - **Deliverables:** schemas for `GeneratedWritingPractice`, submission
-  association, practice response, closed-loop result, and safe error mapping
-  additions only if required.
+  claim/response, fingerprint, practice response, closed-loop result, and safe
+  error mapping additions only if required.
 - **Acceptance criteria:** schema tests pass; no ORM/service/LLM behavior in
   schemas.
 - **Forbidden scope:** planner/state schema redesign.
 - **Failure / FIXING:** mutable defaults, missing constraints, or leakage of
   provider internals keeps `P4-04` in `FIXING`.
-- **Unlocks:** `P4-05`.
+- **Unlocks:** `P4-05`, `P4-09`.
 
 ### P4-05 — Practice Persistence Models
 
 - **Type:** database
-- **Purpose:** Implement the minimal `writing_practices` model (section 7).
+- **Purpose:** Implement the minimal `writing_practices` model (section 12).
 - **Dependencies:** `P4-04`.
-- **Inputs / authority:** frozen schemas; Phase 3 model conventions.
+- **Inputs / authority:** frozen schemas; section 12.1 invariants; Phase 3
+  model conventions.
 - **Deliverables:** SQLAlchemy 2.x model with FKs, ownership anchors,
-  `UNIQUE (recommendation_id)`, timestamps, provenance columns, RESTRICT/SET
-  NULL deletion semantics.
-- **Acceptance criteria:** model tests (constraints, anchors, ownership) pass;
-  no business logic in models.
-- **Forbidden scope:** memory/events tables, curriculum tables.
-- **Failure / FIXING:** broken anchors, missing ownership, or generic-history
-  design keeps `P4-05` in `FIXING`.
+  `UNIQUE (recommendation_id)`, claim/fingerprint columns, `attempt_id`
+  RESTRICT semantics, timestamps, provenance columns.
+- **Acceptance criteria:** model tests (constraints, anchors, ownership,
+  RESTRICT semantics) pass; no business logic in models.
+- **Forbidden scope:** memory/events tables, curriculum tables,
+  failed-generation rows.
+- **Failure / FIXING:** broken anchors, missing ownership, SET NULL attempt
+  FK, or generic-history design keeps `P4-05` in `FIXING`.
 - **Unlocks:** `P4-06`.
 
 ### P4-06 — Alembic Migration
@@ -419,7 +698,7 @@ product-contract decisions, not implementation details.
 - **Dependencies:** `P4-05`.
 - **Inputs / authority:** accepted model.
 - **Deliverables:** upgrade/downgrade/re-upgrade verified on real PostgreSQL;
-  drift check; constraint tests.
+  drift check; constraint tests (unique anchors, RESTRICT FKs).
 - **Acceptance criteria:** linear history `0001 -> 0002 -> 0003 -> 0004`,
   single head, downgrade removes only Phase 4 tables.
 - **Forbidden scope:** schema changes to Phase 2/3 tables.
@@ -435,114 +714,152 @@ product-contract decisions, not implementation details.
 - **Dependencies:** `P4-03`.
 - **Inputs / authority:** generation policy.
 - **Deliverables:** protocol with `generate_practice`, typed request (authority
-  values only) and `GeneratedWritingPractice` response; failure normalization
-  reusing `ProviderError`.
-- **Acceptance criteria:** contract tests with a stub pass; no state mutation.
+  values only) and `GeneratedWritingPractice` response; authority-mirroring
+  validation requirement; failure normalization reusing `ProviderError`.
+- **Acceptance criteria:** contract tests with a stub pass; no state mutation;
+  mismatch of mirrored authority fields is invalid.
 - **Forbidden scope:** generic gateway/tool abstractions.
-- **Failure / FIXING:** contract leakage, untyped output, or state write
-  attempts keep `P4-07` in `FIXING`.
+- **Failure / FIXING:** contract leakage, untyped output, missing authority
+  validation, or state write attempts keep `P4-07` in `FIXING`.
 - **Unlocks:** `P4-08`.
 
 ### P4-08 — DeepSeek Practice Generator + deterministic test fake
 
 - **Type:** provider
-- **Purpose:** Implement the production generator and the deterministic fake.
+- **Purpose:** Implement the production generator, the focused retry wrapper,
+  and the deterministic fake.
 - **Dependencies:** `P4-07`.
 - **Inputs / authority:** `P4-03` policy; `P4-07` contract.
 - **Deliverables:** `DeepSeekPracticeGenerator` (reusing the accepted httpx
-  injection and `ProviderError`/retry patterns) and `FakePracticeGenerator`
-  (deterministic, policy-valid content).
+  injection and `ProviderError`/backoff patterns), `RetryingPracticeGenerator`
+  (focused wrapper implementing `PracticeGenerator`), and
+  `FakePracticeGenerator` (deterministic, policy-valid content).
 - **Acceptance criteria:** adapter tests with injected client (no live
-  network); fake determinism tests; provenance recorded.
-- **Forbidden scope:** network in tests; target-skill authority.
-- **Failure / FIXING:** live-network test coupling or contract drift keeps
-  `P4-08` in `FIXING`.
+  network); retry-wrapper tests; fake determinism tests; provenance recorded;
+  authority fields never override application input.
+- **Forbidden scope:** network in tests; target-skill authority; generic
+  retry-framework refactor.
+- **Failure / FIXING:** live-network test coupling, contract drift, or
+  authority override keeps `P4-08` in `FIXING`.
 - **Unlocks:** `P4-09`.
 
 ### P4-09 — Practice Generation Service
 
 - **Type:** application service
-- **Purpose:** Orchestrate one atomic, idempotent practice generation.
-- **Dependencies:** `P4-06`, `P4-04`, `P4-07`.
+- **Purpose:** Orchestrate one SUCCESS-ONLY, decision-gated, idempotent
+  practice generation: `recommendation -> generated persisted practice`. STOPS
+  there (no submission, no apply, no replan).
+- **Dependencies:** `P4-06`, `P4-04`, `P4-08` (implemented generator + fake).
 - **Inputs / authority:** persisted recommendation, learner, generator,
   session, unique anchor.
-- **Deliverables:** service that validates recommendation ownership, runs the
-  generator OUTSIDE the transaction, persists one `writing_practices` row,
-  and returns the same practice on retry (idempotent); rollback on persistence
-  failure; safe generator-failure mapping.
+- **Deliverables:** service that validates learner/recommendation ownership
+  and `decision_type = practice`, returns an existing practice on retry,
+  returns a deterministic no-practice outcome for `no_practice`, runs the
+  generator OUTSIDE the transaction, validates mirrored authority fields, and
+  persists at most one `writing_practices` row (winner resolution on
+  `UNIQUE(recommendation_id)`).
 - **Acceptance criteria:** PostgreSQL tests for first generate, idempotent
-  retry, cross-learner conflict, rollback, provider failure (no row), and
-  provenance retention.
-- **Forbidden scope:** LLM inside transaction; state mutation.
-- **Failure / FIXING:** duplicate practices, partial writes, or provider
-  coupling keeps `P4-09` in `FIXING`.
+  retry, no_practice -> zero rows, cold_start -> zero rows + no generator
+  call, cross-learner conflict, provider failure -> no row, rollback,
+  provenance retention, and concurrent first-generation -> exactly one durable
+  row (losing request resolves the winner).
+- **Forbidden scope:** LLM inside transaction; state mutation; submission or
+  apply orchestration.
+- **Failure / FIXING:** duplicate practices, partial writes, no_practice
+  rows, or provider coupling keeps `P4-09` in `FIXING`.
 - **Unlocks:** `P4-10`.
 
-### P4-10 — Practice Session / Submission Integration
+### P4-10 — Practice Submission Integration
 
 - **Type:** application service
-- **Purpose:** Bind a generated practice to a learner submission and the
-  existing Phase 2 evaluation.
-- **Dependencies:** `P4-09`, `P4-02`.
-- **Inputs / authority:** practice identity, submission, Phase 2 evaluation
-  pipeline.
-- **Deliverables:** submission association (practice -> `WritingAttempt` ->
-  `WritingEvaluation`) with idempotent resubmission and unchanged Phase 2
-  semantics.
-- **Acceptance criteria:** real-PostgreSQL tests for first submit, resubmit
-  idempotency, ownership, and closed-loop link integrity.
-- **Forbidden scope:** bypassing Phase 2 evaluation; new scoring.
-- **Failure / FIXING:** broken attempt link, duplicate submission, or Phase 2
-  bypass keeps `P4-10` in `FIXING`.
+- **Purpose:** Implement the frozen submission-claim protocol (section 10) for
+  `existing practice -> claim -> provider evaluation -> atomic
+  attempt/evaluation/practice-link finalization`. STOPS there.
+- **Dependencies:** `P4-09`, `P4-02`, `P4-06`.
+- **Inputs / authority:** practice identity, validated essay payload, Phase 2
+  evaluation pipeline, session.
+- **Deliverables:** claim acquisition (practice `FOR UPDATE`, state,
+  fingerprint, claim token), provider evaluation OUTSIDE the transaction, and
+  one atomic finalization transaction creating `WritingAttempt` +
+  `WritingEvaluation` + `practice.attempt_id` + `submitted` together — via a
+  small focused composition refactor of Phase 2 persistence internals (allowed
+  by section 11) that leaves `/writing/evaluate` unchanged.
+- **Acceptance criteria:** real-PostgreSQL tests for first submit,
+  same-fingerprint retry (existing result, no provider call),
+  different-fingerprint conflict, in-progress safe outcome, claim-failure
+  reset to generated, atomic finalization (no orphan attempt/evaluation),
+  RESTRICT deletion semantics, and concurrent submission -> one claim/one
+  evaluator/one attempt/one evaluation.
+- **Forbidden scope:** changing Phase 2 scoring/rubric/evaluation semantics;
+  duplicating a second Writing persistence implementation; process-local
+  correctness locks.
+- **Failure / FIXING:** broken attempt link, duplicate submission, orphan
+  writing records, or Phase 2 bypass keeps `P4-10` in `FIXING`.
 - **Unlocks:** `P4-11`.
 
-### P4-11 — Closed-loop Application Service
+### P4-11 — Closed-loop Completion & Replan Service
 
 - **Type:** application service
-- **Purpose:** Compose generate -> submit -> Phase 3 apply -> expose the next
-  recommendation, keeping every provider call outside transactions.
+- **Purpose:** For a persisted submitted practice: `persisted WritingEvaluation
+  -> existing Phase 3 apply -> new Learner State -> next PracticeRecommendation
+  -> expose closed-loop result`. MUST NOT generate a new practice; MUST NOT
+  call the generator.
 - **Dependencies:** `P4-10`.
-- **Inputs / authority:** practice, evaluation, existing Phase 3 apply.
-- **Deliverables:** deterministic closed-loop orchestration returning the
-  persisted next `PracticeRecommendation`; retryable boundaries.
+- **Inputs / authority:** submitted practice, its persisted evaluation,
+  existing Phase 3 `apply_writing_evaluation`, session.
+- **Deliverables:** deterministic completion returning the persisted next
+  recommendation (which may be `practice` or `no_practice` — both valid);
+  reuse of Phase 3 apply idempotency (same evaluation retry -> no duplicate
+  evidence/state/recommendation).
 - **Acceptance criteria:** full closed-loop PostgreSQL test with fakes (no
-  live model); exactly one practice per recommendation; exactly one next
-  recommendation.
-- **Forbidden scope:** giant single-transaction endpoint with provider calls.
-- **Failure / FIXING:** transaction/provider mixing or missing replan result
-  keeps `P4-11` in `FIXING`.
+  live model); exactly one next recommendation; `no_practice` next decision
+  succeeds without generation.
+- **Forbidden scope:** generation; automatic complete->generate loop; a
+  second learner-state update mechanism; LLM state mutation.
+- **Failure / FIXING:** missing replan result, duplicate apply effects, or
+  generation coupling keeps `P4-11` in `FIXING`.
 - **Unlocks:** `P4-12`.
 
 ### P4-12 — Practice APIs
 
 - **Type:** API
-- **Purpose:** Thin routes for generating/inspecting practice, submitting work,
-  and observing the closed-loop result.
+- **Purpose:** Thin routes supporting SEPARATE lifecycle actions:
+  generate/resolve next eligible Writing practice; inspect one practice;
+  submit one practice; complete/apply/replan or expose completion result.
+  Exact paths are frozen here; NO single giant
+  `POST /practice/complete-everything` endpoint.
 - **Dependencies:** `P4-11`.
 - **Inputs / authority:** frozen schemas, services, existing error contract.
-- **Deliverables:** safe endpoints (exact paths frozen here) exposing the
-  auditable planning decision and closed-loop result; no raw internals.
-- **Acceptance criteria:** API tests for generate/idempotent retry/inspect/
-  submit/closed-loop/safe 4xx/5xx; no provider call in tests.
-- **Forbidden scope:** frontend-specific APIs; business logic in routes.
-- **Failure / FIXING:** route business logic, unsafe leakage, or missing
-  closed-loop fields keeps `P4-12` in `FIXING`.
+- **Deliverables:** safe endpoints exposing the auditable decision,
+  no-practice outcomes, submission status, and closed-loop result; no raw
+  internals.
+- **Acceptance criteria:** API tests for generate (incl. no_practice and
+  cold-start outcomes), idempotent retry, inspect, submit (claim/conflict/
+  in-progress), complete, and safe 4xx/5xx; no provider call in tests.
+- **Forbidden scope:** frontend-specific APIs; business logic in routes;
+  merged generate+submit+complete endpoints.
+- **Failure / FIXING:** route business logic, unsafe leakage, lifecycle
+  endpoint merging, or missing closed-loop fields keeps `P4-12` in `FIXING`.
 - **Unlocks:** `P4-13`.
 
 ### P4-13 — Idempotency / Failure / Concurrency Hardening
 
 - **Type:** test / hardening
-- **Purpose:** Prove database-safe behavior for duplicate and concurrent
-  practice generation/submission against real PostgreSQL.
+- **Purpose:** Prove database-safe duplicate and concurrent behavior against
+  real PostgreSQL for BOTH generation and submission.
 - **Dependencies:** `P4-12`.
-- **Inputs / authority:** services, APIs, unique anchors, per-learner row
-  locks.
-- **Deliverables:** controlled concurrency tests (same recommendation race ->
-  one practice; same practice submit race -> one attempt link) using the
-  PostgreSQL wait-state observation pattern accepted in Phase 3; bounded
-  conflict handling.
-- **Acceptance criteria:** no duplicate practices/attempts/decisions; final
-  state deterministic; no local-lock correctness.
+- **Inputs / authority:** services, APIs, unique anchors, claim protocol,
+  per-learner/per-practice row locks.
+- **Deliverables:** generation race tests (same recommendation, two
+  concurrent requests -> at most one durable row; both logical callers resolve
+  the same practice; provider invocation count is NOT asserted — documented
+  limitation); submission race tests (two concurrent submissions -> only one
+  claim owner, only one authorized evaluator execution, one `WritingAttempt`,
+  one `WritingEvaluation`, one `practice.attempt_id`, no orphan writing
+  records); PostgreSQL-native lock observation only where the implemented
+  claim schedule makes it central (per Phase 3 precedent).
+- **Acceptance criteria:** no duplicate practices/attempts/evaluations;
+  deterministic final state; no process-local correctness lock.
 - **Forbidden scope:** changing generation/state policy to pass tests.
 - **Failure / FIXING:** race, double effect, or replay mismatch keeps `P4-13`
   in `FIXING`.
@@ -557,8 +874,9 @@ product-contract decisions, not implementation details.
 - **Deliverables:** organized unit/API/PostgreSQL/concurrency/end-to-end
   coverage for the full loop with fakes; full regression, no required skip,
   no live provider.
-- **Acceptance criteria:** the closed-loop acceptance story passes end-to-end;
-  every Phase 1/2/3 regression remains green.
+- **Acceptance criteria:** the section 24 acceptance story passes end-to-end;
+  every Phase 1/2/3 regression remains green; both `practice` and `no_practice`
+  next-decision outcomes covered.
 - **Forbidden scope:** live-network tests; weakening existing tests.
 - **Failure / FIXING:** missing required coverage or regressions keep `P4-14`
   in `FIXING`.
@@ -581,28 +899,54 @@ product-contract decisions, not implementation details.
   `FIXING`.
 - **Unlocks:** `P4-16`.
 
-### P4-16 — Final Phase Audit
+### P4-16 — Internal Final Audit & External Review Handoff
 
 - **Type:** documentation
-- **Purpose:** Audit the entire Phase 4 and declare completion.
+- **Purpose:** Consolidate internal validation evidence and prepare the branch
+  for external review. P4-16 does NOT declare external acceptance.
 - **Dependencies:** `P4-15`.
 - **Inputs / authority:** node statuses, policies, commits, PostgreSQL/API/
-  Docker/CI evidence.
+  Docker/CI-eligible evidence.
 - **Deliverables:** `docs/PHASE4_AUDIT.md` with node status, policy versions,
-  commit checkpoints, closed-loop proof (recommendation -> practice ->
-  submission -> evaluation -> apply -> new state -> new recommendation),
-  idempotency/ownership/concurrency results, migration head, security/scope
-  review, known limitations, and next-phase recommendation.
-- **Acceptance criteria:** only if all Phase 4 acceptance criteria pass is
-  `P4-16` COMPLETE and Phase 4 STOP.
-- **Forbidden scope:** claiming approval that has not occurred.
+  commit checkpoints, closed-loop proof, generation/submission idempotency and
+  concurrency results, migration head, security/scope review, known
+  limitations (exactly-once provider invocation not guaranteed; abandoned-claim
+  recovery), and next-phase recommendation.
+- **Acceptance criteria:** evidence complete and internally consistent.
+  After P4-16 succeeds the status is `P4-01 ... P4-15 = COMPLETE`,
+  `P4-16 = INTERNAL_AUDIT_COMPLETE`, `PHASE 4 = FINAL_REVIEW_PENDING`, and
+  WorkBuddy execution STOPS.
+- **Forbidden scope:** claiming external review approval, PR CI green, master
+  merge, or Phase 4 acceptance.
 - **Failure / FIXING:** missing evidence or unrun required validation keeps
   `P4-16` in `FIXING`.
-- **Unlocks:** STOP (Phase 5 remains NOT_STARTED).
+- **Unlocks:** WORKBUDDY STOP / EXTERNAL REVIEW HANDOFF.
 
 ---
 
-## 16. Database safety
+## 22. External gate (post-P4-16 process)
+
+This process occurs OUTSIDE automatic P4 node execution:
+
+```text
+P4-16 internal audit
+  -> STOP WorkBuddy
+  -> ChatGPT external code review
+  -> FIXING loop if needed
+  -> create PR
+  -> GitHub pull_request CI
+  -> CI green
+  -> final external approval
+  -> explicit user merge authorization
+  -> merge master
+  -> master push CI
+  -> Phase 4 accepted
+```
+
+Phase 5 remains NOT_STARTED throughout. WorkBuddy never claims any of these
+external events before they occur.
+
+## 23. Database safety
 
 - All destructive/integration work uses the isolated test database guarded by
   `validate_test_database_url` (test token + never the development DB).
@@ -611,18 +955,41 @@ product-contract decisions, not implementation details.
 - Migration contract: linear history `0001_phase1 -> 0002_writing ->
   0003_learning -> 0004_writing_practice`, single head, reversible, zero drift.
 
-## 17. Git rules
+## 24. Primary end-to-end acceptance story
+
+Start from an ESTABLISHED learner state that already yields
+`PracticeRecommendation: decision_type = practice, target_skill =
+task_response`.
+
+Example: learner target 7.0; TR 6.0, CC 6.5, LR 6.5, GRA 6.5; Phase 3
+recommends `task_response`.
+
+```text
+existing Phase 3 recommendation (practice, task_response)
+  -> P4 generate targeted Task Response practice
+  -> persist one writing_practices row
+  -> human submission
+  -> claim submission (fingerprint + claim token)
+  -> Fake/evaluation provider OUTSIDE DB transaction
+  -> atomically persist WritingAttempt + WritingEvaluation + practice link
+  -> existing Phase 3 apply
+  -> new LearnerSkillState
+  -> new PracticeRecommendation (practice OR no_practice; both valid)
+```
+
+The complete end-to-end test runs with fakes and isolated PostgreSQL. No live
+DeepSeek.
+
+## 25. Git rules
 
 - Work on `phase/4-adaptive-writing-practice` (from accepted `master`).
 - Never push directly to `master`.
 - One node = one focused checkpoint commit (additive; no history rewriting).
-- Suggested checkpoint naming follows Phase 3 conventions (e.g. `feat:`,
-  `fix:`, `test:`, `docs:` prefixes).
 - After the Graph is accepted and execution is separately authorized, each
   completed node is committed, pushed, and the Graph status updated before the
   next READY node activates.
 
-## 18. STOP conditions
+## 26. STOP conditions
 
 - Required work falls outside Phase 4 scope.
 - An unresolved architectural decision is not already frozen by this Graph or
@@ -637,27 +1004,29 @@ product-contract decisions, not implementation details.
 
 Normal implementation bugs are not STOP conditions; fix them automatically.
 
-## 19. Execution authority
+## 27. Execution authority
 
 This Graph does NOT authorize runtime execution. After external review of this
 Graph, a separate explicit user authorization is required to activate `P4-01`.
 No continuous execution begins automatically.
 
-## 20. Final acceptance criteria (Phase 4)
+## 28. Final acceptance criteria (Phase 4)
 
-- The closed loop `Recommendation -> Practice -> Submission -> Evaluation ->
-  Apply -> New State -> New Recommendation` is implemented and proven with
-  fakes on isolated PostgreSQL.
-- Exactly one practice per originating recommendation; exactly one
-  recommendation per successful apply; idempotent retries; explicit ownership
-  conflicts.
+- The closed loop `Recommendation (practice) -> Practice -> Submission ->
+  Evaluation -> Apply -> New State -> New Recommendation` is implemented and
+  proven with fakes on isolated PostgreSQL.
+- At most one durable practice per eligible recommendation; zero rows for
+  `no_practice`/cold-start; idempotent retries; explicit ownership conflicts;
+  submission claim protocol enforced; atomic finalization with no orphan
+  writing records.
 - Provider calls stay outside transactions; a persisted evaluation is reusable
-  without re-invoking the LLM.
+  without re-invoking the LLM; Phase 3 apply idempotency is the sole state
+  update mechanism.
 - All Phase 1/2/3 regressions remain green; full suite passes with no required
   skip and no live DeepSeek key; Docker clean-checkout validation passes.
 - Single Alembic head; no forbidden scope; no secrets; truthful documentation.
 
-## 21. Phase 5 boundary
+## 29. Phase 5 boundary
 
 Phase 5 (not designed here) would introduce long-term learning memory,
 reflection, and possibly additional skills. Phase 4 deliberately builds
