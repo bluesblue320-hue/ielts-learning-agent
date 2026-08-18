@@ -65,3 +65,8 @@ button.primary-action:disabled { cursor: wait; opacity: 0.7; }
 .metric { margin: 0.5rem 0; font-size: 2rem; font-weight: 700; }
 .next-step { margin-top: 1.5rem; }
 @media (max-width: 640px) { .state-grid { grid-template-columns: 1fr; } }
+.writing-page { max-width: 54rem; }
+.writing-page textarea { min-height: 8rem; width: 100%; resize: vertical; border: 1px solid var(--line); border-radius: 0.5rem; padding: 0.75rem; font: inherit; line-height: 1.55; }
+.writing-page #essay { min-height: 18rem; }
+.evaluation { margin-top: 2.5rem; }
+.evaluation li { margin: 0.35rem 0; line-height: 1.55; }
