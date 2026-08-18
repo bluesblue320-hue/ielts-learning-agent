@@ -10,6 +10,7 @@ COPY app ./app
 RUN pip install --no-cache-dir .
 COPY alembic.ini ./
 COPY migrations ./migrations
+COPY docs ./docs
 
 FROM base AS test
 RUN pip install --no-cache-dir ".[test]"

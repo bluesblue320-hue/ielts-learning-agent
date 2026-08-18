@@ -1,6 +1,9 @@
 """Vendor-independent LLM provider boundaries."""
 
 from app.llm.deepseek import DeepSeekProvider, DeepSeekSettings
+from app.llm.deepseek_practice import DeepSeekPracticeGenerator
+from app.llm.practice_generator import PracticeGenerationRequest, PracticeGenerator
+from app.llm.practice_retry import RetryingPracticeGenerator
 from app.llm.provider import (
     LLMProvider,
     ProviderError,
@@ -20,7 +23,11 @@ from app.llm.retry import (
 
 __all__ = [
     "DeepSeekProvider",
+    "DeepSeekPracticeGenerator",
     "DeepSeekSettings",
+    "PracticeGenerationRequest",
+    "PracticeGenerator",
+    "RetryingPracticeGenerator",
     "LLMProvider",
     "ProviderError",
     "ProviderErrorCategory",

@@ -18,6 +18,23 @@ from app.services.learning_application import (
     LearningSourceError,
 )
 from app.services.writing_persistence import WritingPersistenceError
+from app.services.practice_completion import (
+    PracticeCompletionPersistenceError,
+    PracticeCompletionNotFoundError,
+    PracticeCompletionOwnershipError,
+    PracticeNotSubmittedError,
+)
+from app.services.practice_generation import (
+    GeneratedPracticeAuthorityError,
+    PracticeGenerationPersistenceError,
+    RecommendationNotFoundError,
+    RecommendationOwnershipError,
+)
+from app.services.practice_submission import (
+    PracticeSubmissionPersistenceError,
+    PracticeNotFoundError,
+    PracticeOwnershipError,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -194,6 +211,30 @@ async def learning_persistence_error_handler(
     )
 
 
+async def practice_persistence_error_handler(
+    request: Request,
+    error: Exception,
+) -> JSONResponse:
+    del request, error
+    return _response(
+        status.HTTP_503_SERVICE_UNAVAILABLE,
+        APIErrorCode.PERSISTENCE_UNAVAILABLE,
+        "Writing practice data is temporarily unavailable.",
+    )
+
+
+async def generated_practice_authority_error_handler(
+    request: Request,
+    error: GeneratedPracticeAuthorityError,
+) -> JSONResponse:
+    del request, error
+    return _response(
+        status.HTTP_502_BAD_GATEWAY,
+        APIErrorCode.PROVIDER_INVALID_RESPONSE,
+        "Writing practice generator returned an invalid response.",
+    )
+
+
 def register_error_handlers(application: FastAPI) -> None:
     """Register centralized error responses without exposing exception text."""
 
@@ -231,4 +272,51 @@ def register_learning_error_handlers(application: FastAPI) -> None:
     application.add_exception_handler(
         LearningPersistenceError,
         learning_persistence_error_handler,
+    )
+    for error_type in (
+        PracticeGenerationPersistenceError,
+        PracticeSubmissionPersistenceError,
+        PracticeCompletionPersistenceError,
+    ):
+        application.add_exception_handler(error_type, practice_persistence_error_handler)
+    application.add_exception_handler(
+        GeneratedPracticeAuthorityError,
+        generated_practice_authority_error_handler,
+    )
+    for error_type in (
+        PracticeCompletionNotFoundError,
+        PracticeNotFoundError,
+        RecommendationNotFoundError,
+    ):
+        application.add_exception_handler(error_type, practice_not_found_handler)
+    for error_type in (
+        PracticeCompletionOwnershipError,
+        PracticeOwnershipError,
+        RecommendationOwnershipError,
+        PracticeNotSubmittedError,
+    ):
+        application.add_exception_handler(error_type, practice_conflict_handler)
+
+
+async def practice_not_found_handler(
+    request: Request,
+    error: Exception,
+) -> JSONResponse:
+    del request, error
+    return _response(
+        status.HTTP_404_NOT_FOUND,
+        APIErrorCode.PRACTICE_NOT_FOUND,
+        "Writing practice was not found.",
+    )
+
+
+async def practice_conflict_handler(
+    request: Request,
+    error: Exception,
+) -> JSONResponse:
+    del request, error
+    return _response(
+        status.HTTP_409_CONFLICT,
+        APIErrorCode.PRACTICE_CONFLICT,
+        "Writing practice cannot be used in its current state.",
     )

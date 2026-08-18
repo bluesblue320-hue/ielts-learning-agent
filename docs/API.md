@@ -150,3 +150,21 @@ prevention is not claimed.
 
 - `GET /health/live` reports process liveness without external access.
 - `GET /health/ready` checks PostgreSQL and returns `503` when it is unavailable.
+
+## Adaptive Writing practice endpoints
+
+Phase 4 keeps the lifecycle actions separate under
+`/learners/{learner_id}/writing`:
+
+- `POST /recommendations/{recommendation_id}/practice` resolves an existing
+  Phase 3 decision. A `practice` decision returns one durable practice;
+  `no_practice` returns persisted reason codes with no provider call or row.
+- `GET /practices/{practice_id}` returns the durable practice and lifecycle state.
+- `POST /practices/{practice_id}/submit` accepts `{ "essay": "..." }` only;
+  the server supplies the persisted generated question to the existing evaluator.
+- `POST /practices/{practice_id}/complete` applies the persisted evaluation
+  through Phase 3 and returns the next recommendation without generating it.
+
+The lifecycle is `generated -> submission_in_progress -> submitted`. Provider
+calls are outside database transactions; PostgreSQL constraints and row locks
+enforce durable ownership and one logical submission.

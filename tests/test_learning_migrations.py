@@ -57,8 +57,11 @@ def _ensure_head(database_url: str) -> None:
 def test_phase3_revision_is_the_single_linear_head() -> None:
     script = ScriptDirectory.from_config(alembic_config())
 
-    assert script.get_heads() == ["0003_learning"]
+    # Phase 4 legitimately extended the linear history; Phase 3's migration
+    # chain must remain present and linear under the new head.
+    assert script.get_heads() == ["0004_writing_practice"]
     walk = {revision.revision: revision.down_revision for revision in script.walk_revisions()}
+    assert walk["0004_writing_practice"] == "0003_learning"
     assert walk["0003_learning"] == "0002_writing"
     assert walk["0002_writing"] == "0001_phase1"
     assert walk["0001_phase1"] is None
@@ -84,8 +87,9 @@ def test_learning_migration_upgrades_downgrades_and_reupgrades(
             assert not PHASE3_TABLES & set(inspect(connection).get_table_names())
             assert PHASE2_TABLES <= set(inspect(connection).get_table_names())
 
-        # 0002_writing -> 0003_learning
-        command.upgrade(config, "head")
+        # 0002_writing -> 0003_learning (explicit Phase 3 target; the current
+        # repo head is the Phase 4 migration).
+        command.upgrade(config, "0003_learning")
         assert _version(engine) == "0003_learning"
         with engine.connect() as connection:
             inspector = inspect(connection)
@@ -142,7 +146,7 @@ def test_learning_migration_upgrades_downgrades_and_reupgrades(
             assert PHASE2_TABLES <= tables
 
         # 0002_writing -> 0003_learning again (reproducibility)
-        command.upgrade(config, "head")
+        command.upgrade(config, "0003_learning")
         assert _version(engine) == "0003_learning"
         with engine.connect() as connection:
             tables = set(inspect(connection).get_table_names())

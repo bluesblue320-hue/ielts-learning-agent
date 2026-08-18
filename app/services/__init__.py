@@ -19,3 +19,4 @@ __all__ = [
     "WritingPersistenceError",
     "build_writing_provider_request",
 ]
+"""Application services."""

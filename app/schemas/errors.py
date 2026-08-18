@@ -20,6 +20,8 @@ class APIErrorCode(StrEnum):
     EVALUATION_NOT_FOUND = "evaluation_not_found"
     EVALUATION_CONFLICT = "evaluation_conflict"
     LEARNING_SOURCE_INVALID = "learning_source_invalid"
+    PRACTICE_NOT_FOUND = "practice_not_found"
+    PRACTICE_CONFLICT = "practice_conflict"
 
 
 class APIErrorDetail(BaseModel):

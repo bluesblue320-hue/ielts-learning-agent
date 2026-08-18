@@ -45,13 +45,10 @@ class WritingEvaluationPersistenceService:
                 "word count"
             )
 
-        attempt = WritingAttempt(
-            question=validated_submission.question,
-            essay=validated_submission.essay,
-            word_count=validated_submission.word_count,
+        attempt, evaluation_record = self.build_records(
+            validated_submission,
+            validated_evaluation,
         )
-        evaluation_record = self._evaluation_record(validated_evaluation)
-        attempt.evaluation = evaluation_record
 
         try:
             with self._session.begin():
@@ -69,6 +66,39 @@ class WritingEvaluationPersistenceService:
             attempt_id=attempt_id,
             evaluation_id=evaluation_id,
         )
+
+    @staticmethod
+    def build_records(
+        submission: WritingSubmission,
+        evaluation: WritingEvaluationResult,
+    ) -> tuple[WritingAttempt, WritingEvaluation]:
+        """Build validated persistence records without opening a transaction.
+
+        Phase 4 owns the surrounding claim-finalization transaction. Existing
+        Phase 2 callers retain their public ``persist`` transaction semantics.
+        """
+
+        validated_submission = WritingEvaluationPersistenceService._validated_submission(
+            submission
+        )
+        validated_evaluation = WritingEvaluationPersistenceService._validated_evaluation(
+            evaluation
+        )
+        if validated_evaluation.word_count != validated_submission.word_count:
+            raise ValueError(
+                "evaluation word_count must match the deterministic submission "
+                "word count"
+            )
+        attempt = WritingAttempt(
+            question=validated_submission.question,
+            essay=validated_submission.essay,
+            word_count=validated_submission.word_count,
+        )
+        evaluation_record = WritingEvaluationPersistenceService._evaluation_record(
+            validated_evaluation
+        )
+        attempt.evaluation = evaluation_record
+        return attempt, evaluation_record
 
     @staticmethod
     def _validated_submission(value: WritingSubmission) -> WritingSubmission:

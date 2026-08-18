@@ -22,8 +22,9 @@ def alembic_config(database_url: str | None = None) -> Config:
 def test_writing_revision_is_part_of_linear_history() -> None:
     script = ScriptDirectory.from_config(alembic_config())
 
-    assert script.get_heads() == ["0003_learning"]
+    assert script.get_heads() == ["0004_writing_practice"]
     walk = {revision.revision: revision.down_revision for revision in script.walk_revisions()}
+    assert walk["0004_writing_practice"] == "0003_learning"
     assert walk["0003_learning"] == "0002_writing"
     assert walk["0002_writing"] == "0001_phase1"
 

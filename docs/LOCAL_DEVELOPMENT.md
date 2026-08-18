@@ -115,14 +115,14 @@ test supplies an explicit mocked client.
 
 Apply or inspect development migrations with `alembic upgrade head`,
 `alembic current`, and `alembic downgrade base`; `IELTS_DATABASE_URL` controls
-that target. The current head is `0003_learning`. Pytest migration checks instead
+that target. The current head is `0004_writing_practice`. Pytest migration checks instead
 use `IELTS_TEST_DATABASE_URL` and must point to the isolated test database.
 
 ## Phase 3 learner-state commands
 
 Phase 3 adds deterministic learner state and planning on top of the Writing
 pipeline. The isolated test database must be migrated to `head`
-(`0003_learning`) before the learner integration suites run; the test fixtures
+(`0004_writing_practice`) before the learner and practice integration suites run; the test fixtures
 handle this automatically via `IELTS_TEST_DATABASE_URL`.
 
 Focused Phase 3 suites (all require the isolated test database):
@@ -144,6 +144,22 @@ POST /learners/{learner_id}/writing/evaluations/{evaluation_id}/apply
 
 No DeepSeek key is required: learner-state updates and planning are fully
 deterministic and never call a provider.
+
+## Phase 4 adaptive Writing practice commands
+
+Phase 4 uses the same isolated PostgreSQL test database and deterministic
+fakes. The complete Docker command above is the reproducibility check. Focused
+practice coverage is available with:
+
+```bash
+python -m pytest tests/test_practice_generation.py -q --strict-markers
+python -m pytest tests/test_practice_submission.py -q --strict-markers
+python -m pytest tests/test_practice_concurrency.py -q --strict-markers
+python -m pytest tests/test_phase4_consolidated.py -q --strict-markers
+```
+
+No DeepSeek key is required for these tests. Production generation uses the
+configured DeepSeek key, while submission reuses the existing Writing evaluator.
 
 ## Windows Docker Desktop note
 
