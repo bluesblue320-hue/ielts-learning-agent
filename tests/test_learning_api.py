@@ -199,6 +199,7 @@ def test_apply_practice_decision(client: TestClient, engine: Engine) -> None:
     body = response.json()
     assert body["reused"] is False
     assert body["learning_update_id"] > 0
+    assert body["recommendation_id"] > 0
     recommendation = body["recommendation"]
     assert recommendation["decision_type"] == "practice"
     assert recommendation["target_skill"] == "task_response"
@@ -239,6 +240,7 @@ def test_idempotent_replay_via_api(client: TestClient, engine: Engine) -> None:
     assert second.status_code == 200
     assert second.json()["reused"] is True
     assert second.json()["learning_update_id"] == first.json()["learning_update_id"]
+    assert second.json()["recommendation_id"] == first.json()["recommendation_id"]
     assert (
         second.json()["recommendation"]
         == first.json()["recommendation"]

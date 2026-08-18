@@ -7,15 +7,7 @@ it is not intended to be only a chatbot or a thin LLM wrapper.
 
 ## Current status
 
-**Phase 1 — Foundation, Phase 2 — Writing Evaluation Pipeline, Phase 3 —
-Learner State & Adaptive Planning, and Phase 4 — Adaptive Writing Practice are
-implemented on this branch pending external review.** Phase 4 closes the
-bounded Writing loop: a persisted Phase 3 recommendation may resolve to one
-targeted Task 2 practice; the learner submits an essay against the persisted
-authoritative question; the existing evaluator persists one attempt/evaluation;
-and Phase 3 applies that evaluation to return the next recommendation. The
-generate, inspect, submit, and complete actions stay separate. `no_practice`
-never calls a generator, and Phase 5 has not started.
+**Phase 1 = COMPLETE. Phase 2 = COMPLETE. Phase 3 = COMPLETE. Phase 4 = COMPLETE and merged baseline. Phase 5 is implemented on `phase/5-web-product-mvp` and FINAL_REVIEW_PENDING. Phase 6 is NOT_STARTED.**
 
 Phase 3 adds a
 complete deterministic learner-state path on top of the Phase 2 Writing
@@ -38,7 +30,7 @@ pipeline:
   persistence models.
 
 The Phase 3 execution record is [docs/PHASE3_GRAPH.md](docs/PHASE3_GRAPH.md).
-Learning memory, an agent runtime, RAG, frontend behavior, automatic lesson or
+Learning memory, an agent runtime, RAG, automatic lesson or
 exercise generation, and Speaking, Reading, and Listening workflows remain
 outside the implemented system (future phases).
 
@@ -50,7 +42,8 @@ outside the implemented system (future phases).
 | Persistence | PostgreSQL, SQLAlchemy 2.x, Alembic |
 | Learner state | Deterministic EWMA replay + frozen policy constants |
 | Planning | Deterministic target-gap planner (no LLM) |
-| Testing | pytest, httpx, isolated PostgreSQL integration |
+| Frontend | Next.js, TypeScript, Tailwind CSS |
+| Testing | pytest, httpx, Playwright, isolated PostgreSQL integration |
 | Infrastructure | Docker, Docker Compose |
 
 ## Quick start with Docker
@@ -105,6 +98,7 @@ local Python setup, migrations, cleanup, and Windows Docker troubleshooting.
 | `POST` | `/learners/{learner_id}/writing/recommendations/{recommendation_id}/practice` | Resolve an eligible recommendation to one practice or a deterministic `no_practice` outcome |
 | `GET` | `/learners/{learner_id}/writing/practices/{practice_id}` | Inspect a persisted Writing practice |
 | `POST` | `/learners/{learner_id}/writing/practices/{practice_id}/submit` | Submit an essay only; the server uses the persisted question |
+| `GET` | `/learners/{learner_id}/writing/practices/{practice_id}/evaluation` | Read the persisted evaluation for a learner-owned submitted practice |
 | `POST` | `/learners/{learner_id}/writing/practices/{practice_id}/complete` | Apply its persisted evaluation and return the next recommendation |
 
 Readiness responses expose only `available` or `unavailable`; connection details
@@ -128,6 +122,7 @@ product-score disclaimer. Phase 3 endpoints return the same safe error contract
 │   ├── schemas/          # Pydantic boundary/domain value schemas
 │   ├── services/         # evaluation, persistence, learning application, health
 │   └── main.py           # app.main:app entry point
+├── web/                  # Next.js + TypeScript + Tailwind presentation client
 ├── migrations/           # reversible Phase 1, Writing, and learning revisions
 ├── tests/                # unit, API, database, migration, and concurrency tests
 ├── compose.yaml
@@ -136,8 +131,8 @@ product-score disclaimer. Phase 3 endpoints return the same safe error contract
 └── docs/
 ```
 
-Learning memory, an agent runtime, RAG, automatic content generation, a
-frontend, and multi-skill workflows remain outside the implemented system.
+Learning memory, an agent runtime, RAG, automatic content generation, and
+multi-skill workflows remain outside the implemented system.
 
 ## Development guidance
 
@@ -156,3 +151,7 @@ maintained in [docs/PHASE3_GRAPH.md](docs/PHASE3_GRAPH.md).
 
 The completed validation evidence is recorded in the
 [Phase 2 final audit](docs/PHASE2_AUDIT.md).
+
+## Phase 5 Web MVP
+
+Phase 5 is implemented and awaits final external review. The Chinese-first Next.js, TypeScript, and Tailwind frontend is a presentation client for FastAPI and PostgreSQL; it does not own scoring, learner state, planning, or practice policy.

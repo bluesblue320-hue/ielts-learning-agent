@@ -188,4 +188,5 @@ class WritingEvaluationResponse(WritingSchema):
     """Persisted API response for one completed writing evaluation."""
 
     attempt_id: int = Field(gt=0)
+    evaluation_id: int = Field(gt=0)
     evaluation: WritingEvaluationResult

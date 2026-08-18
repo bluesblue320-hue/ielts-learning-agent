@@ -16,7 +16,7 @@ an atomic idempotent learning-application service, learner/learning REST APIs,
 and database-safe concurrency hardening. Phase 4 closes the bounded adaptive
 Writing loop with decision-gated practice generation, durable practice
 ownership, a submission claim protocol, atomic reuse of Phase 2 persistence,
-and Phase 3 completion/replanning. Generation, submission, and completion are
+and Phase 3 completion/replanning. Phase 5 implements the Chinese-first Next.js presentation layer, typed HTTP client, browser presentation cache, real Chromium E2E, and CI gate. Generation, submission, and completion are
 separate product actions; no automatic next-practice generation occurs. The
 learning-loop components below remain target designs unless their status says
 otherwise.
@@ -103,14 +103,14 @@ The core agent coordinates the learning loop. Planner, Memory, Evaluator, and IE
 | Component | Responsibility | Current status |
 | --- | --- | --- |
 | Core Learning Agent | Coordinate state, planning, tools, evaluation, and replanning | Deferred |
-| Learner Model | Represent goals, current level, skill mastery, weaknesses, and history as structured persistent data | IELTS band value schema only; learner state and persistence are deferred |
-| Planner | Select the next learning objective using deterministic priorities, with constrained generation where useful | Deferred |
+| Learner Model | Represent goals, current level, skill mastery, weaknesses, and history as structured persistent data | Implemented Phase 3 learner state and persistence |
+| Planner | Select the next learning objective using deterministic priorities, with constrained generation where useful | Implemented deterministic Phase 3 planner |
 | Memory | Separate stable profile data, learning events, and derived patterns | Storage logic and retrieval are deferred |
 | Writing Evaluator | Convert a Task 2 submission into validated structured evidence through the provider protocol | Implemented for Writing Task 2 only |
 | LLM Provider | Isolate vendor HTTP behavior behind a typed contract | Protocol, test fake, and DeepSeek adapter implemented; no runtime fake selection |
 | Tool Layer | Expose focused learning activities behind explicit interfaces | Wider practice tools deferred |
-| API Layer | Validate HTTP boundaries and call application services | Health APIs and `POST /writing/evaluate` implemented |
-| Persistence | Store durable application data in PostgreSQL through SQLAlchemy and Alembic | Writing attempts and evaluations implemented through `0002_writing`; learner data deferred |
+| API Layer | FastAPI is application/domain authority; Next.js is presentation only | Implemented through Phase 5 |
+| Persistence | Store durable application data in PostgreSQL through SQLAlchemy and Alembic | PostgreSQL is source of truth for Writing, learner state, recommendations, and practices |
 
 ## Responsibility boundaries
 
@@ -148,9 +148,11 @@ prompt injection, and perfect prevention is not claimed. The computed product
 band is a documented application policy, not a claim of exact equivalence to an
 official final IELTS Writing band. See [API.md](API.md) for the public contract.
 
-Learner-state updates, learning memory, planning, task generation, and the wider
-
-closed loop remain later-phase targets.
+Phase 3 implements learner-state updates and deterministic planning. Phase 4
+implements Writing practice generation and the bounded adaptive Writing closed
+loop. Phase 5 implements the Next.js presentation layer. Long-term semantic
+memory, RAG, Reading, Listening, Speaking, and the wider multi-skill Learning
+Agent remain future targets.
 ## Phase 1 architecture boundary
 
 Phase 1 established the following supporting foundation:
@@ -168,14 +170,24 @@ FastAPI application shell
 
 DeepSeek integration and the Writing Evaluator were explicitly deferred during
 Phase 1 and were later implemented only within the authorized Phase 2 boundary.
-Planner, learner state, Learning Memory behavior, RAG, Redis, LangGraph,
-multi-agent orchestration, and Speaking, Reading, or Listening remain deferred.
+During Phase 1, planner, learner state, Learning Memory behavior, RAG, Redis,
+LangGraph, multi-agent orchestration, and Speaking, Reading, or Listening were
+deferred. Phase 3 later implemented learner state and planning; Phase 4 later
+implemented the bounded adaptive Writing loop. Long-term memory, RAG, and the
+remaining skills remain future work.
 
 ## Evolution rule
 
 Architecture follows verified product requirements. Phase 1 is complete and
-stopped at `P1-11`; Phase 2 is complete and stopped at `P2-15`. The authorized
-Phase 3 graph defines planned scope, while node execution still requires
-separate explicit authority. Every later phase likewise requires explicit
-execution authority and its own graph.
+stopped at `P1-11`; Phase 2 is complete and stopped at `P2-15`; Phase 3 is
+complete; and Phase 4 is the accepted implementation baseline. Phase 5 is
+implemented and awaiting final external review. Phase 6 remains NOT_STARTED
+and requires separate explicit authority and its own graph.
 Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
+
+## Phase 5 presentation layer
+
+`web/` is a Chinese-first Next.js presentation layer. It calls FastAPI over JSON, caches only learner navigation/recommendation presentation fields in browser storage, and leaves evaluation, learner state, planning, lifecycle validation, and persistence authoritative in FastAPI/PostgreSQL.
+## Phase 5 status
+
+Next.js presentation, FastAPI application/domain authority, and PostgreSQL source of truth are implemented. Memory/RAG, wider multi-skill work, and Phase 6 remain future; Phase 6 is NOT_STARTED.

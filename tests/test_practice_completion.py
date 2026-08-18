@@ -49,6 +49,7 @@ def test_completion_applies_submitted_evaluation_and_returns_next_recommendation
         assert completed.practice_id == practice_id
         assert completed.attempt_id == submitted.attempt_id
         assert completed.evaluation_id == submitted.evaluation_id
+        assert completed.next_recommendation_id > 0
         assert completed.next_recommendation.decision_type.value in {"practice", "no_practice"}
         assert session.scalar(select(func.count()).select_from(LearningUpdate)) == 2
         assert session.scalar(select(func.count()).select_from(LearningEvidence)) == 8

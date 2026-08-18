@@ -38,6 +38,7 @@ A successful request returns `201 Created`:
 ```json
 {
   "attempt_id": 1,
+  "evaluation_id": 1,
   "evaluation": {
     "criteria": {
       "task_response": {
@@ -160,6 +161,11 @@ Phase 4 keeps the lifecycle actions separate under
   Phase 3 decision. A `practice` decision returns one durable practice;
   `no_practice` returns persisted reason codes with no provider call or row.
 - `GET /practices/{practice_id}` returns the durable practice and lifecycle state.
+- `GET /learners/{learner_id}/writing/practices/{practice_id}/evaluation`
+  requires a learner-owned practice in the `submitted` lifecycle state, follows
+  the authoritative `practice.attempt_id`, and returns `attempt_id`,
+  `evaluation_id`, and the persisted evaluation. It does not call the
+  LLM/provider again.
 - `POST /practices/{practice_id}/submit` accepts `{ "essay": "..." }` only;
   the server supplies the persisted generated question to the existing evaluator.
 - `POST /practices/{practice_id}/complete` applies the persisted evaluation
@@ -168,3 +174,7 @@ Phase 4 keeps the lifecycle actions separate under
 The lifecycle is `generated -> submission_in_progress -> submitted`. Provider
 calls are outside database transactions; PostgreSQL constraints and row locks
 enforce durable ownership and one logical submission.
+
+## Phase 5 web compatibility
+
+`POST /writing/evaluate` returns `attempt_id`, persisted `evaluation_id`, and `evaluation`. `POST /learners/{learner_id}/writing/evaluations/{evaluation_id}/apply` returns `learning_update_id`, `reused`, persisted `recommendation_id`, and `recommendation`. Complete returns `next_recommendation_id` beside `next_recommendation`.

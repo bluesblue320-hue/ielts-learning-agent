@@ -21,9 +21,11 @@ from app.schemas.practice import (
     SubmissionResult,
 )
 from app.services.practice_completion import PracticeCompletionService
+from app.services.practice_evaluation import PracticeEvaluationRetrievalService
 from app.services.practice_generation import PracticeGenerationService
 from app.services.practice_submission import PracticeSubmissionService
 from app.services.writing_evaluation import WritingEvaluationService
+from app.schemas.writing import WritingEvaluationResponse
 
 
 router = APIRouter(prefix="/learners/{learner_id}/writing", tags=["practice"])
@@ -68,6 +70,15 @@ def inspect_practice(
         from app.services.practice_completion import PracticeCompletionNotFoundError
         raise PracticeCompletionNotFoundError("writing practice was not found")
     return _response(row)
+
+
+@router.get("/practices/{practice_id}/evaluation", response_model=WritingEvaluationResponse)
+def get_practice_evaluation(
+    learner_id: int, practice_id: int, session: Annotated[Session, Depends(get_db_session)]
+) -> WritingEvaluationResponse:
+    return PracticeEvaluationRetrievalService(session).get(
+        learner_id=learner_id, practice_id=practice_id
+    )
 
 
 @router.post("/practices/{practice_id}/submit", response_model=SubmissionResult)

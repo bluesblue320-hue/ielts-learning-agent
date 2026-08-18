@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - master
+      - phase/5-web-product-mvp
 
 permissions:
   contents: read
@@ -45,5 +46,30 @@ jobs:
       - name: Install test dependencies
         run: python -m pip install ".[test]"
 
-      - name: Run tests
+      - name: Run backend tests
         run: python -m pytest -q --strict-markers
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        run: npm --prefix web ci
+
+      - name: Run web quality gates
+        run: |
+          npm --prefix web run lint
+          npm --prefix web run typecheck
+          npm --prefix web test
+          npm --prefix web run build
+
+      - name: Install Chromium for browser E2E
+        run: npx --prefix web playwright install --with-deps chromium
+
+      - name: Run browser E2E
+        env:
+          IELTS_E2E_DATABASE_URL: postgresql+psycopg://ielts_test:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/ielts_test
+        run: npm --prefix web run test:e2e

@@ -112,6 +112,7 @@ class AppliedLearningResult:
     """The logical outcome of applying one evaluation to a learner."""
 
     learning_update_id: int
+    recommendation_id: int
     recommendation: PracticeRecommendationDecision
     reused: bool = False
 
@@ -231,6 +232,7 @@ def _resolve_existing(
         ) from error
     return AppliedLearningResult(
         learning_update_id=existing.id,
+        recommendation_id=recommendation.id,
         recommendation=decision,
         reused=True,
     )
@@ -418,10 +420,12 @@ def apply_writing_evaluation(
             state_snapshot=decision.state_snapshot.model_dump(mode="json"),
         )
         session.add(recommendation)
+        session.flush()
 
         session.commit()
         return AppliedLearningResult(
             learning_update_id=learning_update.id,
+            recommendation_id=recommendation.id,
             recommendation=decision,
             reused=False,
         )

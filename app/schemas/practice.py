@@ -168,4 +168,5 @@ class ClosedLoopResult(PracticeSchema):
     attempt_id: int = Field(gt=0)
     evaluation_id: int = Field(gt=0)
     learning_update_id: int = Field(gt=0)
+    next_recommendation_id: int = Field(gt=0)
     next_recommendation: PracticeRecommendationDecision

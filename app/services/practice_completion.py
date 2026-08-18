@@ -89,5 +89,6 @@ class PracticeCompletionService:
             attempt_id=attempt_id,
             evaluation_id=evaluation_id,
             learning_update_id=applied.learning_update_id,
+            next_recommendation_id=applied.recommendation_id,
             next_recommendation=applied.recommendation,
         )
