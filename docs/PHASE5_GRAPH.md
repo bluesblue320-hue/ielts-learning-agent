@@ -6,10 +6,7 @@
 
 This graph is frozen on `phase/5-web-product-mvp`, created from `master` at
 `6aef28490d918905553c8c2335fd1d3c406bd7b9` (`Merge pull request #8 from
-bluesblue320-hue/phase/4-adaptive-writing-practice`). The working tree was
-clean before the branch was created. This run authorizes documentation-only
-completion of P5-01 and P5-02. It does not authorize Next.js initialization,
-application-code changes, policy changes, or P5-03 and later work.
+bluesblue320-hue/phase/4-adaptive-writing-practice`). The working tree was clean before the branch was created. P5-01 and P5-02 were completed as the design baseline; P5-03 through P5-15 were subsequently executed on this frozen graph, followed by the P5-16 internal audit.
 
 Phase 4 is the accepted implementation baseline. Its Phase 2 evaluation,
 Phase 3 learner-state/planning, and Phase 4 practice lifecycle policies remain
@@ -64,18 +61,17 @@ P5-01 Baseline & API Capability Audit [COMPLETE]
   -> P5-02 Web Product Contract Freeze [COMPLETE]
        -> P5-03 Next.js Foundation [COMPLETE]
        -> P5-04 Backend Web Compatibility [COMPLETE]
-P5-03 + P5-04 -> P5-05 Typed API Client -> P5-06 App Shell + Learner Context
-P5-06 -> P5-07 Dashboard
-P5-06 -> P5-08 Initial Writing UX
-P5-07 + P5-08 -> P5-09 Evaluation + Apply UX -> P5-10 Recommendation + Practice Generation
-  -> P5-11 Practice Workspace -> P5-12 Submission Feedback -> P5-13 Complete + Replan UX
-  -> P5-14 UX Resilience / Responsive / Accessibility
-  -> P5-15 Browser E2E + CI + Production Build
-  -> P5-16 Internal Final Audit -> STOP -> External Review
+P5-03 + P5-04 [COMPLETE] -> P5-05 Typed API Client [COMPLETE] -> P5-06 App Shell + Learner Context [COMPLETE]
+P5-06 -> P5-07 Dashboard [COMPLETE]
+P5-06 -> P5-08 Initial Writing UX [COMPLETE]
+P5-07 + P5-08 -> P5-09 Evaluation + Apply UX [COMPLETE] -> P5-10 Recommendation + Practice Generation [COMPLETE]
+  -> P5-11 Practice Workspace [COMPLETE] -> P5-12 Submission Feedback [COMPLETE] -> P5-13 Complete + Replan UX [COMPLETE]
+  -> P5-14 UX Resilience / Responsive / Accessibility [COMPLETE]
+  -> P5-15 Browser E2E + CI + Production Build [COMPLETE]
+  -> P5-16 Internal Final Audit [INTERNAL_AUDIT_COMPLETE] -> STOP -> External Review
 ```
 
-A node is READY only when every declared dependency is COMPLETE. P5-03 and
-P5-03 through P5-15 are complete; P5-16 internal audit is complete and external review is pending.
+All declared dependencies were satisfied in order. P5-01 through P5-15 are COMPLETE; P5-16 is INTERNAL_AUDIT_COMPLETE; Phase 5 is FINAL_REVIEW_PENDING.
 
 ---
 
@@ -119,9 +115,7 @@ Confirmed gaps:
    persisted evaluation for that practice. `GET /practices/{practice_id}`
    exposes lifecycle and `attempt_id`, not evaluation content.
 
-These are API compatibility gaps, not defects in evaluation, learner-state,
-planner, practice, or persistence policy. They are recorded for P5-04 only;
-no fix is implemented by this graph.
+These were API compatibility gaps, not defects in evaluation, learner-state, planner, practice, or persistence policy. They were resolved by the additive P5-04 implementation without redesigning those policies.
 
 ---
 
@@ -137,7 +131,7 @@ or reveal backend identifiers to learners.
 
 ---
 
-## 5. Future node boundaries
+## 5. Executed node boundaries
 
 ### P5-03 — Next.js Foundation
 
@@ -188,15 +182,15 @@ Browser E2E uses Playwright + Next.js + FastAPI + deterministic
 `FakeProvider`/`FakePracticeGenerator` + real isolated PostgreSQL. It MUST
 prove the full browser loop and MUST NOT call DeepSeek in CI.
 
-### P5-16 — Internal Final Audit
+### P5-16 — Internal Final Audit — INTERNAL_AUDIT_COMPLETE
 
-Future final state only:
+Executed final state:
 
 ```text
 P5-01..P5-15 = COMPLETE
 P5-16 = INTERNAL_AUDIT_COMPLETE
 Phase 5 = FINAL_REVIEW_PENDING
-STOP -> ChatGPT external review
+STOP -> External Review
 ```
 
 ---
@@ -208,6 +202,6 @@ RAG/vector storage/semantic memory; LangGraph or multi-agent runtime; Redis,
 Celery, Kafka; admin/social/leaderboard features; full i18n or English UI
 mode; and production cloud deployment, Kubernetes, or microservices.
 
-The current stop condition is reached: P5-01 and P5-02 are complete and no
-later node is authorized in this run. No frontend or application implementation
-has started.
+Final stop condition: `P5-01..P5-15 = COMPLETE`; `P5-16 = INTERNAL_AUDIT_COMPLETE`; `Phase 5 = FINAL_REVIEW_PENDING`; `STOP -> External Review`. Phase 6 remains NOT_STARTED.
+
+External-review findings are routed back to their owning completed nodes for targeted repair and revalidation, then return to external review. The dependency graph and node set remain unchanged.
