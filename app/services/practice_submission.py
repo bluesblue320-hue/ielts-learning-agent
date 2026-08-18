@@ -206,6 +206,13 @@ class PracticeSubmissionService:
             raise
         except SQLAlchemyError as error:
             self._session.rollback()
+            # A recoverable finalization failure is not a process crash: once
+            # its atomic transaction has rolled back, release only the claim
+            # still owned by this caller so a later submission can retry.
+            self._reset_claim_if_owned(
+                practice_id=practice_id,
+                claim_token=claim_token,
+            )
             raise PracticeSubmissionPersistenceError(
                 "writing practice finalization could not be persisted"
             ) from error

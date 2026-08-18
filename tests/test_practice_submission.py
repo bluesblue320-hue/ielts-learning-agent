@@ -3,14 +3,18 @@
 import asyncio
 
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import event, func, select
+from sqlalchemy.exc import OperationalError
 
 from app.llm import ProviderError, ProviderErrorCategory, ProviderErrorContext
 from app.models.practice import WritingPractice
 from app.models.writing import WritingAttempt, WritingEvaluation
 from app.schemas.practice import PracticeSubmission
 from app.services.practice_generation import PracticeGenerationService
-from app.services.practice_submission import PracticeSubmissionService
+from app.services.practice_submission import (
+    PracticeSubmissionPersistenceError,
+    PracticeSubmissionService,
+)
 from app.services.writing_evaluation import WritingEvaluationService
 from tests.fakes import FakePracticeGenerator, FakeProvider
 from tests.test_practice_generation import _recommendation, factory, truncate
@@ -143,3 +147,81 @@ def test_existing_in_progress_claim_does_not_evaluate_again(factory) -> None:
         )
         assert result.status == "in_progress"
         assert not provider.requests
+
+
+def test_finalization_failure_resets_owned_claim_and_allows_retry(factory) -> None:
+    """A recoverable PostgreSQL failure leaves no pair and releases our claim."""
+
+    provider = FakeProvider([_payload(), _payload()])
+    failed_once = False
+
+    def fail_attempt_insert(_connection, _cursor, statement, _parameters, _context, _many) -> None:
+        nonlocal failed_once
+        if not failed_once and "INSERT INTO writing_attempts" in statement:
+            failed_once = True
+            raise OperationalError(statement, {}, Exception("forced finalization failure"))
+
+    with factory() as session:
+        sql_engine = session.get_bind()
+        practice = _generated_practice(session)
+        event.listen(sql_engine, "before_cursor_execute", fail_attempt_insert)
+        try:
+            service = PracticeSubmissionService(session, WritingEvaluationService(provider))
+            with pytest.raises(PracticeSubmissionPersistenceError):
+                asyncio.run(
+                    service.submit(
+                        learner_id=1,
+                        practice_id=practice.id,
+                        submission=PracticeSubmission(essay="Retryable finalization essay."),
+                    )
+                )
+            session.rollback()
+            reset = session.get(WritingPractice, practice.id)
+            assert reset is not None
+            assert reset.lifecycle_state == "generated"
+            assert reset.submission_fingerprint is None
+            assert reset.claim_token is None
+            assert reset.attempt_id is None
+            assert session.scalar(select(func.count()).select_from(WritingAttempt)) == 1
+            assert session.scalar(select(func.count()).select_from(WritingEvaluation)) == 1
+
+            retried = asyncio.run(
+                service.submit(
+                    learner_id=1,
+                    practice_id=practice.id,
+                    submission=PracticeSubmission(essay="Retryable finalization essay."),
+                )
+            )
+            assert retried.status == "submitted"
+            assert retried.attempt_id is not None
+            assert retried.evaluation_id is not None
+            assert len(provider.requests) == 2
+            session.rollback()
+            final = session.get(WritingPractice, practice.id)
+            assert final is not None and final.attempt_id == retried.attempt_id
+            assert session.scalar(select(func.count()).select_from(WritingAttempt)) == 2
+            assert session.scalar(select(func.count()).select_from(WritingEvaluation)) == 2
+        finally:
+            event.remove(sql_engine, "before_cursor_execute", fail_attempt_insert)
+
+
+def test_claim_cleanup_does_not_clear_different_owner_token(factory) -> None:
+    with factory() as session:
+        practice = _generated_practice(session)
+        practice.lifecycle_state = "submission_in_progress"
+        practice.submission_fingerprint = "f" * 64
+        practice.claim_token = "new-owner-token"
+        session.commit()
+
+        PracticeSubmissionService(
+            session, WritingEvaluationService(FakeProvider([]))
+        )._reset_claim_if_owned(
+            practice_id=practice.id,
+            claim_token="old-owner-token",
+        )
+        session.rollback()
+        unchanged = session.get(WritingPractice, practice.id)
+        assert unchanged is not None
+        assert unchanged.lifecycle_state == "submission_in_progress"
+        assert unchanged.submission_fingerprint == "f" * 64
+        assert unchanged.claim_token == "new-owner-token"
