@@ -69,7 +69,7 @@ export default function DashboardPage() {
       setIsGenerating(false);
     }
   }
-  if (!isReady) return <p className="status-copy">正在恢复学习进度…</p>;
+  if (!isReady) return <p className="status-copy" aria-live="polite">正在恢复学习进度…</p>;
   if (cache === null) {
     return (
       <section className="content-card narrow-card">
@@ -85,7 +85,7 @@ export default function DashboardPage() {
       <p className="eyebrow">学习概览</p>
       <h1>你的写作学习状态</h1>
       <p className="supporting-copy">目标分数：{cache.writingTargetBand}</p>
-      {isLoading && <p className="status-copy">正在读取学习状态…</p>}
+      {isLoading && <p className="status-copy" aria-live="polite">正在读取学习状态…</p>}
       {error !== null && <p className="error-message" role="alert">{error}</p>}
       {state !== null && (
         <div className="state-grid">

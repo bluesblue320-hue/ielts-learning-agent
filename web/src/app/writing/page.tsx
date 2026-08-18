@@ -20,7 +20,7 @@ export default function WritingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
 
-  if (!isReady) return <p className="status-copy">正在恢复学习进度…</p>;
+  if (!isReady) return <p className="status-copy" aria-live="polite">正在恢复学习进度…</p>;
   if (cache === null) return <section className="content-card narrow-card"><h1>请先设置学习目标</h1><Link className="primary-action" href="/setup">前往学习设置</Link></section>;
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {

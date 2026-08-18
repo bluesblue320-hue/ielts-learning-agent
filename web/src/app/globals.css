@@ -71,3 +71,10 @@ button.primary-action:disabled { cursor: wait; opacity: 0.7; }
 .evaluation { margin-top: 2.5rem; }
 .evaluation li { margin: 0.35rem 0; line-height: 1.55; }
 .question-copy { white-space: pre-wrap; font-size: 1.1rem; line-height: 1.7; }
+
+:focus-visible { outline: 3px solid #d67f00; outline-offset: 3px; }
+button, select, textarea { font: inherit; }
+.error-message { border-left: 4px solid currentColor; padding-left: 0.75rem; font-weight: 600; }
+.status-copy[aria-live="polite"] { min-height: 1.5rem; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
+@media (max-width: 420px) { .site-header nav { width: 100%; overflow-x: auto; } .nav-link { white-space: nowrap; } .content-card { padding: 1rem; } }
