@@ -70,3 +70,4 @@ button.primary-action:disabled { cursor: wait; opacity: 0.7; }
 .writing-page #essay { min-height: 18rem; }
 .evaluation { margin-top: 2.5rem; }
 .evaluation li { margin: 0.35rem 0; line-height: 1.55; }
+.question-copy { white-space: pre-wrap; font-size: 1.1rem; line-height: 1.7; }
