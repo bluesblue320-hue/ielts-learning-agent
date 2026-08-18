@@ -29,7 +29,7 @@ export function presentApiError(error: unknown): string {
   return "操作暂时无法完成，请稍后重试。";
 }
 
-export function presentPlannerReasons(reasonCodes: string[]): string {
+export function presentNoPracticeReasons(reasonCodes: string[]): string {
   const primary = reasonCodes[0];
   return ({
     target_achieved: "你已达到当前目标分数，暂不需要生成针对性练习。",
@@ -37,4 +37,13 @@ export function presentPlannerReasons(reasonCodes: string[]): string {
     incomplete_state: "学习状态尚未完整建立，请先完成当前必要步骤。",
     target_unset: "请先设置 Writing 目标分数。",
   } as Record<string, string>)[primary] ?? "系统暂不建议生成针对性练习。";
+}
+
+export function presentPracticeReasons(reasonCodes: string[]): string {
+  const copy: Record<string, string> = {
+    largest_target_gap: "当前能力与目标分数差距最大，建议优先训练这一项。",
+    priority_tiebreak: "多个能力项差距相同时，系统按固定优先级选择了这一项。",
+    insufficient_evidence: "当前证据仍较少，本次训练也会帮助进一步校准学习状态。",
+  };
+  return reasonCodes.filter((code) => copy[code]).map((code) => copy[code]).join(" ");
 }

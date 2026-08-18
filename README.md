@@ -15,7 +15,7 @@ targeted Task 2 practice; the learner submits an essay against the persisted
 authoritative question; the existing evaluator persists one attempt/evaluation;
 and Phase 3 applies that evaluation to return the next recommendation. The
 generate, inspect, submit, and complete actions stay separate. `no_practice`
-never calls a generator, and Phase 5 has not started.
+never calls a generator, and Phase 5 is implemented on `phase/5-web-product-mvp` and FINAL_REVIEW_PENDING. Phase 6 is NOT_STARTED.
 
 Phase 3 adds a
 complete deterministic learner-state path on top of the Phase 2 Writing
@@ -38,7 +38,7 @@ pipeline:
   persistence models.
 
 The Phase 3 execution record is [docs/PHASE3_GRAPH.md](docs/PHASE3_GRAPH.md).
-Learning memory, an agent runtime, RAG, frontend behavior, automatic lesson or
+Learning memory, an agent runtime, RAG, automatic lesson or
 exercise generation, and Speaking, Reading, and Listening workflows remain
 outside the implemented system (future phases).
 
@@ -50,7 +50,8 @@ outside the implemented system (future phases).
 | Persistence | PostgreSQL, SQLAlchemy 2.x, Alembic |
 | Learner state | Deterministic EWMA replay + frozen policy constants |
 | Planning | Deterministic target-gap planner (no LLM) |
-| Testing | pytest, httpx, isolated PostgreSQL integration |
+| Frontend | Next.js, TypeScript, Tailwind CSS |
+| Testing | pytest, httpx, Playwright, isolated PostgreSQL integration |
 | Infrastructure | Docker, Docker Compose |
 
 ## Quick start with Docker
@@ -128,6 +129,7 @@ product-score disclaimer. Phase 3 endpoints return the same safe error contract
 │   ├── schemas/          # Pydantic boundary/domain value schemas
 │   ├── services/         # evaluation, persistence, learning application, health
 │   └── main.py           # app.main:app entry point
+├── web/                  # Next.js + TypeScript + Tailwind presentation client
 ├── migrations/           # reversible Phase 1, Writing, and learning revisions
 ├── tests/                # unit, API, database, migration, and concurrency tests
 ├── compose.yaml

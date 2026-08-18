@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { ApiRequestError, apiClient } from "@/lib/api/client";
+import { apiClient } from "@/lib/api/client";
+import { presentApiError } from "@/lib/presentation";
 import { useLearnerContext } from "@/components/learner-context";
 
 const targetBands = ["5.5", "6.0", "6.5", "7.0", "7.5", "8.0"];
@@ -25,9 +26,7 @@ export default function SetupPage() {
       router.push("/writing");
     } catch (reason) {
       setError(
-        reason instanceof ApiRequestError && reason.code === "request_invalid"
-          ? "请选择有效的目标分数。"
-          : "暂时无法保存学习设置，请稍后重试。",
+        presentApiError(reason),
       );
     } finally {
       setIsSubmitting(false);

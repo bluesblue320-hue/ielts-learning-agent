@@ -38,6 +38,7 @@ A successful request returns `201 Created`:
 ```json
 {
   "attempt_id": 1,
+  "evaluation_id": 1,
   "evaluation": {
     "criteria": {
       "task_response": {
@@ -171,4 +172,4 @@ enforce durable ownership and one logical submission.
 
 ## Phase 5 web compatibility
 
-`POST /writing/evaluate` returns persisted `evaluation_id`. Apply returns persisted `recommendation_id`; complete returns `next_recommendation_id`. `GET /learners/{learner_id}/writing/practices/{practice_id}/evaluation` returns the persisted evaluation for a submitted practice through its authoritative attempt link.
+`POST /writing/evaluate` returns `attempt_id`, persisted `evaluation_id`, and `evaluation`. `POST /learners/{learner_id}/writing/evaluations/{evaluation_id}/apply` returns `learning_update_id`, `reused`, persisted `recommendation_id`, and `recommendation`. Complete returns `next_recommendation_id` beside `next_recommendation`.

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { type LearnerStateResponse, type WritingSkill, apiClient } from "@/lib/api/client";
 import { useLearnerContext } from "@/components/learner-context";
-import { presentApiError, presentPlannerReasons, skillLabels } from "@/lib/presentation";
+import { presentApiError, presentNoPracticeReasons, presentPracticeReasons, skillLabels } from "@/lib/presentation";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -93,9 +93,9 @@ export default function DashboardPage() {
         {cache.currentRecommendation === null ? (
           <><p className="supporting-copy">完成首次写作评估并应用学习更新后，系统会在此显示下一步建议。</p><Link className="primary-action" href="/writing">进行首次写作</Link></>
         ) : cache.currentRecommendation.decision_type === "no_practice" ? (
-          <p className="supporting-copy">{presentPlannerReasons(cache.currentRecommendation.reason_codes)}</p>
+          <p className="supporting-copy">{presentNoPracticeReasons(cache.currentRecommendation.reason_codes)}</p>
         ) : (
-          <><p className="supporting-copy">训练重点：{cache.currentRecommendation.target_skill === null ? "—" : skillLabels[cache.currentRecommendation.target_skill]}</p><p className="supporting-copy">当前估计：{cache.currentRecommendation.current_estimate ?? "尚未建立"}；目标分数：{cache.currentRecommendation.learner_target_band?.value ?? cache.writingTargetBand}</p><p className="supporting-copy">{presentPlannerReasons(cache.currentRecommendation.reason_codes)}</p><button className="primary-action" disabled={isGenerating} onClick={generatePractice} type="button">{isGenerating ? "正在生成练习…" : "生成针对性练习"}</button></>
+          <><p className="supporting-copy">训练重点：{cache.currentRecommendation.target_skill === null ? "—" : skillLabels[cache.currentRecommendation.target_skill]}</p><p className="supporting-copy">当前估计：{cache.currentRecommendation.current_estimate ?? "尚未建立"}；目标分数：{cache.currentRecommendation.learner_target_band?.value ?? cache.writingTargetBand}</p><p className="supporting-copy">{presentPracticeReasons(cache.currentRecommendation.reason_codes)}</p><button className="primary-action" disabled={isGenerating} onClick={generatePractice} type="button">{isGenerating ? "正在生成练习…" : "生成针对性练习"}</button></>
         )}
       </section>
     </section>

@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 
 import { EvaluationDisplay } from "@/components/evaluation-display";
 import { useLearnerContext } from "@/components/learner-context";
-import { ApiRequestError, type WritingEvaluationResponse, apiClient } from "@/lib/api/client";
+import { type WritingEvaluationResponse, apiClient } from "@/lib/api/client";
+import { presentApiError } from "@/lib/presentation";
 
 function wordCount(value: string): number { return value.trim() === "" ? 0 : value.trim().split(/\s+/).length; }
 
@@ -27,7 +28,7 @@ export default function WritingPage() {
     event.preventDefault(); setIsSubmitting(true); setError(null); setResult(null);
     try { setResult(await apiClient.evaluateWriting(question, essay)); }
     catch (reason) {
-      setError(reason instanceof ApiRequestError && reason.code === "request_invalid" ? "请检查题目和作文内容后重试。" : "写作评估暂时不可用，请稍后重试。");
+      setError(presentApiError(reason));
     } finally { setIsSubmitting(false); }
   }
 
@@ -40,7 +41,7 @@ export default function WritingPage() {
       await apiClient.getLearnerState(learnerId);
       setRecommendation(applied.recommendation_id, applied.recommendation);
       router.push("/dashboard");
-    } catch { setError("暂时无法应用学习更新，请稍后重试。"); }
+    } catch (reason) { setError(presentApiError(reason)); }
     finally { setIsApplying(false); }
   }
   return <section className="writing-page"><p className="eyebrow">首次写作</p><h1>提交一篇 Writing Task 2 作文</h1><p className="supporting-copy">题目和作文将发送给评估服务；字数仅作本地提示，服务端验证仍为准。</p>
