@@ -2,8 +2,7 @@
 
 ## Document status
 
-**DESIGN RECORD — P5-01 and P5-02 complete; P5-03 through P5-16 not
-started.**
+**FINAL REVIEW PENDING — P5-01 through P5-15 complete; P5-16 internal audit complete.**
 
 This graph is frozen on `phase/5-web-product-mvp`, created from `master` at
 `6aef28490d918905553c8c2335fd1d3c406bd7b9` (`Merge pull request #8 from
