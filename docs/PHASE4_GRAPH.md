@@ -1249,3 +1249,12 @@ or live provider calls were required.
 concurrency, security/scope, reproducibility, and limitation evidence. The
 branch is ready for external review only. No PR has been created, no branch has
 been merged, `master` has not been pushed, and Phase 5 remains `NOT_STARTED`.
+
+### External-review repair record — `READY_FOR_REVIEW`
+
+Post-audit Phase 4 repair commits normalize all Phase 4 persistence and
+authority failures at the API boundary, reset a still-owned claim after a
+recoverable finalization failure, complete lifecycle API coverage, and align
+the generator decision/thinking-mode contracts. The prescribed focused Docker
+suite passed **46 passed, 1 warning**. Phase 4 remains `FINAL_REVIEW_PENDING`;
+this record does not claim external approval.

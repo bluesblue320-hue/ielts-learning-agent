@@ -2,7 +2,7 @@
 
 ## Status
 
-**Internal audit complete; external review pending.** This audit records work
+**Internal audit complete; external-review fixes ready for second review.** This audit records work
 on `phase/4-adaptive-writing-practice` only. It does not claim external
 approval, a pull request, CI approval, merge to `master`, or Phase 4
 acceptance. Phase 5 is `NOT_STARTED`.
@@ -49,6 +49,11 @@ and decision.
   transaction. Finalization atomically creates the Phase 2 attempt/evaluation,
   attaches the attempt, and marks the practice submitted. Normalized provider
   failures reset the owned claim without orphan writing records.
+- A recoverable SQLAlchemy finalization failure rolls back the complete atomic
+  transaction and then performs a short `FOR UPDATE` cleanup transaction. It
+  resets only the still-owned matching claim token to `generated`; it never
+  clears another caller's claim. If cleanup cannot reach the database, the
+  normalized persistence failure is returned and the abandoned claim remains.
 - Completion reuses the existing idempotent Phase 3 application service and
   returns a next recommendation; it never generates another practice.
 
@@ -69,6 +74,16 @@ fakes; no DeepSeek credential or live provider call was required.
 
 The full-suite result was rerun after the P4-15 documentation changes using a
 fresh Docker test-image build and isolated test database.
+
+## External-review repair evidence
+
+The follow-up repairs add centralized Phase 4 persistence/authority error
+normalization (`503 persistence_unavailable` and `502
+provider_invalid_response`), expanded public lifecycle API coverage, the
+recoverable finalization claim cleanup described above, and a typed
+`decision_type = practice` generation request plus `thinking_mode` protocol
+property. The prescribed focused Phase 4 Docker/PostgreSQL/API/migration/
+concurrency suite passed **46 passed, 1 warning**.
 
 ## Commit checkpoints
 
@@ -101,8 +116,10 @@ skill, PR, merge, force-push, or Phase 5 work was introduced.
 
 - Generation is exactly-once only at durable persistence: concurrent first
   callers may duplicate provider invocation before unique-row winner resolution.
-- An abandoned `submission_in_progress` claim has no automatic recovery or
-  lease; recovery requires an explicit future product decision.
+- A hard process crash or database-unavailable claim-cleanup can still leave an
+  abandoned `submission_in_progress` claim. There is no automatic recovery,
+  lease, or claim stealing in v1; recovery requires an explicit future product
+  decision.
 - The product band and provider feedback are application behavior, not a claim
   of official IELTS score equivalence.
 
