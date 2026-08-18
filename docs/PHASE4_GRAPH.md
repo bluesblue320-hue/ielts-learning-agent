@@ -2,7 +2,7 @@
 
 ## Document status
 
-**EXECUTION RECORD — P4-01 through P4-15 complete; P4-16 not started.**
+**EXECUTION RECORD — P4-01 through P4-15 complete; P4-16 internal audit complete.**
 
 This document retains the accepted Phase 4 graph and records its authorized
 execution on `phase/4-adaptive-writing-practice`. It does not claim external
@@ -1164,7 +1164,8 @@ transactional practice history only — not a generic memory or events system.
 ---
 
 **Execution status:** `P4-01` … `P4-15` are `COMPLETE`; `P4-16` is
-`NOT_STARTED`; Phase 5 remains `NOT_STARTED`.
+`INTERNAL_AUDIT_COMPLETE`; Phase 4 is `FINAL_REVIEW_PENDING`; Phase 5 remains
+`NOT_STARTED`.
 
 ---
 
@@ -1241,3 +1242,10 @@ actions, the `0004_writing_practice` migration head, Phase 4 scope, and the
 external-review boundary. A fresh Docker test-image build and isolated full
 suite verification passed **786 passed, 1 warning**; no DeepSeek credentials
 or live provider calls were required.
+
+### P4-16 — Internal final audit and external review handoff — `INTERNAL_AUDIT_COMPLETE`
+
+`docs/PHASE4_AUDIT.md` consolidates the policy, migration, commit, closed-loop,
+concurrency, security/scope, reproducibility, and limitation evidence. The
+branch is ready for external review only. No PR has been created, no branch has
+been merged, `master` has not been pushed, and Phase 5 remains `NOT_STARTED`.
