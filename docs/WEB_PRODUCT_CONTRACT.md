@@ -35,7 +35,7 @@ and Phase 5 MUST NOT modify LLM prompts merely to force Chinese feedback.
 
 | Route | Purpose | Data/action boundary |
 | --- | --- | --- |
-| `/` or `/dashboard` | learner state, target band, weakest skill, next recommendation | Reads state and presents the most recent recommendation held by the browser flow; it does not recompute planning. |
+| `/` or `/dashboard` | learner state, target band, weakest skill, next recommendation | Reads current learner state and presents the current persisted recommendation held by the browser presentation cache; it does not recompute planning. |
 | `/setup` | first-time learner creation | Creates one learner with a valid Writing target band and establishes browser learner context. |
 | `/writing` | initial Task 2 question, essay editor, word count, evaluation, apply | Submits question + essay to the existing evaluator, renders its response, then applies the returned persisted evaluation identity after P5-04 closes the handoff gap. |
 | `/practice/[practiceId]` | authoritative practice workspace | Reads the persisted practice; renders target, objective, instructions, checkpoints, essay editor, submission/evaluation, and complete/replan actions. |
@@ -73,9 +73,12 @@ appropriate empty/setup state; the UI must not invent a learner ID.
    ID.
 3. After P5-04, apply uses the explicit authoritative `evaluation_id` at
    `POST /learners/{learner_id}/writing/evaluations/{evaluation_id}/apply`.
-4. Render the returned state snapshot/recommendation as a presentation of the
-   backend decision. Do not calculate a new weakest skill or decision in the
-   browser.
+4. Apply returns `recommendation_id` alongside the pure `recommendation`
+   decision. The browser then calls `GET /learners/{learner_id}/state` and
+   renders the updated learner state plus that recommendation. The decision's
+   `state_snapshot` is audit/decision provenance, not a replacement for the
+   normal learner-state read endpoint.
+5. The frontend MUST NOT recompute learner state or planning.
 
 ### Recommendation and practice
 
@@ -94,8 +97,9 @@ appropriate empty/setup state; the UI must not invent a learner ID.
    `in_progress`, do not call complete and do not manufacture an evaluation.
 5. Only after a submitted practice and a successful evaluation display can the
    learner select complete. `POST .../complete` applies the existing
-   evaluation through Phase 3 and returns the next recommendation. It does not
-   generate the next practice.
+   evaluation through Phase 3 and returns `next_recommendation_id` alongside
+   the next pure recommendation decision. It does not generate the next
+   practice; the ID enables a later legal resolve action.
 
 ## 4. UI states
 
@@ -119,7 +123,30 @@ The practice/recommendation flow additionally has `no_practice`,
 | submission conflict | Explain that this practice already has a different submitted essay; do not overwrite it or call the provider again. |
 | submission in_progress | Explain that a submission is still being processed; do not issue another submit or complete action; permit a later refresh/retry. |
 
-## 5. Audited API contract
+## 5. Browser presentation cache (no auth)
+
+Phase 5 may store only presentation/navigation data in localStorage or an
+equivalent browser store:
+
+- `currentLearnerId`
+- `writingTargetBand`
+- `currentRecommendationId`
+- `currentRecommendation`
+
+This is a presentation cache, not backend truth. Every business action is
+validated by FastAPI and PostgreSQL; the browser must not use cached data to
+invent an identity, bypass a lifecycle transition, or recompute a decision.
+
+The browser MUST NOT persist essay content, full evaluation content, provider
+payloads, `claim_token`, `submission_fingerprint`, credentials, or secrets.
+
+**V1 limitation:** Phase 5 does not guarantee recovery of an interrupted
+learning session after browser storage is cleared or in another device/browser.
+Cross-device and cross-session recovery belongs to a future Auth/Product
+Hardening phase. Phase 5 does not add authentication, a session backend, a
+user profile, or a `GET latest recommendation` endpoint to address this.
+
+## 6. Audited API contract
 
 The supported validation, provider, persistence, ownership, and lifecycle
 errors use the safe envelope:
@@ -139,11 +166,11 @@ fingerprints, or submitted content from an error response.
 | `POST /learners` | `{ "writing_target_band": {"value":"7.0"} }` | `id`, target band, timestamps (201) | `request_invalid` (422); `persistence_unavailable` (503) |
 | `GET /learners/{learner_id}/state` | none | `learner_id`, exactly four states with estimate/evidence/revision | `learner_not_found` (404); `persistence_unavailable` (503) |
 | `POST /writing/evaluate` | `{ "question":"…", "essay":"…" }` | `attempt_id`, complete evaluation (criteria, evidence, feedback, bands, word count, metadata, product band) (201) | `request_invalid` (422); provider codes (502/503/504); `persistence_unavailable` (503) |
-| `POST /learners/{learner_id}/writing/evaluations/{evaluation_id}/apply` | none | `learning_update_id`, `reused`, full next recommendation | `learner_not_found`, `evaluation_not_found` (404); `evaluation_conflict` (409); `learning_source_invalid` (422); `persistence_unavailable` (503) |
+| `POST /learners/{learner_id}/writing/evaluations/{evaluation_id}/apply` | none | `learning_update_id`, `reused`, persisted `recommendation_id`, and full pure recommendation decision; then the browser reads current state | `learner_not_found`, `evaluation_not_found` (404); `evaluation_conflict` (409); `learning_source_invalid` (422); `persistence_unavailable` (503) |
 | `POST /learners/{learner_id}/writing/recommendations/{recommendation_id}/practice` | none | `decision`; either `practice` or `no_practice_reasons` | `practice_not_found` (404); `practice_conflict` (409); provider codes; `persistence_unavailable` (503) |
 | `GET /learners/{learner_id}/writing/practices/{practice_id}` | none | immutable practice content, lifecycle state, nullable attempt ID | `practice_not_found` (404) |
 | `POST /learners/{learner_id}/writing/practices/{practice_id}/submit` | `{ "essay":"…" }` only | `status` and, for `submitted`/`reused`, `attempt_id` + `evaluation_id` | `request_invalid` (422); `practice_not_found` (404); `practice_conflict` (409); provider codes; `persistence_unavailable` (503) |
-| `POST /learners/{learner_id}/writing/practices/{practice_id}/complete` | none | practice/attempt/evaluation/update IDs and full `next_recommendation` | `practice_not_found` (404); `practice_conflict` (409); `persistence_unavailable` (503) |
+| `POST /learners/{learner_id}/writing/practices/{practice_id}/complete` | none | practice/attempt/evaluation/update IDs, persisted `next_recommendation_id`, and full pure next recommendation decision | `practice_not_found` (404); `practice_conflict` (409); `persistence_unavailable` (503) |
 
 Provider codes are `provider_configuration`, `provider_authentication`,
 `provider_billing_unavailable`, `provider_timeout`, `provider_rate_limited`,
@@ -151,16 +178,24 @@ Provider codes are `provider_configuration`, `provider_authentication`,
 `provider_request_rejected`. Present them with a concise Chinese retry or
 support message; never distinguish sensitive account details to the learner.
 
-## 6. Required P5-04 compatibility contract (not implemented)
+## 7. Required P5-04 compatibility contract (not implemented)
 
-P5-01 confirmed two additive requirements:
+P5-01 confirmed four additive requirements:
 
 1. The successful initial evaluation handoff needs an explicit persisted
    `evaluation_id`. Preferred compatible change: add `evaluation_id` to the
    existing `201 POST /writing/evaluate` response alongside `attempt_id` and
    `evaluation`. This permits the frozen apply transition without treating
    independent IDs as interchangeable.
-2. Add `GET /learners/{learner_id}/writing/practices/{practice_id}/evaluation`.
+2. Add persisted `recommendation_id: int` beside the existing pure
+   `recommendation` on `LearningApplyResponse` from
+   `POST /learners/{learner_id}/writing/evaluations/{evaluation_id}/apply`.
+   Do not put database identity into `PracticeRecommendationDecision`.
+3. Add persisted `next_recommendation_id: int` beside the existing pure
+   `next_recommendation` on `ClosedLoopResult` from
+   `POST /learners/{learner_id}/writing/practices/{practice_id}/complete`.
+   Do not put database identity into `PracticeRecommendationDecision`.
+4. Add `GET /learners/{learner_id}/writing/practices/{practice_id}/evaluation`.
    It returns the full existing evaluation representation linked from the
    submitted practice's authoritative `attempt_id` to its `WritingEvaluation`.
    It must enforce learner ownership, require lifecycle `submitted`, and use
@@ -171,7 +206,7 @@ These changes must be additive. They must not change scoring, provider prompts,
 evaluation policy, learner-state policy, planner policy, practice lifecycle, or
 the persistence model.
 
-## 7. Non-goals and future validation
+## 8. Non-goals and future validation
 
 This MVP excludes auth, payments, all non-Writing skills, RAG/vector memory,
 agent runtimes, background-job infrastructure, admin/social features, full

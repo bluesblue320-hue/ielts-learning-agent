@@ -93,11 +93,11 @@ baseline. **Deliverable:** the audited UI contract and gaps in
 | Create learner and target | `POST /learners` | Available |
 | View four-skill state | `GET /learners/{learner_id}/state` | Available |
 | Submit initial Task 2 | `POST /writing/evaluate` | Evaluation display available; apply handoff incomplete |
-| Apply initial evaluation | `POST /learners/{learner_id}/writing/evaluations/{evaluation_id}/apply` | Blocked by missing public initial `evaluation_id` |
-| Resolve recommendation | `POST /learners/{learner_id}/writing/recommendations/{recommendation_id}/practice` | Available once recommendation identity is retained in UI state |
+| Apply initial evaluation | `POST /learners/{learner_id}/writing/evaluations/{evaluation_id}/apply` | Blocked by missing public initial `evaluation_id`; its response also lacks `recommendation_id` |
+| Resolve recommendation | `POST /learners/{learner_id}/writing/recommendations/{recommendation_id}/practice` | Blocked until apply exposes the persisted recommendation identity |
 | Inspect practice | `GET /learners/{learner_id}/writing/practices/{practice_id}` | Available |
 | Submit practice | `POST /learners/{learner_id}/writing/practices/{practice_id}/submit` | Submission outcome available; full evaluation retrieval absent |
-| Complete and replan | `POST /learners/{learner_id}/writing/practices/{practice_id}/complete` | Available after a submitted practice |
+| Complete and replan | `POST /learners/{learner_id}/writing/practices/{practice_id}/complete` | Replans, but its next recommendation cannot be resolved later because no public next recommendation ID is returned |
 
 Confirmed gaps:
 
@@ -106,7 +106,16 @@ Confirmed gaps:
    return the distinct persisted `evaluation_id` that the apply endpoint
    requires. The frontend MUST NOT infer that two independent database IDs are
    equal.
-2. Practice submission returns `status`, `attempt_id`, and `evaluation_id` for
+2. `LearningApplyResponse` returns the pure planner decision but not its
+   persisted `recommendation_id`. The generation endpoint is recommendation
+   scoped, so the browser has no legal identity with which to resolve the
+   returned decision. The ID belongs beside, not inside,
+   `PracticeRecommendationDecision`.
+3. `ClosedLoopResult` returns `next_recommendation` but not its persisted
+   `next_recommendation_id`. A future `practice` decision returned by complete
+   consequently cannot be resolved through the existing recommendation-scoped
+   generation endpoint.
+4. Practice submission returns `status`, `attempt_id`, and `evaluation_id` for
    `submitted`/`reused`, but there is no public endpoint to retrieve the full
    persisted evaluation for that practice. `GET /practices/{practice_id}`
    exposes lifecycle and `attempt_id`, not evaluation content.
@@ -144,14 +153,20 @@ contract. The required candidates discovered in P5-01 are:
 
 - expose the persisted `evaluation_id` in the successful initial-evaluation
   handoff (prefer an additive field on `POST /writing/evaluate`);
+- expose `recommendation_id` beside the existing pure `recommendation` on
+  `LearningApplyResponse` from `POST .../evaluations/{evaluation_id}/apply`;
+- expose `next_recommendation_id` beside the existing pure
+  `next_recommendation` on `ClosedLoopResult` from `POST .../complete`;
 - add `GET /learners/{learner_id}/writing/practices/{practice_id}/evaluation`
   to expose the persisted evaluation linked through `Practice -> Attempt ->
   Evaluation`.
 
 The practice-evaluation endpoint, if implemented, must enforce learner
 ownership, require a submitted practice, use the authoritative attempt link,
-and return safe 4xx/5xx failures. P5-04 MUST NOT redesign evaluation policy,
-scoring, learner state, planner, the Phase 4 lifecycle, or persistence models.
+and return safe 4xx/5xx failures. These four changes are additive API/
+application-result compatibility only. P5-04 MUST NOT redesign evaluation
+policy, scoring, learner state, planner, the Phase 4 lifecycle, or persistence
+models.
 
 ### P5-05 through P5-15
 
