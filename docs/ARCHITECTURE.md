@@ -179,3 +179,7 @@ Phase 3 graph defines planned scope, while node execution still requires
 separate explicit authority. Every later phase likewise requires explicit
 execution authority and its own graph.
 Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
+
+## Phase 5 presentation layer
+
+`web/` is a Chinese-first Next.js presentation layer. It calls FastAPI over JSON, caches only learner navigation/recommendation presentation fields in browser storage, and leaves evaluation, learner state, planning, lifecycle validation, and persistence authoritative in FastAPI/PostgreSQL.

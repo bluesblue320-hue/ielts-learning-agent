@@ -168,3 +168,7 @@ Phase 4 keeps the lifecycle actions separate under
 The lifecycle is `generated -> submission_in_progress -> submitted`. Provider
 calls are outside database transactions; PostgreSQL constraints and row locks
 enforce durable ownership and one logical submission.
+
+## Phase 5 web compatibility
+
+`POST /writing/evaluate` returns persisted `evaluation_id`. Apply returns persisted `recommendation_id`; complete returns `next_recommendation_id`. `GET /learners/{learner_id}/writing/practices/{practice_id}/evaluation` returns the persisted evaluation for a submitted practice through its authoritative attempt link.

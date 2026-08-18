@@ -4,22 +4,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { ApiRequestError, type LearnerStateResponse, type WritingSkill, apiClient } from "@/lib/api/client";
+import { type LearnerStateResponse, type WritingSkill, apiClient } from "@/lib/api/client";
 import { useLearnerContext } from "@/components/learner-context";
-
-const labels: Record<WritingSkill, string> = {
-  task_response: "任务回应（Task Response）",
-  coherence_and_cohesion: "连贯与衔接（Coherence and Cohesion）",
-  lexical_resource: "词汇资源（Lexical Resource）",
-  grammatical_range_and_accuracy: "语法多样性与准确性（Grammatical Range and Accuracy）",
-};
-
-function stateMessage(reason: unknown): string {
-  if (reason instanceof ApiRequestError && reason.code === "learner_not_found") {
-    return "未找到当前学习者，请重新设置学习目标。";
-  }
-  return "暂时无法读取学习状态，请刷新后重试。";
-}
+import { presentApiError, presentPlannerReasons, skillLabels } from "@/lib/presentation";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -41,7 +28,7 @@ export default function DashboardPage() {
         const result = await apiClient.getLearnerState(activeLearnerId);
         if (active) setState(result);
       } catch (reason) {
-        if (active) setError(stateMessage(reason));
+        if (active) setError(presentApiError(reason));
       } finally {
         if (active) setIsLoading(false);
       }
@@ -89,11 +76,11 @@ export default function DashboardPage() {
       {error !== null && <p className="error-message" role="alert">{error}</p>}
       {state !== null && (
         <div className="state-grid">
-          {(Object.keys(labels) as WritingSkill[]).map((skill) => {
+          {(Object.keys(skillLabels) as WritingSkill[]).map((skill) => {
             const item = state.states[skill];
             return (
               <article className="content-card" key={skill}>
-                <h2>{labels[skill]}</h2>
+                <h2>{skillLabels[skill]}</h2>
                 <p className="metric">{item.estimated_band ?? "尚未评估"}</p>
                 <p className="supporting-copy">已采纳证据：{item.evidence_count}</p>
               </article>
@@ -106,9 +93,9 @@ export default function DashboardPage() {
         {cache.currentRecommendation === null ? (
           <><p className="supporting-copy">完成首次写作评估并应用学习更新后，系统会在此显示下一步建议。</p><Link className="primary-action" href="/writing">进行首次写作</Link></>
         ) : cache.currentRecommendation.decision_type === "no_practice" ? (
-          <p className="supporting-copy">当前学习状态暂不需要生成针对性练习。完成新的写作评估后，系统会给出新的建议。</p>
+          <p className="supporting-copy">{presentPlannerReasons(cache.currentRecommendation.reason_codes)}</p>
         ) : (
-          <><p className="supporting-copy">系统已给出下一步针对性写作练习建议。</p><button className="primary-action" disabled={isGenerating} onClick={generatePractice} type="button">{isGenerating ? "正在生成练习…" : "生成针对性练习"}</button></>
+          <><p className="supporting-copy">训练重点：{cache.currentRecommendation.target_skill === null ? "—" : skillLabels[cache.currentRecommendation.target_skill]}</p><p className="supporting-copy">当前估计：{cache.currentRecommendation.current_estimate ?? "尚未建立"}；目标分数：{cache.currentRecommendation.learner_target_band?.value ?? cache.writingTargetBand}</p><p className="supporting-copy">{presentPlannerReasons(cache.currentRecommendation.reason_codes)}</p><button className="primary-action" disabled={isGenerating} onClick={generatePractice} type="button">{isGenerating ? "正在生成练习…" : "生成针对性练习"}</button></>
         )}
       </section>
     </section>

@@ -62,8 +62,8 @@ a transport-only proxy/rewrite may be considered later only if justified.
 ```text
 P5-01 Baseline & API Capability Audit [COMPLETE]
   -> P5-02 Web Product Contract Freeze [COMPLETE]
-       -> P5-03 Next.js Foundation [NOT_STARTED]
-       -> P5-04 Backend Web Compatibility [NOT_STARTED]
+       -> P5-03 Next.js Foundation [COMPLETE]
+       -> P5-04 Backend Web Compatibility [COMPLETE]
 P5-03 + P5-04 -> P5-05 Typed API Client -> P5-06 App Shell + Learner Context
 P5-06 -> P5-07 Dashboard
 P5-06 -> P5-08 Initial Writing UX
@@ -75,7 +75,7 @@ P5-07 + P5-08 -> P5-09 Evaluation + Apply UX -> P5-10 Recommendation + Practice 
 ```
 
 A node is READY only when every declared dependency is COMPLETE. P5-03 and
-P5-04 are parallel successors of P5-02; neither has been activated.
+P5-03 through P5-15 are complete; P5-16 internal audit is complete and external review is pending.
 
 ---
 

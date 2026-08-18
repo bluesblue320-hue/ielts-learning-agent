@@ -18,3 +18,6 @@ The browser test proves create learner, initial evaluation/apply/state read, per
 The P5-04 fields (`evaluation_id`, `recommendation_id`, `next_recommendation_id`) and practice-scoped persisted evaluation endpoint are exercised by that loop. Browser storage remains limited to the four frozen presentation fields and excludes essays, evaluations, provider data, submission tokens/fingerprints, and secrets.
 
 No live DeepSeek call is present in E2E or CI. CI now installs Chromium and enforces backend, frontend, production-build, and browser E2E gates. Phase 6 is not started.
+## External review repair
+
+The practice workspace now reloads authoritative lifecycle state: submitted practices restore persisted evaluations and Complete without an editable resubmission UI; in-progress practices expose only a safe recheck. Central Chinese skill, planner-reason, and safe API-error presentation is tested. Browser E2E proves submit → reload → evaluation restoration and learner-state/recommendation rendering after apply and completion.

@@ -156,3 +156,7 @@ maintained in [docs/PHASE3_GRAPH.md](docs/PHASE3_GRAPH.md).
 
 The completed validation evidence is recorded in the
 [Phase 2 final audit](docs/PHASE2_AUDIT.md).
+
+## Phase 5 Web MVP
+
+Phase 5 is implemented and awaits final external review. The Chinese-first Next.js, TypeScript, and Tailwind frontend is a presentation client for FastAPI and PostgreSQL; it does not own scoring, learner state, planning, or practice policy.
