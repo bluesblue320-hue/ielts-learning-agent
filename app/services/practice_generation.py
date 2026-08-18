@@ -175,6 +175,7 @@ class PracticeGenerationService:
     ) -> GeneratedWritingPractice:
         request = PracticeGenerationRequest(
             recommendation_id=recommendation.id,
+            decision_type="practice",
             target_skill=recommendation.target_skill,
             learner_target_band=(
                 Decimal(recommendation.learner_target_band)

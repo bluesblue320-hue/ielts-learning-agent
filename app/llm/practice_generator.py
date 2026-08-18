@@ -16,11 +16,11 @@ row, safe normalized failure).
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Annotated, Protocol, runtime_checkable
+from typing import Annotated, Literal, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
-from app.llm.provider import ProviderError
+from app.llm.provider import ProviderError, ThinkingMode
 from app.schemas.learner import WritingSkillKey
 from app.schemas.practice import GeneratedWritingPractice
 
@@ -44,6 +44,7 @@ class PracticeGenerationRequest(GeneratorBoundary):
     """
 
     recommendation_id: int = Field(gt=0)
+    decision_type: Literal["practice"] = "practice"
     target_skill: WritingSkillKey
     learner_target_band: Decimal | None = None
     reason_codes: list[str] = Field(default_factory=list)
@@ -69,6 +70,10 @@ class PracticeGenerator(Protocol):
     @property
     def model_name(self) -> str:
         """Return the configured model identifier."""
+
+    @property
+    def thinking_mode(self) -> ThinkingMode:
+        """Return the configured thinking-mode provenance value."""
 
     async def generate_practice(
         self,

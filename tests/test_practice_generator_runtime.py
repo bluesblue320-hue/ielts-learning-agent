@@ -12,6 +12,7 @@ from app.llm import (
     DeepSeekPracticeGenerator,
     DeepSeekSettings,
     PracticeGenerationRequest,
+    PracticeGenerator,
     ProviderError,
     ProviderErrorCategory,
     ProviderErrorContext,
@@ -106,6 +107,7 @@ def test_deepseek_practice_generator_uses_injected_http_and_attaches_provenance(
     assert payload["thinking"] == {"type": "disabled"}
     authority = json.loads(payload["messages"][1]["content"])
     assert authority["boundary"] == "application_owned_recommendation_authority"
+    assert authority["decision_type"] == "practice"
     assert authority["target_skill"] == "task_response"
     assert "essay" not in authority
     assert practice.provider == "deepseek"
@@ -219,3 +221,16 @@ def test_fake_practice_generator_is_deterministic_and_policy_valid() -> None:
     assert first.target_skill == "coherence_and_cohesion"
     assert first.provider == "fake-practice-provider"
     assert first.thinking_mode == ThinkingMode.DISABLED.value
+
+
+def test_generator_runtime_implementations_satisfy_full_protocol() -> None:
+    fake = FakePracticeGenerator()
+    deepseek = DeepSeekPracticeGenerator(settings())
+    retrying = RetryingPracticeGenerator(fake)
+
+    assert isinstance(fake, PracticeGenerator)
+    assert isinstance(deepseek, PracticeGenerator)
+    assert isinstance(retrying, PracticeGenerator)
+    assert fake.thinking_mode is ThinkingMode.DISABLED
+    assert deepseek.thinking_mode is ThinkingMode.DISABLED
+    assert retrying.thinking_mode is ThinkingMode.DISABLED
