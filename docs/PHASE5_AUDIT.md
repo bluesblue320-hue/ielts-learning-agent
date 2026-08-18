@@ -9,7 +9,7 @@ P5-01 through P5-15 are complete on `phase/5-web-product-mvp`. The Chinese-first
 - `python -m pytest -q --strict-markers`: **797 passed, 1 warning**
 - `npm --prefix web run lint`: passed
 - `npm --prefix web run typecheck`: passed
-- `npm --prefix web test`: **6 passed**
+- `npm --prefix web test`: **7 passed**
 - `npm --prefix web run build`: passed
 - `npm --prefix web run test:e2e`: **1 passed** using Chromium, Next.js, FastAPI, deterministic `FakeProvider`, deterministic `FakePracticeGenerator`, and isolated PostgreSQL.
 
@@ -24,3 +24,7 @@ The practice workspace now reloads authoritative lifecycle state: submitted prac
 ## Final external re-review repair
 
 Practice reason presentation distinguishes practice from no-practice decisions; conflict submission is explicitly locked and rechecked; stable API error codes are centralized across setup, initial writing, and practice generation. This review's frontend gates passed: lint, typecheck, 6 unit tests, and production build.
+
+## Final narrow cleanup evidence
+
+Frontend lint and typecheck passed; unit tests: **7 passed**; production build passed; Playwright: **1 passed (9.1s)**. Central API-error presentation now also covers practice generation, and conflict state has deterministic regression coverage.

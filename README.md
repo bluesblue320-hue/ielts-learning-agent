@@ -7,15 +7,7 @@ it is not intended to be only a chatbot or a thin LLM wrapper.
 
 ## Current status
 
-**Phase 1 — Foundation, Phase 2 — Writing Evaluation Pipeline, Phase 3 —
-Learner State & Adaptive Planning, and Phase 4 — Adaptive Writing Practice are
-implemented on this branch pending external review.** Phase 4 closes the
-bounded Writing loop: a persisted Phase 3 recommendation may resolve to one
-targeted Task 2 practice; the learner submits an essay against the persisted
-authoritative question; the existing evaluator persists one attempt/evaluation;
-and Phase 3 applies that evaluation to return the next recommendation. The
-generate, inspect, submit, and complete actions stay separate. `no_practice`
-never calls a generator, and Phase 5 is implemented on `phase/5-web-product-mvp` and FINAL_REVIEW_PENDING. Phase 6 is NOT_STARTED.
+**Phase 1 = COMPLETE. Phase 2 = COMPLETE. Phase 3 = COMPLETE. Phase 4 = COMPLETE and merged baseline. Phase 5 is implemented on `phase/5-web-product-mvp` and FINAL_REVIEW_PENDING. Phase 6 is NOT_STARTED.**
 
 Phase 3 adds a
 complete deterministic learner-state path on top of the Phase 2 Writing
@@ -106,6 +98,7 @@ local Python setup, migrations, cleanup, and Windows Docker troubleshooting.
 | `POST` | `/learners/{learner_id}/writing/recommendations/{recommendation_id}/practice` | Resolve an eligible recommendation to one practice or a deterministic `no_practice` outcome |
 | `GET` | `/learners/{learner_id}/writing/practices/{practice_id}` | Inspect a persisted Writing practice |
 | `POST` | `/learners/{learner_id}/writing/practices/{practice_id}/submit` | Submit an essay only; the server uses the persisted question |
+| `GET` | `/learners/{learner_id}/writing/practices/{practice_id}/evaluation` | Read the persisted evaluation for a learner-owned submitted practice |
 | `POST` | `/learners/{learner_id}/writing/practices/{practice_id}/complete` | Apply its persisted evaluation and return the next recommendation |
 
 Readiness responses expose only `available` or `unavailable`; connection details

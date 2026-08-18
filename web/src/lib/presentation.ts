@@ -47,3 +47,6 @@ export function presentPracticeReasons(reasonCodes: string[]): string {
   };
   return reasonCodes.filter((code) => copy[code]).map((code) => copy[code]).join(" ");
 }
+export function isSubmissionConflictLocked(status: string | null): boolean {
+  return status === "conflict";
+}
