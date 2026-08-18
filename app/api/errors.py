@@ -18,6 +18,19 @@ from app.services.learning_application import (
     LearningSourceError,
 )
 from app.services.writing_persistence import WritingPersistenceError
+from app.services.practice_completion import (
+    PracticeCompletionNotFoundError,
+    PracticeCompletionOwnershipError,
+    PracticeNotSubmittedError,
+)
+from app.services.practice_generation import (
+    RecommendationNotFoundError,
+    RecommendationOwnershipError,
+)
+from app.services.practice_submission import (
+    PracticeNotFoundError,
+    PracticeOwnershipError,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -231,4 +244,41 @@ def register_learning_error_handlers(application: FastAPI) -> None:
     application.add_exception_handler(
         LearningPersistenceError,
         learning_persistence_error_handler,
+    )
+    for error_type in (
+        PracticeCompletionNotFoundError,
+        PracticeNotFoundError,
+        RecommendationNotFoundError,
+    ):
+        application.add_exception_handler(error_type, practice_not_found_handler)
+    for error_type in (
+        PracticeCompletionOwnershipError,
+        PracticeOwnershipError,
+        RecommendationOwnershipError,
+        PracticeNotSubmittedError,
+    ):
+        application.add_exception_handler(error_type, practice_conflict_handler)
+
+
+async def practice_not_found_handler(
+    request: Request,
+    error: Exception,
+) -> JSONResponse:
+    del request, error
+    return _response(
+        status.HTTP_404_NOT_FOUND,
+        APIErrorCode.PRACTICE_NOT_FOUND,
+        "Writing practice was not found.",
+    )
+
+
+async def practice_conflict_handler(
+    request: Request,
+    error: Exception,
+) -> JSONResponse:
+    del request, error
+    return _response(
+        status.HTTP_409_CONFLICT,
+        APIErrorCode.PRACTICE_CONFLICT,
+        "Writing practice cannot be used in its current state.",
     )
