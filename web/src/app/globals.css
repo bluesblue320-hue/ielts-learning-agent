@@ -48,3 +48,20 @@ h1 { max-width: 38rem; font-size: clamp(2.25rem, 6vw, 4.5rem); line-height: 1.08
   .learner-status { width: 100%; margin-left: 0; }
   .page-content { width: min(100% - 2rem, 72rem); padding: 2.5rem 0; }
 }
+
+.content-card { border: 1px solid var(--line); border-radius: 0.75rem; padding: 1.5rem; background: var(--surface); }
+.narrow-card { max-width: 40rem; }
+.content-card h1, .content-card h2 { letter-spacing: -0.025em; }
+.content-card h1 { font-size: clamp(2rem, 5vw, 3rem); }
+.content-card h2 { margin-top: 0; font-size: 1.125rem; }
+.supporting-copy, .status-copy { color: var(--muted); line-height: 1.65; }
+.stack { display: grid; gap: 0.75rem; margin-top: 1.5rem; }
+.stack label { font-weight: 700; }
+.stack select { width: 100%; max-width: 16rem; border: 1px solid var(--line); border-radius: 0.5rem; padding: 0.7rem; background: white; font: inherit; }
+button.primary-action { border: 0; cursor: pointer; font: inherit; text-align: left; }
+button.primary-action:disabled { cursor: wait; opacity: 0.7; }
+.error-message { color: #a61b1b; }
+.state-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+.metric { margin: 0.5rem 0; font-size: 2rem; font-weight: 700; }
+.next-step { margin-top: 1.5rem; }
+@media (max-width: 640px) { .state-grid { grid-template-columns: 1fr; } }
