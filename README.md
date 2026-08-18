@@ -131,8 +131,8 @@ product-score disclaimer. Phase 3 endpoints return the same safe error contract
 └── docs/
 ```
 
-Learning memory, an agent runtime, RAG, automatic content generation, a
-frontend, and multi-skill workflows remain outside the implemented system.
+Learning memory, an agent runtime, RAG, automatic content generation, and
+multi-skill workflows remain outside the implemented system.
 
 ## Development guidance
 

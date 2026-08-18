@@ -148,9 +148,11 @@ prompt injection, and perfect prevention is not claimed. The computed product
 band is a documented application policy, not a claim of exact equivalence to an
 official final IELTS Writing band. See [API.md](API.md) for the public contract.
 
-Learner-state updates, learning memory, planning, task generation, and the wider
-
-closed loop remain later-phase targets.
+Phase 3 implements learner-state updates and deterministic planning. Phase 4
+implements Writing practice generation and the bounded adaptive Writing closed
+loop. Phase 5 implements the Next.js presentation layer. Long-term semantic
+memory, RAG, Reading, Listening, Speaking, and the wider multi-skill Learning
+Agent remain future targets.
 ## Phase 1 architecture boundary
 
 Phase 1 established the following supporting foundation:
@@ -168,16 +170,19 @@ FastAPI application shell
 
 DeepSeek integration and the Writing Evaluator were explicitly deferred during
 Phase 1 and were later implemented only within the authorized Phase 2 boundary.
-Planner, learner state, Learning Memory behavior, RAG, Redis, LangGraph,
-multi-agent orchestration, and Speaking, Reading, or Listening remain deferred.
+During Phase 1, planner, learner state, Learning Memory behavior, RAG, Redis,
+LangGraph, multi-agent orchestration, and Speaking, Reading, or Listening were
+deferred. Phase 3 later implemented learner state and planning; Phase 4 later
+implemented the bounded adaptive Writing loop. Long-term memory, RAG, and the
+remaining skills remain future work.
 
 ## Evolution rule
 
 Architecture follows verified product requirements. Phase 1 is complete and
-stopped at `P1-11`; Phase 2 is complete and stopped at `P2-15`. The authorized
-Phase 3 graph defines planned scope, while node execution still requires
-separate explicit authority. Every later phase likewise requires explicit
-execution authority and its own graph.
+stopped at `P1-11`; Phase 2 is complete and stopped at `P2-15`; Phase 3 is
+complete; and Phase 4 is the accepted implementation baseline. Phase 5 is
+implemented and awaiting final external review. Phase 6 remains NOT_STARTED
+and requires separate explicit authority and its own graph.
 Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
 
 ## Phase 5 presentation layer

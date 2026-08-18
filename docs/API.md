@@ -161,6 +161,11 @@ Phase 4 keeps the lifecycle actions separate under
   Phase 3 decision. A `practice` decision returns one durable practice;
   `no_practice` returns persisted reason codes with no provider call or row.
 - `GET /practices/{practice_id}` returns the durable practice and lifecycle state.
+- `GET /learners/{learner_id}/writing/practices/{practice_id}/evaluation`
+  requires a learner-owned practice in the `submitted` lifecycle state, follows
+  the authoritative `practice.attempt_id`, and returns `attempt_id`,
+  `evaluation_id`, and the persisted evaluation. It does not call the
+  LLM/provider again.
 - `POST /practices/{practice_id}/submit` accepts `{ "essay": "..." }` only;
   the server supplies the persisted generated question to the existing evaluator.
 - `POST /practices/{practice_id}/complete` applies the persisted evaluation

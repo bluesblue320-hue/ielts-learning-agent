@@ -50,8 +50,8 @@ export default function DashboardPage() {
         return;
       }
       setError("当前没有需要生成的针对性练习。");
-    } catch {
-      setError("暂时无法生成练习，请稍后重试。");
+    } catch (reason) {
+      setError(presentApiError(reason));
     } finally {
       setIsGenerating(false);
     }

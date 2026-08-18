@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { ApiRequestError } from "../src/lib/api/client.ts";
 import { isSubmissionConflictLocked, presentApiError, presentNoPracticeReasons, presentPracticeReasons, skillLabels } from "../src/lib/presentation.ts";
@@ -9,3 +10,4 @@ test("conflict locks the normal submission and completion transition", () => {
   assert.equal(isSubmissionConflictLocked("conflict"), true);
   assert.equal(isSubmissionConflictLocked("submitted"), false);
 });
+test("dashboard practice generation delegates errors to the centralized mapping", () => { const source = readFileSync(new URL("../src/app/dashboard/page.tsx", import.meta.url), "utf8"); assert.match(source, /catch \(reason\) \{\s*setError\(presentApiError\(reason\)\);/); });
