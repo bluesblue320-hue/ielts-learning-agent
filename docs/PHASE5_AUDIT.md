@@ -39,3 +39,12 @@ Final isolated PostgreSQL backend validation: `python -m pytest -q --strict-mark
 - `npm --prefix web test`: **8 passed**
 - `npm --prefix web run build`: passed
 - `npm --prefix web run test:e2e`: **1 passed (8.4s)** using Chromium, FastAPI, deterministic providers, and isolated PostgreSQL
+
+## Final external-review revalidation
+
+- `python -m pytest -q --strict-markers`: **797 passed, 1 warning in 25.77s** (isolated PostgreSQL)
+- `npm --prefix web run lint`: passed
+- `npm --prefix web run typecheck`: passed
+- `npm --prefix web test`: **8 passed**
+- `npm --prefix web run build`: passed
+- `npm --prefix web run test:e2e`: **1 passed (9.3s)** using Chromium, FastAPI, deterministic providers, and isolated PostgreSQL
