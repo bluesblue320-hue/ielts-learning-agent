@@ -2,10 +2,11 @@
 
 ## Status
 
-**Internal audit complete; external-review fixes ready for second review.** This audit records work
-on `phase/4-adaptive-writing-practice` only. It does not claim external
-approval, a pull request, CI approval, merge to `master`, or Phase 4
-acceptance. Phase 5 is `NOT_STARTED`.
+**Internal audit complete; second-round code review approved; final Phase 4
+approval pending.** This audit records work on
+`phase/4-adaptive-writing-practice`. PR #8 is the active external-review
+surface. It remains open and unmerged into `master`; Phase 4 remains
+`FINAL_REVIEW_PENDING` and Phase 5 is `NOT_STARTED`.
 
 ## Scope and architecture
 
@@ -70,10 +71,10 @@ fakes; no DeepSeek credential or live provider call was required.
 | Completion/replan | P4-11 service plus regression tests: 16 passed |
 | API lifecycle | P4-12 API/service tests: 32 passed, one deprecation warning |
 | Concurrency | P4-13 isolated PostgreSQL tests: 15 passed; two concurrent submissions yielded one evaluator, one attempt, one evaluation, and one linked practice |
-| Full clean container validation | P4-14/P4-15: `786 passed, 1 warning` (`StarletteDeprecationWarning` for `httpx`/`TestClient`) |
+| Latest PR CI / isolated PostgreSQL validation | `796 passed, 1 warning` (`StarletteDeprecationWarning` for `httpx`/`TestClient`) |
 
-The full-suite result was rerun after the P4-15 documentation changes using a
-fresh Docker test-image build and isolated test database.
+The latest successful PR CI result is `796 passed, 1 warning`, using a fresh
+Docker test-image build and isolated test database.
 
 ## External-review repair evidence
 
@@ -123,6 +124,6 @@ skill, PR, merge, force-push, or Phase 5 work was introduced.
 - The product band and provider feedback are application behavior, not a claim
   of official IELTS score equivalence.
 
-External review should verify the claim state transitions, transaction
-boundaries, migration downgrade on a clean database, error mapping, and the
-documented non-goals before any PR is created.
+PR #8 has completed second-round code review. The final Phase 4 approval and
+merge authorization remain outside this audit; the PR must remain unmerged
+until that explicit authorization is given.

@@ -5,8 +5,11 @@
 **EXECUTION RECORD — P4-01 through P4-15 complete; P4-16 internal audit complete.**
 
 This document retains the accepted Phase 4 graph and records its authorized
-execution on `phase/4-adaptive-writing-practice`. It does not claim external
-review, PR approval, merge, or Phase 4 acceptance.
+execution on `phase/4-adaptive-writing-practice`. PR #8 is open as the active
+external-review surface; its repair commits are pushed and its latest CI result
+is **796 passed, 1 warning**. The PR is unmerged, Phase 4 remains
+`FINAL_REVIEW_PENDING`, and Phase 5 remains `NOT_STARTED`. This record does
+not claim final Phase 4 approval or merge authorization.
 
 Accepted baseline: `master` @ `8cb0b73` (`feat: complete Phase 3 learner state
 and adaptive planning (#7)`), with Phase 3 merged and master CI green. Current
@@ -1247,8 +1250,8 @@ or live provider calls were required.
 
 `docs/PHASE4_AUDIT.md` consolidates the policy, migration, commit, closed-loop,
 concurrency, security/scope, reproducibility, and limitation evidence. The
-branch is ready for external review only. No PR has been created, no branch has
-been merged, `master` has not been pushed, and Phase 5 remains `NOT_STARTED`.
+branch is represented by open PR #8 for external review. No branch has been
+merged, `master` has not been pushed, and Phase 5 remains `NOT_STARTED`.
 
 ### External-review repair record — `READY_FOR_REVIEW`
 
@@ -1258,3 +1261,10 @@ recoverable finalization failure, complete lifecycle API coverage, and align
 the generator decision/thinking-mode contracts. The prescribed focused Docker
 suite passed **46 passed, 1 warning**. Phase 4 remains `FINAL_REVIEW_PENDING`;
 this record does not claim external approval.
+
+### Current external-review status — `FINAL_REVIEW_PENDING`
+
+Second-round code review approved the implementation fixes. PR #8 remains the
+active, unmerged review surface, with repair commits pushed and latest PR CI
+at **796 passed, 1 warning**. The remaining documentation gate does not
+authorize merge, `master` changes, or Phase 5 work.
