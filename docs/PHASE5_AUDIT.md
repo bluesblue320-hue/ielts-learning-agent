@@ -28,3 +28,5 @@ Practice reason presentation distinguishes practice from no-practice decisions; 
 ## Final narrow cleanup evidence
 
 Frontend lint and typecheck passed; unit tests: **7 passed**; production build passed; Playwright: **1 passed (9.1s)**. Central API-error presentation now also covers practice generation, and conflict state has deterministic regression coverage.
+
+Final isolated PostgreSQL backend validation: `python -m pytest -q --strict-markers` completed with **797 passed, 1 warning in 35.44s**.
