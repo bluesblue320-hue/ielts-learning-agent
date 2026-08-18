@@ -131,6 +131,7 @@ def test_valid_request_evaluates_persists_and_returns_explicit_schema(
     assert response.status_code == 201
     body = response.json()
     assert body["attempt_id"] == 1
+    assert body["evaluation_id"] == 1
     assert body["evaluation"]["word_count"] == 5
     assert body["evaluation"]["product_band"] == {"value": "6.5"}
     assert body["evaluation"]["metadata"] == {

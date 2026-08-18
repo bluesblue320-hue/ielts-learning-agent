@@ -146,5 +146,6 @@ def apply_evaluation(
     return LearningApplyResponse(
         learning_update_id=result.learning_update_id,
         reused=result.reused,
+        recommendation_id=result.recommendation_id,
         recommendation=result.recommendation,
     )

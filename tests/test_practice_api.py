@@ -252,6 +252,7 @@ def test_completion_success_replans_at_api_boundary(client: TestClient, engine) 
         assert submitted.status_code == 200
         completed = client.post(f"/learners/1/writing/practices/{practice_id}/complete")
         assert completed.status_code == 200
+        assert completed.json()["next_recommendation_id"] > 0
         assert completed.json()["next_recommendation"]["decision_type"] in {"practice", "no_practice"}
     finally:
         client.app.dependency_overrides.clear()
@@ -290,5 +291,33 @@ def test_phase4_persistence_and_authority_errors_use_safe_api_contract(
         monkeypatch.setattr(PracticeCompletionService, "complete", completion_persistence_failure)
         completion = client.post("/learners/1/writing/practices/1/complete")
         _assert_safe_error(completion, status_code=503, code="persistence_unavailable")
+    finally:
+        client.app.dependency_overrides.clear()
+
+
+def test_submitted_practice_evaluation_retrieval_contract(client: TestClient, engine) -> None:
+    practice_id, _ = _generate(client, _practice_recommendation_id(client, engine))
+    before_submit = client.get(f"/learners/1/writing/practices/{practice_id}/evaluation")
+    _assert_safe_error(before_submit, status_code=409, code="practice_conflict")
+
+    provider = FakeProvider([_payload()])
+    client.app.dependency_overrides[get_writing_provider] = lambda: provider
+    try:
+        submitted = client.post(
+            f"/learners/1/writing/practices/{practice_id}/submit",
+            json={"essay": "Evaluation retrieval essay."},
+        )
+        assert submitted.status_code == 200
+        evaluation = client.get(
+            f"/learners/1/writing/practices/{practice_id}/evaluation"
+        )
+        assert evaluation.status_code == 200
+        assert evaluation.json()["attempt_id"] == submitted.json()["attempt_id"]
+        assert evaluation.json()["evaluation_id"] == submitted.json()["evaluation_id"]
+        assert evaluation.json()["evaluation"]["criteria"]["task_response"]["band"] == {"value": "6.5"}
+
+        _seed_learner(engine, learner_id=2)
+        hidden = client.get(f"/learners/2/writing/practices/{practice_id}/evaluation")
+        _assert_safe_error(hidden, status_code=409, code="practice_conflict")
     finally:
         client.app.dependency_overrides.clear()

@@ -46,5 +46,6 @@ async def evaluate_writing(
 
     return WritingEvaluationResponse(
         attempt_id=persisted.attempt_id,
+        evaluation_id=persisted.evaluation_id,
         evaluation=evaluation,
     )

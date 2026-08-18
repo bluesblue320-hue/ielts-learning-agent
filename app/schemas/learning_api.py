@@ -35,4 +35,5 @@ class LearningApplyResponse(LearningApiSchema):
 
     learning_update_id: int = Field(gt=0)
     reused: bool
+    recommendation_id: int = Field(gt=0)
     recommendation: PracticeRecommendationDecision

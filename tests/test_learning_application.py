@@ -574,6 +574,7 @@ def test_accepted_idempotency_constraint_enters_duplicate_resolution(
         calls: list[dict] = []
         canned = AppliedLearningResult(
             learning_update_id=1,
+            recommendation_id=1,
             recommendation=None,  # type: ignore[arg-type]
             reused=True,
         )

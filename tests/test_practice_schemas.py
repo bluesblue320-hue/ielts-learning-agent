@@ -202,6 +202,7 @@ def test_closed_loop_result_carries_next_recommendation() -> None:
         attempt_id=100,
         evaluation_id=200,
         learning_update_id=300,
+        next_recommendation_id=400,
         next_recommendation=recommendation,
     )
     assert result.next_recommendation.target_skill == "task_response"
