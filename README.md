@@ -7,8 +7,17 @@ it is not intended to be only a chatbot or a thin LLM wrapper.
 
 ## Current status
 
-**Phase 1 — Foundation, Phase 2 — Writing Evaluation Pipeline, and
-Phase 3 — Learner State & Adaptive Planning are implemented.** Phase 3 adds a
+**Phase 1 — Foundation, Phase 2 — Writing Evaluation Pipeline, Phase 3 —
+Learner State & Adaptive Planning, and Phase 4 — Adaptive Writing Practice are
+implemented on this branch pending external review.** Phase 4 closes the
+bounded Writing loop: a persisted Phase 3 recommendation may resolve to one
+targeted Task 2 practice; the learner submits an essay against the persisted
+authoritative question; the existing evaluator persists one attempt/evaluation;
+and Phase 3 applies that evaluation to return the next recommendation. The
+generate, inspect, submit, and complete actions stay separate. `no_practice`
+never calls a generator, and Phase 5 has not started.
+
+Phase 3 adds a
 complete deterministic learner-state path on top of the Phase 2 Writing
 pipeline:
 
@@ -93,6 +102,10 @@ local Python setup, migrations, cleanup, and Windows Docker troubleshooting.
 | `POST` | `/learners` | Create a learner with a Writing target band |
 | `GET` | `/learners/{learner_id}/state` | Inspect the four-skill materialized learner state |
 | `POST` | `/learners/{learner_id}/writing/evaluations/{evaluation_id}/apply` | Atomically apply a persisted evaluation; returns the auditable `practice`/`no_practice` decision |
+| `POST` | `/learners/{learner_id}/writing/recommendations/{recommendation_id}/practice` | Resolve an eligible recommendation to one practice or a deterministic `no_practice` outcome |
+| `GET` | `/learners/{learner_id}/writing/practices/{practice_id}` | Inspect a persisted Writing practice |
+| `POST` | `/learners/{learner_id}/writing/practices/{practice_id}/submit` | Submit an essay only; the server uses the persisted question |
+| `POST` | `/learners/{learner_id}/writing/practices/{practice_id}/complete` | Apply its persisted evaluation and return the next recommendation |
 
 Readiness responses expose only `available` or `unavailable`; connection details
 are not returned. See the [Writing API reference](docs/API.md) for request and
@@ -131,7 +144,7 @@ frontend, and multi-skill workflows remain outside the implemented system.
 Before changing the project, read these documents in order:
 
 1. [AGENTS.md](AGENTS.md)
-2. [Phase 3 graph](docs/PHASE3_GRAPH.md)
+2. [Phase 4 graph](docs/PHASE4_GRAPH.md)
 3. [Development loop](docs/DEVELOPMENT_LOOP.md)
 4. [Target architecture](docs/ARCHITECTURE.md)
 

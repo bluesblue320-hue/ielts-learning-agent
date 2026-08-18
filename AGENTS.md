@@ -40,13 +40,13 @@ Always inspect the current phase documentation before implementing features.
 Current phase:
 
 ```text
-Phase 3 — Learner State & Adaptive Planning
+Phase 4 — Adaptive Writing Practice
 ```
 
 Read:
 
 ```text
-docs/PHASE3_GRAPH.md
+docs/PHASE4_GRAPH.md
 docs/DEVELOPMENT_LOOP.md
 ```
 
@@ -57,6 +57,13 @@ atomic learning-application service, learner/learning APIs, and concurrency
 hardening are implemented and validated against isolated PostgreSQL. Phase 3
 is complete; see [docs/PHASE3_GRAPH.md](docs/PHASE3_GRAPH.md) for the per-node
 status and [docs/PHASE3_AUDIT.md](docs/PHASE3_AUDIT.md) for the final audit.
+
+Phase 4 implements the bounded adaptive Writing loop on its dedicated branch:
+a Phase 3 recommendation is resolved to at most one durable practice, an
+essay-only submission is evaluated against the stored question, and the
+persisted evaluation is applied through Phase 3 to return the next
+recommendation. Phase 4 execution is pending its final internal audit and
+external review; Phase 5 must not start.
 
 The graph defines WHAT should be implemented.
 

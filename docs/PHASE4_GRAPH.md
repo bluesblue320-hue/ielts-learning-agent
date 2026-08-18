@@ -2,16 +2,15 @@
 
 ## Document status
 
-**DESIGN ONLY — NOT EXECUTION AUTHORIZED.**
+**EXECUTION RECORD — P4-01 through P4-15 complete; P4-16 not started.**
 
-This document defines the Phase 4 execution graph. It does NOT authorize any
-runtime implementation. After this Graph passes external review, a separate
-explicit user authorization is required to activate `P4-01`. No Phase 4 node
-is `ACTIVE` and no Phase 4 runtime code exists.
+This document retains the accepted Phase 4 graph and records its authorized
+execution on `phase/4-adaptive-writing-practice`. It does not claim external
+review, PR approval, merge, or Phase 4 acceptance.
 
 Accepted baseline: `master` @ `8cb0b73` (`feat: complete Phase 3 learner state
 and adaptive planning (#7)`), with Phase 3 merged and master CI green. Current
-single Alembic head: `0003_learning`.
+single Alembic head: `0004_writing_practice`.
 
 ---
 
@@ -1164,9 +1163,8 @@ transactional practice history only — not a generic memory or events system.
 
 ---
 
-**Design status:** GRAPH READY FOR EXTERNAL REVIEW — no runtime execution
-authorized. All `P4-01` … `P4-16` nodes are `NOT_STARTED`. Phase 5 remains
-`NOT_STARTED`.
+**Execution status:** `P4-01` … `P4-15` are `COMPLETE`; `P4-16` is
+`NOT_STARTED`; Phase 5 remains `NOT_STARTED`.
 
 ---
 
@@ -1189,3 +1187,57 @@ Baseline verified before any Phase 4 runtime work (commit
   implementation.
 
 `P4-02` is now `READY`.
+
+### P4-02 through P4-07 — Frozen contracts, schemas, models, and migration — `COMPLETE`
+
+The accepted product and generation policies, typed schemas and generator
+contract, `WritingPractice` model, and reversible `0004_writing_practice`
+migration were implemented and verified on isolated PostgreSQL. The migration
+adds only `writing_practices` and the `(id, learner_id)` candidate key needed
+for its composite ownership foreign key.
+
+### P4-08 — Practice generator runtime — `COMPLETE`
+
+Commit `31ec75f feat: implement practice generation runtime`; focused adapter,
+retry, and deterministic-fake tests: **60 passed**.
+
+### P4-09 — Practice generation service — `COMPLETE`
+
+Commit `fc5c320 feat: add practice generation service`; real-PostgreSQL
+generation and migration coverage: **12 passed**.
+
+### P4-10 — Practice submission integration — `COMPLETE`
+
+Commit `b9ea27d feat: add claimed practice submission`; real-PostgreSQL
+claim, failure reset, authoritative-question, and atomic finalization coverage:
+**19 passed**.
+
+### P4-11 — Completion and replan service — `COMPLETE`
+
+Commit `4d003f7 feat: add practice completion replan service`; completion plus
+generation/submission regression coverage: **16 passed**.
+
+### P4-12 — Practice APIs — `COMPLETE`
+
+Commit `16eebc7 feat: add writing practice lifecycle APIs`; API/service
+regression coverage: **32 passed** (one existing Starlette/httpx deprecation
+warning).
+
+### P4-13 — Idempotency, failure, and concurrency hardening — `COMPLETE`
+
+Commit `4461f6f test: prove practice concurrency invariants`; isolated
+PostgreSQL concurrent submission and generation coverage: **15 passed**.
+
+### P4-14 — Closed-loop integration validation — `COMPLETE`
+
+Commit `8e7f37a test: validate complete adaptive writing loop`; the container
+full regression passed **786 passed, 1 warning**. The Docker test image copies
+the policy and contract documents required by runtime tests.
+
+### P4-15 — Docker, documentation, and reproducibility — `COMPLETE`
+
+Documentation now reflects the separate generate, inspect, submit, and complete
+actions, the `0004_writing_practice` migration head, Phase 4 scope, and the
+external-review boundary. A fresh Docker test-image build and isolated full
+suite verification passed **786 passed, 1 warning**; no DeepSeek credentials
+or live provider calls were required.

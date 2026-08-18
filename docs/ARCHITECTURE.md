@@ -13,8 +13,13 @@ local, CI, and Docker validation. Phase 3 adds the deterministic learner-state
 path: learner creation and four-skill materialized state, canonical evidence
 extraction, an exact-Decimal EWMA replay engine, a target-gap practice planner,
 an atomic idempotent learning-application service, learner/learning REST APIs,
-and database-safe concurrency hardening. The learning-loop components below
-remain target designs unless their status says otherwise.
+and database-safe concurrency hardening. Phase 4 closes the bounded adaptive
+Writing loop with decision-gated practice generation, durable practice
+ownership, a submission claim protocol, atomic reuse of Phase 2 persistence,
+and Phase 3 completion/replanning. Generation, submission, and completion are
+separate product actions; no automatic next-practice generation occurs. The
+learning-loop components below remain target designs unless their status says
+otherwise.
 
 The completed [PHASE1_GRAPH.md](PHASE1_GRAPH.md) remains the historical Phase 1
 execution record, and [PHASE2_GRAPH.md](PHASE2_GRAPH.md) records the completed
