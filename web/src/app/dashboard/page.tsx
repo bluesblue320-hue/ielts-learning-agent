@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { ApiRequestError, type LearnerStateResponse, type WritingSkill, apiClient } from "@/lib/api/client";
 import { useLearnerContext } from "@/components/learner-context";
@@ -21,11 +22,13 @@ function stateMessage(reason: unknown): string {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { cache, isReady } = useLearnerContext();
   const [state, setState] = useState<LearnerStateResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const learnerId = cache?.currentLearnerId ?? null;
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     if (!isReady || learnerId === null) return;
@@ -47,6 +50,25 @@ export default function DashboardPage() {
     return () => { active = false; };
   }, [isReady, learnerId]);
 
+  async function generatePractice() {
+    if (cache === null || cache.currentRecommendationId === null) return;
+    const activeLearnerId = cache.currentLearnerId;
+    const recommendationId = cache.currentRecommendationId;
+    setIsGenerating(true);
+    setError(null);
+    try {
+      const outcome = await apiClient.generatePractice(activeLearnerId, recommendationId);
+      if (outcome.decision === "practice" && outcome.practice !== null) {
+        router.push(`/practice/${outcome.practice.id}`);
+        return;
+      }
+      setError("当前没有需要生成的针对性练习。");
+    } catch {
+      setError("暂时无法生成练习，请稍后重试。");
+    } finally {
+      setIsGenerating(false);
+    }
+  }
   if (!isReady) return <p className="status-copy">正在恢复学习进度…</p>;
   if (cache === null) {
     return (
@@ -82,11 +104,12 @@ export default function DashboardPage() {
       <section className="content-card next-step">
         <h2>下一步</h2>
         {cache.currentRecommendation === null ? (
-          <p className="supporting-copy">完成首次写作评估并应用学习更新后，系统会在此显示下一步建议。</p>
+          <><p className="supporting-copy">完成首次写作评估并应用学习更新后，系统会在此显示下一步建议。</p><Link className="primary-action" href="/writing">进行首次写作</Link></>
+        ) : cache.currentRecommendation.decision_type === "no_practice" ? (
+          <p className="supporting-copy">当前学习状态暂不需要生成针对性练习。完成新的写作评估后，系统会给出新的建议。</p>
         ) : (
-          <p className="supporting-copy">已收到新的练习建议。请继续查看并选择下一步操作。</p>
+          <><p className="supporting-copy">系统已给出下一步针对性写作练习建议。</p><button className="primary-action" disabled={isGenerating} onClick={generatePractice} type="button">{isGenerating ? "正在生成练习…" : "生成针对性练习"}</button></>
         )}
-        <Link className="primary-action" href="/writing">进行首次写作</Link>
       </section>
     </section>
   );
