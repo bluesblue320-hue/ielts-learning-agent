@@ -30,12 +30,22 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Final
 
+from pydantic import ValidationError
+
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.learner.memory_planning_context import (
+    PlanningContextError,
+    build_memory_aware_planning_context,
+)
+from app.learner.memory_planning_policy import PLANNER_V2_VERSION
+from app.learner.memory_planner import (
+    resolve_practice_v2_exact_tie,
+    select_practice_v2_base,
+)
 from app.learner.planning_policy import PLANNER_VERSION
-from app.learner.planner import plan_practice
 from app.learner.state_engine import rebuild_all_skill_states
 from app.learner.writing_evidence import (
     ExtractedWritingEvidence,
@@ -63,8 +73,11 @@ from app.schemas.learner import (
 )
 from app.schemas.planning import (
     DecisionType,
+    PersistedPlannerContextSnapshot,
+    PersistedRecommendationPlanningRecord,
     PlannerReasonCode,
     PracticeRecommendationDecision,
+    PracticeRecommendationDecisionV2,
 )
 from app.schemas.writing import EvaluationMetadata
 
@@ -113,7 +126,7 @@ class AppliedLearningResult:
 
     learning_update_id: int
     recommendation_id: int
-    recommendation: PracticeRecommendationDecision
+    recommendation: PracticeRecommendationDecision | PracticeRecommendationDecisionV2
     reused: bool = False
 
 
@@ -157,23 +170,45 @@ def _extracted_from_row(row: LearningEvidence) -> ExtractedWritingEvidence:
 
 def _reconstruct_decision(
     row: PracticeRecommendation,
-) -> PracticeRecommendationDecision:
-    """Rebuild the audit decision from a persisted recommendation row."""
+) -> PracticeRecommendationDecision | PracticeRecommendationDecisionV2:
+    """Rebuild and validate one persisted v1 or v2 recommendation row."""
 
-    return PracticeRecommendationDecision(
-        decision_type=DecisionType(row.decision_type),
-        target_skill=row.target_skill,
-        learner_target_band=(
+    decision_values = {
+        "decision_type": DecisionType(row.decision_type),
+        "target_skill": row.target_skill,
+        "learner_target_band": (
             BandScore(value=Decimal(row.learner_target_band))
             if row.learner_target_band is not None
             else None
         ),
-        current_estimate=row.current_estimate,
-        reason_codes=[PlannerReasonCode(code) for code in row.reason_codes],
-        planner_version=row.planner_version,
-        state_snapshot=LearnerSkillStateSet.model_validate(row.state_snapshot),
-    )
-
+        "current_estimate": row.current_estimate,
+        "reason_codes": [PlannerReasonCode(code) for code in row.reason_codes],
+        "planner_version": row.planner_version,
+        "state_snapshot": LearnerSkillStateSet.model_validate(row.state_snapshot),
+    }
+    try:
+        if row.planner_version == PLANNER_VERSION:
+            decision = PracticeRecommendationDecision(**decision_values)
+        elif row.planner_version == PLANNER_V2_VERSION:
+            decision = PracticeRecommendationDecisionV2(**decision_values)
+        else:
+            raise LearningApplicationError("unsupported persisted planner version")
+        snapshot = (
+            PersistedPlannerContextSnapshot.model_validate(
+                row.planner_context_snapshot
+            )
+            if row.planner_context_snapshot is not None
+            else None
+        )
+        PersistedRecommendationPlanningRecord(
+            decision=decision,
+            planner_context_snapshot=snapshot,
+        )
+        return decision
+    except ValidationError as error:
+        raise LearningApplicationError(
+            "persisted recommendation violates planner contract"
+        ) from error
 
 def _resolve_existing(
     session: Session,
@@ -312,7 +347,7 @@ def apply_writing_evaluation(
             writing_evaluation_id=writing_evaluation_id,
             skill_taxonomy_version=WRITING_SKILL_TAXONOMY_VERSION,
             state_policy_version=WRITING_STATE_POLICY_VERSION,
-            planner_version=PLANNER_VERSION,
+            planner_version=PLANNER_V2_VERSION,
         )
         session.add(learning_update)
         session.flush()
@@ -400,9 +435,36 @@ def apply_writing_evaluation(
             )
 
         state_set = LearnerSkillStateSet(**materialized)
-        decision = plan_practice(
+        base_selection = select_practice_v2_base(
             learner_target_band=BandScore(value=learner.writing_target_band),
             states=state_set,
+        )
+        snapshot: PersistedPlannerContextSnapshot | None = None
+        if base_selection.requires_memory_context:
+            memory_context = build_memory_aware_planning_context(
+                session,
+                learner_id=learner_id,
+                current_target_band=Decimal(learner.writing_target_band),
+                owner_learning_update_id=learning_update.id,
+            )
+            planning_result = resolve_practice_v2_exact_tie(
+                base_selection=base_selection,
+                memory_context=memory_context,
+            )
+            assert planning_result.selection_trace is not None
+            snapshot = PersistedPlannerContextSnapshot(
+                snapshot_version="writing-practice-gap-memory-v2-audit-v1",
+                memory_context=memory_context,
+                selection_trace=planning_result.selection_trace,
+            )
+            decision = planning_result.decision
+        else:
+            assert base_selection.decision is not None
+            decision = base_selection.decision
+
+        validated_record = PersistedRecommendationPlanningRecord(
+            decision=decision,
+            planner_context_snapshot=snapshot,
         )
         recommendation = PracticeRecommendation(
             learning_update_id=learning_update.id,
@@ -418,6 +480,11 @@ def apply_writing_evaluation(
             reason_codes=[code.value for code in decision.reason_codes],
             planner_version=decision.planner_version,
             state_snapshot=decision.state_snapshot.model_dump(mode="json"),
+            planner_context_snapshot=(
+                validated_record.planner_context_snapshot.model_dump(mode="json")
+                if validated_record.planner_context_snapshot is not None
+                else None
+            ),
         )
         session.add(recommendation)
         session.flush()
@@ -431,6 +498,16 @@ def apply_writing_evaluation(
         )
     except LearningApplicationError:
         raise
+    except PlanningContextError as error:
+        session.rollback()
+        raise LearningPersistenceError(
+            "decision-time planning context is unavailable"
+        ) from error
+    except ValidationError as error:
+        session.rollback()
+        raise LearningPersistenceError(
+            "planner persistence contract validation failed"
+        ) from error
     except IntegrityError as error:
         session.rollback()
         if _violated_constraint(error) == IDEMPOTENCY_CONSTRAINT:

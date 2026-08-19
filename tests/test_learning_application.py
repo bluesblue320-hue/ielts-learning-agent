@@ -193,7 +193,7 @@ def test_first_apply_creates_exact_phase3_rows(session_factory) -> None:
         assert update.writing_evaluation_id == 200
         assert update.skill_taxonomy_version == "writing-core-v1"
         assert update.state_policy_version == "writing-state-ewma-v1"
-        assert update.planner_version == "writing-practice-gap-v1"
+        assert update.planner_version == "writing-practice-gap-memory-v2"
         skills = {
             row.skill for row in session.scalars(select(LearningEvidence)).all()
         }

@@ -2,7 +2,7 @@
 
 ## Document status
 
-**IMPLEMENTATION_ACTIVE — External Design Review is APPROVED. P7-01 through P7-06 are COMPLETE; P7-07 through P7-14 are NOT_STARTED.**
+**IMPLEMENTATION_ACTIVE — External Design Review is APPROVED. P7-01 through P7-07 are COMPLETE; P7-08 through P7-14 are NOT_STARTED.**
 
 This graph was created on `phase/7-memory-aware-planning-v2` from verified
 `master` commit `fa34dc3499ab85e286340582353482c4b7388198` (`docs: finalize
@@ -36,7 +36,7 @@ START
   -> P7-04 Planner Persistence Evolution / Migration [COMPLETE]
   -> P7-05 Decision-Time Memory Context Builder [COMPLETE]
   -> P7-06 Deterministic Planner v2 Engine [COMPLETE]
-  -> P7-07 Atomic Learning-Application Integration
+  -> P7-07 Atomic Learning-Application Integration [COMPLETE]
   -> P7-08 Mixed v1/v2 Reconstruction & Backward Compatibility
   -> P7-09 Planning Explanation API Contract
   -> P7-10 Memory-Aware Recommendation UX
@@ -289,6 +289,6 @@ P7-03 = COMPLETE
 P7-04 = COMPLETE
 P7-05 = COMPLETE
 P7-06 = COMPLETE
-P7-07 = NOT_STARTED
+P7-07 = COMPLETE
 Phase 8 = NOT_STARTED
 ```
