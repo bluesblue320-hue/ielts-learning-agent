@@ -148,7 +148,8 @@ def _complete_targeted_practice(
         assert completed.status_code == 200
         return completed.json()
     finally:
-        client.app.dependency_overrides.clear()
+        client.app.dependency_overrides.pop(get_practice_generator, None)
+        client.app.dependency_overrides.pop(get_writing_provider, None)
 
 
 def test_empty_learner_history_is_empty(client: TestClient, engine) -> None:
