@@ -59,31 +59,43 @@ Phase 2 = COMPLETE
 Phase 3 = COMPLETE
 Phase 4 = COMPLETE
 Phase 5 = COMPLETE
-Phase 6 = DESIGN_REVIEW_PENDING
+Phase 6 = INTERNAL_AUDIT_COMPLETE
 P6-01 = COMPLETE
 P6-02 = COMPLETE
-P6-03 = NOT_STARTED
+P6-03 = COMPLETE
+P6-04 = COMPLETE
+P6-05 = COMPLETE
+P6-06 = COMPLETE
+P6-07 = COMPLETE
+P6-08 = COMPLETE
+P6-09 = COMPLETE
+P6-10 = COMPLETE
+P6-11 = COMPLETE
+P6-12 = COMPLETE
+P6-13 = COMPLETE
+P6-14 = COMPLETE
+P6-15 = COMPLETE
+P6-16 = INTERNAL_AUDIT_COMPLETE
+External Review = PENDING
 Phase 7 = NOT_STARTED
 ```
 
-Phase 6 design/baseline work is complete: P6-01 (Baseline & Hierarchical
-Memory Capability Audit) and P6-02 (Hierarchical Learning Memory Contract
-Freeze). The audit proved that the existing durable Writing history can
-support the L0–L3 memory hierarchy without duplicate storage: `LearningUpdate`
-anchors L0 episodes, L1 atoms are read-model projections of existing rows, L2
-patterns and the L3 profile are computed read models, and NO new database
-table is required. The frozen contract is
-[docs/WRITING_MEMORY_POLICY.md](docs/WRITING_MEMORY_POLICY.md) (versions
-`writing-memory-v1`, `writing-progress-v1`). External design review requested
-targeted contract repair; the repair was applied docs-only and is pending
-re-review acceptance. External approval is not claimed.
-
-Phase 6 implementation (P6-03 and later: memory schemas, read-model services,
-pattern engine, profile, history/progress/context APIs, web UX, E2E) is
-NOT_STARTED and must not begin until the frozen contract is accepted and
-implementation is explicitly authorized. No Phase 6 application code,
-frontend code, or migration exists yet. Do not implement P6-03 or later, and
-do not start Phase 7, without explicit instruction.
+Phase 6 design (P6-01 audit, P6-02 contract freeze, versions
+`writing-memory-v1` / `writing-progress-v1`) and the full implementation
+(P6-03 through P6-16) are complete on branch
+`phase/6-hierarchical-learning-memory`. The hierarchical Learning Memory
+subsystem is implemented as read models over the existing durable Writing
+history: L0 episodes anchor on `LearningUpdate` (no duplicate storage), L1
+atoms are projections of persisted rows, L2 longitudinal patterns (trend,
+persistent gap, recency windows) and the L3 learner profile are computed
+deterministically with exact `Decimal` arithmetic, and the four frozen read
+APIs (`/writing/history`, `/writing/history/{episode_id}`, `/writing/progress`,
+`/writing/context`) expose them with full provenance. The web product adds
+`/history`, `/progress`, and a server-authoritative dashboard resume. No new
+database table, no migration, and no provider abstraction were introduced; the
+current planner (`writing-practice-gap-v1`) is unchanged. See
+[docs/PHASE6_AUDIT.md](docs/PHASE6_AUDIT.md) for the internal audit and fresh
+validation results. External review is PENDING; Phase 7 must not start.
 
 The graph defines WHAT should be implemented.
 

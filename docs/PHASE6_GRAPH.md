@@ -2,13 +2,13 @@
 
 ## Document status
 
-**DESIGN/BASELINE RUN — P6-01 COMPLETE, P6-02 COMPLETE; P6-03 through P6-16
-NOT_STARTED; Phase 6 = DESIGN_REVIEW_PENDING; Phase 7 = NOT_STARTED.**
+**EXECUTED — P6-01 through P6-15 COMPLETE; P6-16 = INTERNAL_AUDIT_COMPLETE; Phase 6 = INTERNAL_AUDIT_COMPLETE; External Review = PENDING; Phase 7 = NOT_STARTED.**
 
-External design review requested targeted contract repair (docs-only). The
-repair was applied to [WRITING_MEMORY_POLICY.md](WRITING_MEMORY_POLICY.md) and
-this graph without redesign; re-review is pending and external approval is not
-claimed.
+The design run (P6-01/P6-02) completed and passed external design review
+repair. The implementation run then executed P6-03 through P6-16 continuously
+on this branch; see [PHASE6_AUDIT.md](PHASE6_AUDIT.md) for the final internal
+audit, fresh validation results, and the commit list. External review approval
+is not claimed.
 
 This graph is frozen on `phase/6-hierarchical-learning-memory`, created from
 `master` at `3f1b4a5772b1a5fecf863d2711def11de6f5ff0f` (`docs: finalize Phase 5
@@ -100,37 +100,37 @@ P6-01 Baseline & Hierarchical Memory Capability Audit [COMPLETE]
   ↓
 P6-02 Hierarchical Learning Memory Contract Freeze [COMPLETE]
   ↓
-P6-03 Memory Domain Schemas + Provenance Contracts [NOT_STARTED]
+P6-03 Memory Domain Schemas + Provenance Contracts [COMPLETE]
   ↓
-P6-04 L0 Episode Query Layer [NOT_STARTED]
+P6-04 L0 Episode Query Layer [COMPLETE]
   ↓
-P6-05 L1 Atom Derivation (read model) [NOT_STARTED]
+P6-05 L1 Atom Derivation (read model) [COMPLETE]
   ↓
-P6-06 L2 Longitudinal Pattern Engine [NOT_STARTED]
+P6-06 L2 Longitudinal Pattern Engine [COMPLETE]
   ↓
-P6-07 L3 Learner Profile Read Model [NOT_STARTED]
+P6-07 L3 Learner Profile Read Model [COMPLETE]
   ↓
-P6-08 History / Progress / Context APIs [NOT_STARTED]
+P6-08 History / Progress / Context APIs [COMPLETE]
   ↓
-P6-09 Typed Web API Integration [NOT_STARTED]
+P6-09 Typed Web API Integration [COMPLETE]
   ↓
-P6-10 Writing History UX [NOT_STARTED]
+P6-10 Writing History UX [COMPLETE]
   ↓
-P6-11 Longitudinal Progress UX [NOT_STARTED]
+P6-11 Longitudinal Progress UX [COMPLETE]
   ↓
-P6-12 Resume Learning Context [NOT_STARTED]
+P6-12 Resume Learning Context [COMPLETE]
   ↓
-P6-13 Progressive Disclosure / Provenance UX [NOT_STARTED]
+P6-13 Progressive Disclosure / Provenance UX [COMPLETE]
   ↓
-P6-14 Resilience / Chinese Presentation / Accessibility [NOT_STARTED]
+P6-14 Resilience / Chinese Presentation / Accessibility [COMPLETE]
   ↓
-P6-15 Backend + Frontend + Browser E2E / CI [NOT_STARTED]
+P6-15 Backend + Frontend + Browser E2E / CI [COMPLETE]
   ↓
-P6-16 Internal Final Audit [NOT_STARTED]
+P6-16 Internal Final Audit [INTERNAL_AUDIT_COMPLETE]
   ↓
 STOP
   ↓
-External Review
+External Review [PENDING]
 ```
 
 Dependency rule: a node may be activated only when every declared dependency is
@@ -383,22 +383,24 @@ Phase 2 = COMPLETE
 Phase 3 = COMPLETE
 Phase 4 = COMPLETE
 Phase 5 = COMPLETE
-Phase 6 = DESIGN_REVIEW_PENDING
+Phase 6 = DESIGN_REVIEW_PENDING (design run) -> INTERNAL_AUDIT_COMPLETE (after P6-16)
 P6-01 = COMPLETE
 P6-02 = COMPLETE
-P6-03 = NOT_STARTED
+P6-03..P6-15 = COMPLETE (implementation run)
+P6-16 = INTERNAL_AUDIT_COMPLETE
+External Review = PENDING
 Phase 7 = NOT_STARTED
 ```
 
 ---
 
-## 5. Node definitions (P6-03 .. P6-16 — NOT_STARTED)
+## 5. Node definitions (P6-03 .. P6-16 — COMPLETE / INTERNAL_AUDIT_COMPLETE)
 
-Each node below is a future implementation node. Node wording reflects the
-P6-01 audit: L1/L2/L3 are read models over existing PostgreSQL rows; no new
-table; no external memory vendor; no vector database. A node may be activated
-only after the frozen contract is accepted and Phase 6 implementation is
-explicitly authorized.
+Each node below was executed in dependency order during the authorized
+continuous implementation run. Node wording reflects the P6-01 audit:
+L1/L2/L3 are read models over existing PostgreSQL rows; no new table; no
+external memory vendor; no vector database. The execution record, acceptance
+evidence, and fresh validation results are in [PHASE6_AUDIT.md](PHASE6_AUDIT.md).
 
 ### P6-03 — Memory Domain Schemas + Provenance Contracts
 
@@ -751,29 +753,29 @@ and its own graph.
 
 ---
 
-## 7. Design-run status (frozen)
+## 7. Final status (after internal audit)
 
 ```text
 P6-01 = COMPLETE
 P6-02 = COMPLETE
-P6-03 = NOT_STARTED
-P6-04 = NOT_STARTED
-P6-05 = NOT_STARTED
-P6-06 = NOT_STARTED
-P6-07 = NOT_STARTED
-P6-08 = NOT_STARTED
-P6-09 = NOT_STARTED
-P6-10 = NOT_STARTED
-P6-11 = NOT_STARTED
-P6-12 = NOT_STARTED
-P6-13 = NOT_STARTED
-P6-14 = NOT_STARTED
-P6-15 = NOT_STARTED
-P6-16 = NOT_STARTED
-Phase 6 = DESIGN_REVIEW_PENDING
+P6-03 = COMPLETE
+P6-04 = COMPLETE
+P6-05 = COMPLETE
+P6-06 = COMPLETE
+P6-07 = COMPLETE
+P6-08 = COMPLETE
+P6-09 = COMPLETE
+P6-10 = COMPLETE
+P6-11 = COMPLETE
+P6-12 = COMPLETE
+P6-13 = COMPLETE
+P6-14 = COMPLETE
+P6-15 = COMPLETE
+P6-16 = INTERNAL_AUDIT_COMPLETE
+Phase 6 = INTERNAL_AUDIT_COMPLETE
+External Review = PENDING
 Phase 7 = NOT_STARTED
 ```
 
-No Phase 6 implementation exists in this repository at this commit. The
-contract in [WRITING_MEMORY_POLICY.md](WRITING_MEMORY_POLICY.md) is the frozen
-specification for future execution.
+Phase 6 implementation exists on this branch per [PHASE6_AUDIT.md](PHASE6_AUDIT.md).
+STOP — awaiting external review; Phase 7 must not start.

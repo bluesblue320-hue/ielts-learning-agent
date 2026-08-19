@@ -17,7 +17,7 @@ and database-safe concurrency hardening. Phase 4 closes the bounded adaptive
 Writing loop with decision-gated practice generation, durable practice
 ownership, a submission claim protocol, atomic reuse of Phase 2 persistence,
 and Phase 3 completion/replanning. Phase 5 implements the Chinese-first Next.js presentation layer, typed HTTP client, browser presentation cache, real Chromium E2E, and CI gate. Generation, submission, and completion are
-separate product actions; no automatic next-practice generation occurs. The
+separate product actions; no automatic next-practice generation occurs. Phase 6 implements the hierarchical Learning Memory subsystem (L0-L3) as deterministic read models over the existing durable Writing history, with four frozen read APIs (`history`, `history/{episode_id}`, `progress`, `context`), `/history` and `/progress` web UX, and server-authoritative dashboard resume; no new table, migration, or external memory runtime was introduced. The
 learning-loop components below remain target designs unless their status says
 otherwise.
 
@@ -105,7 +105,7 @@ The core agent coordinates the learning loop. Planner, Memory, Evaluator, and IE
 | Core Learning Agent | Coordinate state, planning, tools, evaluation, and replanning | Deferred |
 | Learner Model | Represent goals, current level, skill mastery, weaknesses, and history as structured persistent data | Implemented Phase 3 learner state and persistence |
 | Planner | Select the next learning objective using deterministic priorities, with constrained generation where useful | Implemented deterministic Phase 3 planner |
-| Memory | Separate stable profile data, learning events, and derived patterns | Phase 6 design frozen (`writing-memory-v1`); storage/read-model implementation deferred to Phase 6 execution |
+| Memory | Separate stable profile data, learning events, and derived patterns | Implemented Phase 6 read models (`writing-memory-v1` / `writing-progress-v1`); no new tables |
 | Writing Evaluator | Convert a Task 2 submission into validated structured evidence through the provider protocol | Implemented for Writing Task 2 only |
 | LLM Provider | Isolate vendor HTTP behavior behind a typed contract | Protocol, test fake, and DeepSeek adapter implemented; no runtime fake selection |
 | Tool Layer | Expose focused learning activities behind explicit interfaces | Wider practice tools deferred |
@@ -181,11 +181,11 @@ remaining skills remain future work.
 Architecture follows verified product requirements. Phase 1 is complete and
 stopped at `P1-11`; Phase 2 is complete and stopped at `P2-15`; Phase 3 is
 complete; Phase 4 is the accepted implementation baseline; Phase 5 is
-implemented and merged. Phase 6 is DESIGN_REVIEW_PENDING: its P6-01 baseline
-audit and P6-02 hierarchical learning memory contract freeze are complete
-(`docs/PHASE6_GRAPH.md`, `docs/WRITING_MEMORY_POLICY.md`) and the contract was
-refined after external design review; Phase 6 implementation (P6-03 and later)
-is NOT_STARTED and requires separate explicit authority. Phase 7 remains
+implemented and merged; Phase 6 is INTERNAL_AUDIT_COMPLETE on branch
+`phase/6-hierarchical-learning-memory` (hierarchical Learning Memory read
+models over the existing Writing history, four frozen read APIs, `/history`
+and `/progress` UX, and dashboard resume; no new table, no migration, no
+provider abstraction). Phase 6 External Review is PENDING. Phase 7 remains
 NOT_STARTED.
 Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
 
@@ -194,4 +194,4 @@ Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
 `web/` is a Chinese-first Next.js presentation layer. It calls FastAPI over JSON, caches only learner navigation/recommendation presentation fields in browser storage, and leaves evaluation, learner state, planning, lifecycle validation, and persistence authoritative in FastAPI/PostgreSQL.
 ## Phase 5 status
 
-Next.js presentation, FastAPI application/domain authority, and PostgreSQL source of truth are implemented. Phase 6 is DESIGN_REVIEW_PENDING: the hierarchical learning memory audit (P6-01) and contract freeze (P6-02) are complete and the contract was refined after external design review; memory implementation, RAG, wider multi-skill work, and Phase 7 remain future and are NOT_STARTED.
+Next.js presentation, FastAPI application/domain authority, and PostgreSQL source of truth are implemented. Phase 6 is INTERNAL_AUDIT_COMPLETE: the hierarchical learning memory subsystem (L0-L3 read models, history/progress/context APIs, `/history` and `/progress` UX, dashboard resume) is implemented and internally audited; External Review is PENDING; RAG, wider multi-skill work, and Phase 7 remain future and are NOT_STARTED.
