@@ -54,3 +54,12 @@ export function formatEpisodeTime(iso: string): string {
   const pad = (value: number) => String(value).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
+
+/**
+ * Learner-facing drill-down label for a source episode, using a neutral
+ * ordinal instead of the raw persisted episode id. Raw ids stay in hrefs /
+ * React keys / API data only.
+ */
+export function progressSourceLinkLabel(index: number): string {
+  return `查看来源记录 ${index + 1}`;
+}

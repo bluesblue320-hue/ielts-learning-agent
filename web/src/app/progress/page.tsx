@@ -7,6 +7,7 @@ import { useLearnerContext } from "@/components/learner-context";
 import { apiClient, type SkillProgress, type WritingProgressResponse, type WritingSkill } from "@/lib/api/client";
 import {
   persistentGapLabels,
+  progressSourceLinkLabel,
   trendExplanations,
   trendLabels,
 } from "@/lib/memory-presentation";
@@ -39,9 +40,9 @@ function ProgressCard({ skill, target }: { skill: SkillProgress; target: string 
       </ul>
       {skill.source_episode_ids.length > 0 && (
         <p className="drill-down">
-          {[...new Set(skill.source_episode_ids)].map((episodeId) => (
+          {[...new Set(skill.source_episode_ids)].map((episodeId, index) => (
             <Link className="drill-down-link" href={`/history/${episodeId}`} key={episodeId}>
-              查看学习记录 #{episodeId}
+              {progressSourceLinkLabel(index)}
             </Link>
           ))}
         </p>

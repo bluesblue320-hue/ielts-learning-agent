@@ -173,6 +173,8 @@ export type LearningEpisodeSummary = {
   writing_evaluation_id: number;
   attempt_id: number;
   writing_practice_id: number | null;
+  /** The completed practice's actual target (null for initial_writing). */
+  practice_target_skill: WritingSkill | null;
   recommendation_id: number;
   recommendation_decision_type: "practice" | "no_practice";
   recommendation_target_skill: WritingSkill | null;
@@ -245,8 +247,12 @@ export type SkillProgress = {
   recent_practice_count: number;
   latest_observation_time: string | null;
   last_episode_id: number | null;
+  /** Evidence ids of the canonical trend window that produced trend/gap. */
   source_observation_ids: number[];
+  /** LearningUpdate ids OWNING the trend-window evidence rows (exact L0). */
   source_episode_ids: number[];
+  /** Latest RECENT_PRACTICE_EPISODE_WINDOW episode ids (practice provenance). */
+  recent_practice_source_episode_ids: number[];
 };
 
 export type SkillProgressSet = Record<WritingSkill, SkillProgress>;
