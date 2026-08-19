@@ -105,7 +105,7 @@ The core agent coordinates the learning loop. Planner, Memory, Evaluator, and IE
 | Core Learning Agent | Coordinate state, planning, tools, evaluation, and replanning | Deferred |
 | Learner Model | Represent goals, current level, skill mastery, weaknesses, and history as structured persistent data | Implemented Phase 3 learner state and persistence |
 | Planner | Select the next learning objective using deterministic priorities, with constrained generation where useful | Implemented deterministic Phase 3 planner |
-| Memory | Separate stable profile data, learning events, and derived patterns | Storage logic and retrieval are deferred |
+| Memory | Separate stable profile data, learning events, and derived patterns | Phase 6 design frozen (`writing-memory-v1`); storage/read-model implementation deferred to Phase 6 execution |
 | Writing Evaluator | Convert a Task 2 submission into validated structured evidence through the provider protocol | Implemented for Writing Task 2 only |
 | LLM Provider | Isolate vendor HTTP behavior behind a typed contract | Protocol, test fake, and DeepSeek adapter implemented; no runtime fake selection |
 | Tool Layer | Expose focused learning activities behind explicit interfaces | Wider practice tools deferred |
@@ -180,9 +180,12 @@ remaining skills remain future work.
 
 Architecture follows verified product requirements. Phase 1 is complete and
 stopped at `P1-11`; Phase 2 is complete and stopped at `P2-15`; Phase 3 is
-complete; and Phase 4 is the accepted implementation baseline. Phase 5 is
-implemented and awaiting final external review. Phase 6 remains NOT_STARTED
-and requires separate explicit authority and its own graph.
+complete; Phase 4 is the accepted implementation baseline; Phase 5 is
+implemented and merged. Phase 6 is DESIGN_ACTIVE: its P6-01 baseline audit
+and P6-02 hierarchical learning memory contract freeze are complete
+(`docs/PHASE6_GRAPH.md`, `docs/WRITING_MEMORY_POLICY.md`); Phase 6
+implementation (P6-03 and later) is NOT_STARTED and requires separate explicit
+authority. Phase 7 remains NOT_STARTED.
 Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
 
 ## Phase 5 presentation layer
@@ -190,4 +193,4 @@ Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
 `web/` is a Chinese-first Next.js presentation layer. It calls FastAPI over JSON, caches only learner navigation/recommendation presentation fields in browser storage, and leaves evaluation, learner state, planning, lifecycle validation, and persistence authoritative in FastAPI/PostgreSQL.
 ## Phase 5 status
 
-Next.js presentation, FastAPI application/domain authority, and PostgreSQL source of truth are implemented. Memory/RAG, wider multi-skill work, and Phase 6 remain future; Phase 6 is NOT_STARTED.
+Next.js presentation, FastAPI application/domain authority, and PostgreSQL source of truth are implemented. Phase 6 is DESIGN_ACTIVE: the hierarchical learning memory audit (P6-01) and contract freeze (P6-02) are complete; memory implementation, RAG, wider multi-skill work, and Phase 7 remain future and are NOT_STARTED.
