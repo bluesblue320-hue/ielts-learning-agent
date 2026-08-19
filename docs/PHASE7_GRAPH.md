@@ -2,7 +2,7 @@
 
 ## Document status
 
-**DESIGN ACTIVE — P7-01 is COMPLETE; P7-02 and P7-03 through P7-14 are NOT_STARTED.**
+**DESIGN ACTIVE — P7-01 and P7-02 are COMPLETE; P7-03 through P7-14 are NOT_STARTED.**
 
 This graph was created on `phase/7-memory-aware-planning-v2` from verified
 `master` commit `fa34dc3499ab85e286340582353482c4b7388198` (`docs: finalize
@@ -33,7 +33,7 @@ remain unchanged.
 ```text
 START
   -> P7-01 Baseline & Memory-Aware Planning Capability Audit [COMPLETE]
-  -> P7-02 Memory-Aware Planner v2 Contract Freeze [NOT_STARTED]
+  -> P7-02 Memory-Aware Planner v2 Contract Freeze [COMPLETE]
   -> P7-03 Versioned Planner v2 Schemas + Context Contract
   -> P7-04 Planner Persistence Evolution / Migration
   -> P7-05 Decision-Time Memory Context Builder
@@ -360,7 +360,7 @@ Phase 5 = COMPLETE
 Phase 6 = COMPLETE
 Phase 7 = DESIGN_ACTIVE
 P7-01 = COMPLETE
-P7-02 = NOT_STARTED
+P7-02 = COMPLETE
 P7-03 = NOT_STARTED
 Phase 8 = NOT_STARTED
 ```
