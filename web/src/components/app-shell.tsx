@@ -8,6 +8,8 @@ import { useLearnerContext } from "@/components/learner-context";
 const navigation = [
   { href: "/dashboard", label: "学习概览" },
   { href: "/writing", label: "首次写作" },
+  { href: "/history", label: "历史" },
+  { href: "/progress", label: "进度" },
   { href: "/setup", label: "学习设置" },
 ];
 

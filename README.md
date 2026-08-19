@@ -7,7 +7,7 @@ it is not intended to be only a chatbot or a thin LLM wrapper.
 
 ## Current status
 
-**Phase 1 = COMPLETE. Phase 2 = COMPLETE. Phase 3 = COMPLETE. Phase 4 = COMPLETE. Phase 5 = COMPLETE and MERGED through PR #9 (`feat: deliver Phase 5 Chinese-first web MVP`), merge commit `56498c3d59aad4ae645c5b78c6b6dc41bec62bcf`. Phase 6 = NOT_STARTED.**
+**Phase 1 = COMPLETE. Phase 2 = COMPLETE. Phase 3 = COMPLETE. Phase 4 = COMPLETE. Phase 5 = COMPLETE and MERGED through PR #9 (`feat: deliver Phase 5 Chinese-first web MVP`), merge commit `56498c3d59aad4ae645c5b78c6b6dc41bec62bcf`. Phase 6 = INTERNAL_AUDIT_COMPLETE (hierarchical Learning Memory implemented on `phase/6-hierarchical-learning-memory`; P6-16 internal audit complete; External Review = PENDING; implementation P6-03..P6-16 complete). Phase 7 = NOT_STARTED.**
 
 Phase 3 adds a
 complete deterministic learner-state path on top of the Phase 2 Writing

@@ -22,6 +22,7 @@ class APIErrorCode(StrEnum):
     LEARNING_SOURCE_INVALID = "learning_source_invalid"
     PRACTICE_NOT_FOUND = "practice_not_found"
     PRACTICE_CONFLICT = "practice_conflict"
+    EPISODE_NOT_FOUND = "episode_not_found"
 
 
 class APIErrorDetail(BaseModel):

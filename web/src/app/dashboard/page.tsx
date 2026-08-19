@@ -4,43 +4,58 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { type LearnerStateResponse, type WritingSkill, apiClient } from "@/lib/api/client";
+import { type LearnerStateResponse, type WritingSkill, apiClient, type WritingContextResponse } from "@/lib/api/client";
 import { useLearnerContext } from "@/components/learner-context";
 import { presentApiError, presentNoPracticeReasons, presentPracticeReasons, skillLabels } from "@/lib/presentation";
+import { resumeActionExplanations, resumeActionLabels } from "@/lib/memory-presentation";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { cache, isReady } = useLearnerContext();
   const [state, setState] = useState<LearnerStateResponse | null>(null);
+  const [context, setContext] = useState<WritingContextResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const learnerId = cache?.currentLearnerId ?? null;
   const [isGenerating, setIsGenerating] = useState(false);
+  const learnerId = cache?.currentLearnerId ?? null;
 
   useEffect(() => {
     if (!isReady || learnerId === null) return;
     const activeLearnerId: number = learnerId;
     let active = true;
-    async function load() {
-      setIsLoading(true);
-      setError(null);
+    async function loadState() {
       try {
         const result = await apiClient.getLearnerState(activeLearnerId);
         if (active) setState(result);
+      } catch (reason) {
+        if (active) setError(presentApiError(reason));
+      }
+    }
+    async function loadContext() {
+      try {
+        const result = await apiClient.getWritingContext(activeLearnerId);
+        if (active) setContext(result);
       } catch (reason) {
         if (active) setError(presentApiError(reason));
       } finally {
         if (active) setIsLoading(false);
       }
     }
+    async function load() {
+      setIsLoading(true);
+      setError(null);
+      // Load state and context independently so a resume-context failure does
+      // not blank the authoritative state grid.
+      await Promise.all([loadState(), loadContext()]);
+    }
     void load();
     return () => { active = false; };
   }, [isReady, learnerId]);
 
   async function generatePractice() {
-    if (cache === null || cache.currentRecommendationId === null) return;
-    const activeLearnerId = cache.currentLearnerId;
-    const recommendationId = cache.currentRecommendationId;
+    if (context === null || context.current_recommendation_id === null) return;
+    const activeLearnerId = context.learner_id;
+    const recommendationId = context.current_recommendation_id;
     setIsGenerating(true);
     setError(null);
     try {
@@ -56,6 +71,45 @@ export default function DashboardPage() {
       setIsGenerating(false);
     }
   }
+
+  function renderResumeAction() {
+    if (context === null) return null;
+    const action = context.resume_action;
+    if (action === "initial_writing") {
+      return <><p className="supporting-copy">{resumeActionExplanations.initial_writing}</p><Link className="primary-action" href="/writing">开始首次写作</Link></>;
+    }
+    if (action === "no_action") {
+      return <p className="supporting-copy">{resumeActionExplanations.no_action}</p>;
+    }
+    if (action === "generate_practice") {
+      return (
+        <>
+          <p className="supporting-copy">{resumeActionExplanations.generate_practice}</p>
+          {context.current_recommendation?.target_skill !== null && (
+            <p className="supporting-copy">
+              训练重点：{context.current_recommendation?.target_skill === undefined ? "—" : skillLabels[context.current_recommendation.target_skill]}
+            </p>
+          )}
+          <button className="primary-action" disabled={isGenerating} onClick={generatePractice} type="button">
+            {isGenerating ? "正在生成练习…" : "生成针对性练习"}
+          </button>
+        </>
+      );
+    }
+    if (context.relevant_practice !== null && (action === "submit_practice" || action === "complete_practice")) {
+      return (
+        <>
+          <p className="supporting-copy">{resumeActionExplanations[action]}</p>
+          <p className="supporting-copy">训练重点：{skillLabels[context.relevant_practice.target_skill]}</p>
+          <Link className="primary-action" href={`/practice/${context.relevant_practice.id}`}>
+            {resumeActionLabels[action]}
+          </Link>
+        </>
+      );
+    }
+    return <p className="supporting-copy">{resumeActionExplanations[action]}</p>;
+  }
+
   if (!isReady) return <p className="status-copy" aria-live="polite">正在恢复学习进度…</p>;
   if (cache === null) {
     return (
@@ -89,15 +143,22 @@ export default function DashboardPage() {
         </div>
       )}
       <section className="content-card next-step">
-        <h2>下一步</h2>
-        {cache.currentRecommendation === null ? (
-          <><p className="supporting-copy">完成首次写作评估并应用学习更新后，系统会在此显示下一步建议。</p><Link className="primary-action" href="/writing">进行首次写作</Link></>
-        ) : cache.currentRecommendation.decision_type === "no_practice" ? (
-          <p className="supporting-copy">{presentNoPracticeReasons(cache.currentRecommendation.reason_codes)}</p>
+        <h2>继续学习</h2>
+        {context === null ? (
+          <><p className="supporting-copy">正在读取下一步建议…</p><Link className="primary-action" href="/writing">进行首次写作</Link></>
         ) : (
-          <><p className="supporting-copy">训练重点：{cache.currentRecommendation.target_skill === null ? "—" : skillLabels[cache.currentRecommendation.target_skill]}</p><p className="supporting-copy">当前估计：{cache.currentRecommendation.current_estimate ?? "尚未建立"}；目标分数：{cache.currentRecommendation.learner_target_band?.value ?? cache.writingTargetBand}</p><p className="supporting-copy">{presentPracticeReasons(cache.currentRecommendation.reason_codes)}</p><button className="primary-action" disabled={isGenerating} onClick={generatePractice} type="button">{isGenerating ? "正在生成练习…" : "生成针对性练习"}</button></>
+          renderResumeAction()
+        )}
+        {context?.current_recommendation?.decision_type === "no_practice" && (
+          <p className="supporting-copy">{presentNoPracticeReasons(context.current_recommendation.reason_codes)}</p>
+        )}
+        {context?.current_recommendation?.decision_type === "practice" && (
+          <p className="supporting-copy">{presentPracticeReasons(context.current_recommendation.reason_codes)}</p>
         )}
       </section>
+      <p className="supporting-copy nav-hint">
+        <Link href="/history">查看写作历史</Link> · <Link href="/progress">查看学习进度</Link>
+      </p>
     </section>
   );
 }

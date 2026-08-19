@@ -40,30 +40,62 @@ Always inspect the current phase documentation before implementing features.
 Current phase:
 
 ```text
-Phase 4 — Adaptive Writing Practice
+Phase 6 — Hierarchical Learning Memory & Longitudinal Progress
 ```
 
 Read:
 
 ```text
-docs/PHASE4_GRAPH.md
+docs/PHASE6_GRAPH.md
+docs/WRITING_MEMORY_POLICY.md
 docs/DEVELOPMENT_LOOP.md
 ```
 
-The Phase 3 graph is approved and its runtime nodes have been executed:
-learner-state policy and schemas, persistence models and migration, evidence
-extraction, the deterministic EWMA replay engine, the practice planner, the
-atomic learning-application service, learner/learning APIs, and concurrency
-hardening are implemented and validated against isolated PostgreSQL. Phase 3
-is complete; see [docs/PHASE3_GRAPH.md](docs/PHASE3_GRAPH.md) for the per-node
-status and [docs/PHASE3_AUDIT.md](docs/PHASE3_AUDIT.md) for the final audit.
+Phase 6 status:
 
-Phase 4 implements the bounded adaptive Writing loop on its dedicated branch:
-a Phase 3 recommendation is resolved to at most one durable practice, an
-essay-only submission is evaluated against the stored question, and the
-persisted evaluation is applied through Phase 3 to return the next
-recommendation. Phase 4 execution is pending its final internal audit and
-external review; Phase 5 must not start.
+```text
+Phase 1 = COMPLETE
+Phase 2 = COMPLETE
+Phase 3 = COMPLETE
+Phase 4 = COMPLETE
+Phase 5 = COMPLETE
+Phase 6 = INTERNAL_AUDIT_COMPLETE
+P6-01 = COMPLETE
+P6-02 = COMPLETE
+P6-03 = COMPLETE
+P6-04 = COMPLETE
+P6-05 = COMPLETE
+P6-06 = COMPLETE
+P6-07 = COMPLETE
+P6-08 = COMPLETE
+P6-09 = COMPLETE
+P6-10 = COMPLETE
+P6-11 = COMPLETE
+P6-12 = COMPLETE
+P6-13 = COMPLETE
+P6-14 = COMPLETE
+P6-15 = COMPLETE
+P6-16 = INTERNAL_AUDIT_COMPLETE
+External Review = PENDING
+Phase 7 = NOT_STARTED
+```
+
+Phase 6 design (P6-01 audit, P6-02 contract freeze, versions
+`writing-memory-v1` / `writing-progress-v1`) and the full implementation
+(P6-03 through P6-16) are complete on branch
+`phase/6-hierarchical-learning-memory`. The hierarchical Learning Memory
+subsystem is implemented as read models over the existing durable Writing
+history: L0 episodes anchor on `LearningUpdate` (no duplicate storage), L1
+atoms are projections of persisted rows, L2 longitudinal patterns (trend,
+persistent gap, recency windows) and the L3 learner profile are computed
+deterministically with exact `Decimal` arithmetic, and the four frozen read
+APIs (`/writing/history`, `/writing/history/{episode_id}`, `/writing/progress`,
+`/writing/context`) expose them with full provenance. The web product adds
+`/history`, `/progress`, and a server-authoritative dashboard resume. No new
+database table, no migration, and no provider abstraction were introduced; the
+current planner (`writing-practice-gap-v1`) is unchanged. See
+[docs/PHASE6_AUDIT.md](docs/PHASE6_AUDIT.md) for the internal audit and fresh
+validation results. External review is PENDING; Phase 7 must not start.
 
 The graph defines WHAT should be implemented.
 
