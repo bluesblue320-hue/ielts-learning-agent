@@ -2,13 +2,11 @@
 
 ## Document status
 
-**DESIGN_REVIEW_PENDING — P7-01 and P7-02 are COMPLETE after targeted contract repair; P7-03 through P7-14 are NOT_STARTED. External re-review is pending.**
+**IMPLEMENTATION_ACTIVE — External Design Review is APPROVED. P7-01 through P7-03 are COMPLETE; P7-04 through P7-14 are NOT_STARTED.**
 
 This graph was created on `phase/7-memory-aware-planning-v2` from verified
 `master` commit `fa34dc3499ab85e286340582353482c4b7388198` (`docs: finalize
-Phase 6 merged status`). This run is authorized for design and baseline work
-only. No application code, frontend code, migration, or test may be changed
-until a later node is explicitly authorized.
+Phase 6 merged status`). External Design Review has approved continuous execution from P7-03 through P7-14, with each node remaining a mandatory quality gate. No Phase 8 work, master merge, or pull request is authorized before external implementation review.
 
 Phase 7 evolves only the deterministic Writing planner. It is not a Core Agent
 runtime, LLM planner, RAG/semantic-memory feature, vector database, TencentDB
@@ -34,7 +32,7 @@ remain unchanged.
 START
   -> P7-01 Baseline & Memory-Aware Planning Capability Audit [COMPLETE]
   -> P7-02 Memory-Aware Planner v2 Contract Freeze [COMPLETE]
-  -> P7-03 Versioned Planner v2 Schemas + Context Contract
+  -> P7-03 Versioned Planner v2 Schemas + Context Contract [COMPLETE]
   -> P7-04 Planner Persistence Evolution / Migration
   -> P7-05 Decision-Time Memory Context Builder
   -> P7-06 Deterministic Planner v2 Engine
@@ -49,8 +47,7 @@ START
   -> STOP -> External Review
 ```
 
-Nodes activate only after every dependency is complete and after explicit
-authority for implementation. P7-03 and later are not authorized by this run.
+Nodes activate only after every dependency is complete. External Design Review has authorized continuous implementation through P7-14; each node is still a mandatory commit, test, and push checkpoint.
 
 ## P7-01 — Baseline & Memory-Aware Planning Capability Audit — COMPLETE
 
@@ -285,9 +282,10 @@ Phase 3 = COMPLETE
 Phase 4 = COMPLETE
 Phase 5 = COMPLETE
 Phase 6 = COMPLETE
-Phase 7 = DESIGN_REVIEW_PENDING
+Phase 7 = IMPLEMENTATION_ACTIVE
 P7-01 = COMPLETE
 P7-02 = COMPLETE
-P7-03 = NOT_STARTED
+P7-03 = COMPLETE
+P7-04 = NOT_STARTED
 Phase 8 = NOT_STARTED
 ```

@@ -7,7 +7,7 @@ it is not intended to be only a chatbot or a thin LLM wrapper.
 
 ## Current status
 
-**Phase 1 = COMPLETE. Phase 2 = COMPLETE. Phase 3 = COMPLETE. Phase 4 = COMPLETE. Phase 5 = COMPLETE and MERGED through PR #9 (`feat: deliver Phase 5 Chinese-first web MVP`), merge commit `56498c3d59aad4ae645c5b78c6b6dc41bec62bcf`. Phase 6 = COMPLETE and MERGED through PR #10 (`feat: deliver Phase 6 hierarchical learning memory & longitudinal progress`), merge commit `b8e419d8c146c921539f4654b5aeb0b56ed6f425`. Phase 7 = DESIGN_REVIEW_PENDING: P7-01/P7-02 targeted contract repair is complete; external re-review is pending and implementation is not authorized.**
+**Phase 1 = COMPLETE. Phase 2 = COMPLETE. Phase 3 = COMPLETE. Phase 4 = COMPLETE. Phase 5 = COMPLETE and MERGED through PR #9 (`feat: deliver Phase 5 Chinese-first web MVP`), merge commit `56498c3d59aad4ae645c5b78c6b6dc41bec62bcf`. Phase 6 = COMPLETE and MERGED through PR #10 (`feat: deliver Phase 6 hierarchical learning memory & longitudinal progress`), merge commit `b8e419d8c146c921539f4654b5aeb0b56ed6f425`. Phase 7 = IMPLEMENTATION_ACTIVE: External Design Review is APPROVED; P7-01/P7-02 contract repair and P7-03 versioned planner schemas are complete. P7-04 through P7-14 remain mandatory implementation gates; Phase 8 has not started.**
 
 Phase 3 adds a
 complete deterministic learner-state path on top of the Phase 2 Writing
