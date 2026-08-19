@@ -18,11 +18,14 @@ from app.models.learning import PracticeRecommendation
 from app.schemas.common import BandScore
 from app.schemas.learner import LearnerSkillStateSet
 from app.schemas.planning import (
-    AnyPracticeRecommendationDecision,
     DecisionType,
     PersistedPlannerContextSnapshot,
     PersistedRecommendationPlanningRecord,
+    PlanningExplanationFactor,
     PlannerReasonCode,
+    PublicPlanningExplanation,
+    PublicPracticeRecommendationDecision,
+    PublicPracticeRecommendationDecisionV2,
     PracticeRecommendationDecision,
     PracticeRecommendationDecisionV2,
 )
@@ -78,9 +81,42 @@ def reconstruct_persisted_planning_record(
         ) from error
 
 
+_TRACE_FACTORS = {
+    "persistent_gap": PlanningExplanationFactor.PERSISTENT_GAP_TIEBREAK,
+    "trend": PlanningExplanationFactor.TREND_TIEBREAK,
+    "recent_practice": PlanningExplanationFactor.LOWER_RECENT_PRACTICE_COUNT,
+    "canonical_priority": (
+        PlanningExplanationFactor.CANONICAL_PRIORITY_TIEBREAK
+    ),
+}
+
+
+def _planning_explanation_from_snapshot(
+    snapshot: PersistedPlannerContextSnapshot | None,
+) -> PublicPlanningExplanation | None:
+    """Project only semantic tie-break facts from the immutable trace."""
+
+    if snapshot is None:
+        return None
+    factors = [PlanningExplanationFactor.EQUAL_MAXIMUM_TARGET_GAP]
+    for stage in snapshot.selection_trace.stages:
+        if stage.narrowed:
+            factors.append(_TRACE_FACTORS[stage.stage])
+    return PublicPlanningExplanation(factors=factors)
+
+
 def reconstruct_persisted_decision(
     row: PracticeRecommendation,
-) -> AnyPracticeRecommendationDecision:
-    """Return the safe public v1/v2 decision without its audit envelope."""
+) -> PublicPracticeRecommendationDecision:
+    """Return a safe public v1/v2 decision from the immutable record."""
 
-    return reconstruct_persisted_planning_record(row).decision
+    record = reconstruct_persisted_planning_record(row)
+    decision = record.decision
+    if decision.planner_version == PLANNER_VERSION:
+        return decision
+    return PublicPracticeRecommendationDecisionV2(
+        **decision.model_dump(),
+        planning_explanation=_planning_explanation_from_snapshot(
+            record.planner_context_snapshot
+        ),
+    )

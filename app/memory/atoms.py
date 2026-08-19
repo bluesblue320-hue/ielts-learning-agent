@@ -36,7 +36,7 @@ from app.schemas.memory import (
     SkillObservationAtom,
     TargetSnapshotAtom,
 )
-from app.schemas.planning import AnyPracticeRecommendationDecision
+from app.schemas.planning import PublicPracticeRecommendationDecision
 from app.schemas.practice import PracticeLifecycleState
 
 
@@ -115,7 +115,7 @@ def target_snapshot_atom(
 def recommendation_observation_atom(
     row: PracticeRecommendation,
     *,
-    decision: AnyPracticeRecommendationDecision,
+    decision: PublicPracticeRecommendationDecision,
 ) -> RecommendationObservationAtom:
     """Project one persisted recommendation as an observation atom.
 

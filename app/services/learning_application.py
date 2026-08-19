@@ -75,7 +75,7 @@ from app.schemas.learner import (
     LearnerSkillStateSet,
 )
 from app.schemas.planning import (
-    AnyPracticeRecommendationDecision,
+    PublicPracticeRecommendationDecision,
     PersistedPlannerContextSnapshot,
     PersistedRecommendationPlanningRecord,
 )
@@ -126,7 +126,7 @@ class AppliedLearningResult:
 
     learning_update_id: int
     recommendation_id: int
-    recommendation: AnyPracticeRecommendationDecision
+    recommendation: PublicPracticeRecommendationDecision
     reused: bool = False
 
 
@@ -170,7 +170,7 @@ def _extracted_from_row(row: LearningEvidence) -> ExtractedWritingEvidence:
 
 def _reconstruct_decision(
     row: PracticeRecommendation,
-) -> AnyPracticeRecommendationDecision:
+) -> PublicPracticeRecommendationDecision:
     """Rebuild a safe v1/v2 decision from its persisted recommendation row."""
 
     try:
@@ -239,7 +239,7 @@ def _resolve_existing(
     return AppliedLearningResult(
         learning_update_id=existing.id,
         recommendation_id=recommendation.id,
-        recommendation=decision,
+        recommendation=_reconstruct_decision(recommendation),
         reused=True,
     )
 
@@ -464,7 +464,7 @@ def apply_writing_evaluation(
         return AppliedLearningResult(
             learning_update_id=learning_update.id,
             recommendation_id=recommendation.id,
-            recommendation=decision,
+            recommendation=_reconstruct_decision(recommendation),
             reused=False,
         )
     except LearningApplicationError:

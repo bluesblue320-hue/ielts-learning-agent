@@ -50,7 +50,7 @@ from app.schemas.memory import (
     LearningEpisodeSummary,
     WritingAttemptView,
 )
-from app.schemas.planning import AnyPracticeRecommendationDecision
+from app.schemas.planning import PublicPracticeRecommendationDecision
 from app.schemas.practice import (
     PracticeLifecycleState,
     PracticeResponse,
@@ -66,7 +66,7 @@ from app.schemas.writing import (
 
 def reconstruct_decision(
     row: PracticeRecommendation,
-) -> AnyPracticeRecommendationDecision:
+) -> PublicPracticeRecommendationDecision:
     """Return a safe public v1/v2 decision after internal record validation."""
 
     try:

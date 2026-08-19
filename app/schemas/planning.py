@@ -490,6 +490,22 @@ class PublicPlanningExplanation(BaseModel):
         return self
 
 
+class PublicPracticeRecommendationDecisionV2(PracticeRecommendationDecisionV2):
+    """Safe v2 product decision, optionally explained from a stored trace.
+
+    This is intentionally distinct from the immutable persisted decision model:
+    it contains no audit envelope or provenance ids.
+    """
+
+    planning_explanation: PublicPlanningExplanation | None = None
+
+
+PublicPracticeRecommendationDecision = Annotated[
+    Union[PracticeRecommendationDecisionV1, PublicPracticeRecommendationDecisionV2],
+    Field(discriminator="planner_version"),
+]
+
+
 class PersistedRecommendationPlanningRecord(BaseModel):
     """Versioned persistence boundary for a decision and its audit envelope.
 

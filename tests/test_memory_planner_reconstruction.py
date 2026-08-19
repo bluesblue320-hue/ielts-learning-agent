@@ -187,6 +187,17 @@ def test_mixed_rows_reconstruct_internal_matrix_and_safe_decision(
     public_decision = reconstruct_persisted_decision(row)
     assert isinstance(public_decision, expected_type)
     assert not hasattr(public_decision, "planner_context_snapshot")
+    if has_snapshot:
+        assert public_decision.planning_explanation is not None
+        factors = public_decision.planning_explanation.factors
+        assert [factor.value for factor in factors] == [
+            "equal_maximum_target_gap",
+            "trend_tiebreak",
+        ]
+    elif version == "writing-practice-gap-memory-v2":
+        assert public_decision.planning_explanation is None
+    else:
+        assert "planning_explanation" not in public_decision.model_dump()
     assert isinstance(reconstruct_decision(row), expected_type)
 
 
@@ -243,6 +254,9 @@ def test_exact_tie_api_projects_v2_decision_without_audit_envelope(
         context.json()["current_recommendation"],
     ):
         assert recommendation["planner_version"] == "writing-practice-gap-memory-v2"
+        assert recommendation["planning_explanation"] == {
+            "factors": ["equal_maximum_target_gap", "canonical_priority_tiebreak"]
+        }
         assert "planner_context_snapshot" not in recommendation
         assert "memory_context" not in recommendation
         assert "selection_trace" not in recommendation

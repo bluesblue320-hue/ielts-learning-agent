@@ -205,6 +205,7 @@ def test_apply_practice_decision(client: TestClient, engine: Engine) -> None:
     assert recommendation["target_skill"] == "task_response"
     assert recommendation["reason_codes"] == ["largest_target_gap", "insufficient_evidence"]
     assert recommendation["planner_version"] == "writing-practice-gap-memory-v2"
+    assert recommendation["planning_explanation"] is None
     assert recommendation["current_estimate"] == "6.00"
     assert set(recommendation["state_snapshot"]) == {
         "task_response",

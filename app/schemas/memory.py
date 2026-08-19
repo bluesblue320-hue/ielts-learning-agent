@@ -38,7 +38,7 @@ from app.schemas.learner import (
     LearningUpdate as LearningUpdateSchema,
     WritingSkillKey,
 )
-from app.schemas.planning import AnyPracticeRecommendationDecision
+from app.schemas.planning import PublicPracticeRecommendationDecision
 from app.schemas.practice import PracticeResponse
 from app.schemas.writing import WritingEvaluationResponse
 
@@ -152,7 +152,7 @@ class LearningEpisodeDetail(MemorySchema):
     attempt: WritingAttemptView
     evaluation: WritingEvaluationResponse
     evidence: list[LearningEvidenceSchema] = Field(min_length=4, max_length=4)
-    recommendation: AnyPracticeRecommendationDecision
+    recommendation: PublicPracticeRecommendationDecision
     practice: PracticeResponse | None = None
 
 
@@ -216,7 +216,7 @@ class RecommendationObservationAtom(MemorySchema):
     atom_kind: Literal["recommendation_observation"] = "recommendation_observation"
     learning_update_id: int = Field(gt=0)
     recommendation_id: int = Field(gt=0)
-    decision: AnyPracticeRecommendationDecision
+    decision: PublicPracticeRecommendationDecision
 
 
 # ---------------------------------------------------------------------------
@@ -307,6 +307,6 @@ class WritingContextResponse(MemorySchema):
     has_learner_owned_episodes: bool
     latest_learning_update_id: int | None = Field(default=None, gt=0)
     current_recommendation_id: int | None = Field(default=None, gt=0)
-    current_recommendation: AnyPracticeRecommendationDecision | None = None
+    current_recommendation: PublicPracticeRecommendationDecision | None = None
     relevant_practice: PracticeResponse | None = None
     current_state: LearnerSkillStateSet
