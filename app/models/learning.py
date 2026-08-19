@@ -496,7 +496,7 @@ class PracticeRecommendation(Base):
     planner_version: Mapped[str] = mapped_column(String(64), nullable=False)
     state_snapshot: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     planner_context_snapshot: Mapped[dict[str, Any] | None] = mapped_column(
-        JSONB,
+        JSONB(none_as_null=True),
         nullable=True,
     )
     created_at: Mapped[datetime] = mapped_column(

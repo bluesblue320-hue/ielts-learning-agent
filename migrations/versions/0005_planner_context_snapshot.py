@@ -29,7 +29,11 @@ def upgrade() -> None:
 
     op.add_column(
         "practice_recommendations",
-        sa.Column("planner_context_snapshot", postgresql.JSONB(), nullable=True),
+        sa.Column(
+            "planner_context_snapshot",
+            postgresql.JSONB(none_as_null=True),
+            nullable=True,
+        ),
     )
     op.create_check_constraint(
         _SNAPSHOT_CHECK,

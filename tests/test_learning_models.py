@@ -423,6 +423,7 @@ def test_reason_codes_and_snapshot_use_structured_jsonb() -> None:
     assert isinstance(PracticeRecommendation.__table__.c.state_snapshot.type, JSONB)
     snapshot = PracticeRecommendation.__table__.c.planner_context_snapshot
     assert isinstance(snapshot.type, JSONB)
+    assert snapshot.type.none_as_null is True
     assert snapshot.nullable is True
 
 
