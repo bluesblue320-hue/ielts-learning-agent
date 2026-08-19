@@ -9,6 +9,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.llm.provider import ProviderError, ProviderErrorCategory
+from app.memory.errors import (
+    EpisodeNotFoundError,
+    MemoryInvariantError,
+    MemoryPersistenceError,
+)
 from app.schemas.errors import APIErrorCode, APIErrorDetail, APIErrorResponse
 from app.services.learning_application import (
     CrossOwnerConflictError,
@@ -235,6 +240,30 @@ async def generated_practice_authority_error_handler(
     )
 
 
+async def episode_not_found_handler(
+    request: Request,
+    error: EpisodeNotFoundError,
+) -> JSONResponse:
+    del request, error
+    return _response(
+        status.HTTP_404_NOT_FOUND,
+        APIErrorCode.EPISODE_NOT_FOUND,
+        "Learning episode was not found.",
+    )
+
+
+async def memory_persistence_error_handler(
+    request: Request,
+    error: Exception,
+) -> JSONResponse:
+    del request, error
+    return _response(
+        status.HTTP_503_SERVICE_UNAVAILABLE,
+        APIErrorCode.PERSISTENCE_UNAVAILABLE,
+        "Learning memory data is temporarily unavailable.",
+    )
+
+
 def register_error_handlers(application: FastAPI) -> None:
     """Register centralized error responses without exposing exception text."""
 
@@ -296,6 +325,12 @@ def register_learning_error_handlers(application: FastAPI) -> None:
         PracticeNotSubmittedError,
     ):
         application.add_exception_handler(error_type, practice_conflict_handler)
+    application.add_exception_handler(EpisodeNotFoundError, episode_not_found_handler)
+    for error_type in (
+        MemoryPersistenceError,
+        MemoryInvariantError,
+    ):
+        application.add_exception_handler(error_type, memory_persistence_error_handler)
 
 
 async def practice_not_found_handler(
