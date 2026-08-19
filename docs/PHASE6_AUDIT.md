@@ -10,7 +10,7 @@
 - **Implementation-start HEAD:** `9133487c9c1dd5287848f9ff09dccc34dc1ca9c7`
   (after the P6-01/P6-02 design commits `177faea`, `4ccc38a`, `9133487`)
 - **Reviewed HEAD (external review start):** `b5a83aa93efe7f24bd2612fbaa72f991d114f528`
-- **Final HEAD:** `4268eb84298803882fe213cb1a9078ca4a6ba672`
+- **Final HEAD (validated implementation state):** `fd0ab2587c9e0d6a1418f8181f7e880fa709b54b`
 
 ## External review repair (targeted, no redesign)
 
@@ -194,6 +194,7 @@ fb078ea fix: repair practice attribution and trend provenance
 d16e460 fix: hide raw database ids in progress UI
 d4f8534 docs: freeze unfinished-practice history v1 limitation
 4268eb8 docs: update Phase 6 audit for external review repairs
+fd0ab25 docs: sync final audit HEAD
 ```
 
 ## Files changed (grouped)
