@@ -9,7 +9,56 @@
 - **Base master SHA:** `3f1b4a5772b1a5fecf863d2711def11de6f5ff0f`
 - **Implementation-start HEAD:** `9133487c9c1dd5287848f9ff09dccc34dc1ca9c7`
   (after the P6-01/P6-02 design commits `177faea`, `4ccc38a`, `9133487`)
-- **Final HEAD:** `38dafd3fb27c56894f15b387dc3179b70cd08c91`
+- **Reviewed HEAD (external review start):** `b5a83aa93efe7f24bd2612fbaa72f991d114f528`
+- **Final HEAD (after external review repairs):** `d4f8534` (see commit list)
+
+## External review repair (targeted, no redesign)
+
+The external review requested four targeted repairs. All were applied without
+changing the frozen architecture, the planner, the persistence layer, or the
+memory contract semantics beyond the explicit amendments below:
+
+1. **Recent-practice skill attribution (fixed).** `LearningEpisodeSummary`
+   now carries `practice_target_skill`, derived from the linked
+   `WritingPractice.target_skill` (`null` for `initial_writing`).
+   `recent_practice_count_for_skill()` counts targeted-practice episodes whose
+   `practice_target_skill == requested skill`; the next-recommendation target
+   (`recommendation_target_skill`) is retained and never used for practice
+   attribution. Regression test: `test_review_regression_practice_target_differs_from_next_recommendation`
+   (engine) and `test_review_regression_practice_attribution_at_api` (API),
+   proving a practice completed for `task_response` with a next recommendation
+   for `coherence_and_cohesion` is counted only for `task_response`.
+2. **Late-arrival provenance (fixed).** `SkillObservationPoint` now carries
+   `learning_update_id` (the persisted episode OWNING each evidence row).
+   `SkillProgress.source_episode_ids` is derived from the SAME canonical trend
+   window as `source_observation_ids` (exact L0 drill-down, independent of
+   apply chronology); the new separate
+   `recent_practice_source_episode_ids` field carries the
+   `RECENT_PRACTICE_EPISODE_WINDOW` episode ids for practice provenance. No
+   field is overloaded. Regression tests:
+   `test_review_regression_late_arrival_provenance_matches_canonical_window`
+   (engine) and `test_review_regression_late_arrival_provenance` (profile,
+   isolated PostgreSQL) prove that with an older attempt applied later the
+   trend is computed over canonical order and both provenance id lists point
+   to the exact owning episodes.
+3. **Raw database ids removed from normal progress UI (fixed).** The progress
+   drill-down now renders ordinal, Chinese-first labels
+   (`查看来源记录 1/2/3`) via `progressSourceLinkLabel()`; raw episode ids
+   remain only in hrefs/React keys/API data. Frontend regression test added in
+   `web/tests/presentation.test.ts` (asserts ordinal labels and the absence of
+   the raw-id copy pattern in the page source).
+4. **Unfinished-practice history contract (resolved by freezing a truthful v1
+   limitation).** `/writing/history` returns applied L0 episodes only. Durable
+   unfinished practices (`generated`, `submission_in_progress`,
+   `submitted`-but-unapplied) are NOT surfaced in history once they stop being
+   the relevant current practice; they remain exposed only through
+   `/writing/context` while they are the practice linked to the current
+   recommendation. No `pending_practices` collection and no new persistence
+   were introduced. Frozen in `docs/WRITING_MEMORY_POLICY.md` §1.17
+   ("Unfinished-practice history limitation") and the Phase 6 graph; regression
+   test `test_review_unfinished_practice_history_v1_limitation` proves the
+   history response shape (learner_id + episodes only) with a generated
+   practice present in the database.
 
 ## Completed nodes
 
@@ -102,18 +151,22 @@ No fifth `/profile` endpoint was added.
 
 ## Fresh validation results
 
-Re-run after all nodes completed:
+Re-run from the final repaired HEAD (all local/full deterministic gates):
 
 | Gate | Result |
 | --- | --- |
-| `python -m pytest -q --strict-markers` (isolated PostgreSQL) | **870 passed, 1 warning** (Phase 5 baseline was 797; +73 Phase 6 tests) |
+| `python -m pytest -q --strict-markers` (isolated PostgreSQL) | **876 passed, 1 warning** (Phase 5 baseline 797; +79 Phase 6 tests incl. review regressions) |
 | `npm --prefix web run lint` | passed |
 | `npm --prefix web run typecheck` | passed |
-| `npm --prefix web test` | **10 passed** (Phase 5 baseline 8; +2 memory client tests) |
+| `npm --prefix web test` | **11 passed** (Phase 5 baseline 8; +3 memory/presentation tests) |
 | `npm --prefix web run build` | passed (Next.js production build) |
 | `npm --prefix web run test:e2e` | **2 passed** (Phase 5 closed loop + Phase 6 memory flow; Chromium, FastAPI, deterministic fakes, isolated PostgreSQL) |
 
-CI: `.github/workflows/ci.yml` already enforces every gate above (pytest, lint, typecheck, web test, build, Playwright E2E with Chromium + PostgreSQL service) with no live DeepSeek credentials; no CI change was required.
+CI truth: no GitHub Actions run exists for this final HEAD on the branch, so
+branch CI is NOT claimed green. `.github/workflows/ci.yml` enforces every gate
+above on `pull_request` (pytest, lint, typecheck, web test, build, Playwright
+E2E with Chromium + PostgreSQL service, no live DeepSeek); the final PR CI run
+remains the merge gate.
 
 ## Commits (Phase 6, chronological)
 
@@ -134,6 +187,13 @@ eddc9b7 feat: add typed Phase 6 web memory client
 882deff feat: add memory drill-down experience
 d38af52 fix: harden Phase 6 memory experience
 38dafd3 test: validate Phase 6 learning memory flow
+8eb7fc2 docs: complete Phase 6 internal audit
+95c2591 test: scope memory test overrides to owned keys
+b5a83aa chore: ignore playwright test artifacts
+fb078ea fix: repair practice attribution and trend provenance
+d16e460 fix: hide raw database ids in progress UI
+d4f8534 docs: freeze unfinished-practice history v1 limitation
+<final audit commit>
 ```
 
 ## Files changed (grouped)
@@ -147,6 +207,7 @@ d38af52 fix: harden Phase 6 memory experience
 ## Known limitations
 
 - **Unapplied initial-evaluation resume limitation (frozen):** an initial `WritingEvaluation` persisted by `/writing/evaluate` but never applied is NOT learner-owned; if browser/client state carrying its identity is lost before apply, `/writing/context` falls back to `initial_writing`. Phase 6 deliberately adds no ownership table to close this.
+- **Unfinished-practice history limitation (frozen):** `/writing/history` returns applied L0 episodes only; durable unfinished practices (`generated`, `submission_in_progress`, `submitted`-but-unapplied) are not surfaced in history once they stop being the relevant current practice. They remain exposed through `/writing/context` only while they are the practice linked to the current recommendation. No `pending_practices` collection exists in v1.
 - Server-authoritative resume requires a known `learner_id` (no authentication/account discovery in scope).
 - Trend/persistent-gap require 3 canonical observations; fewer yields `insufficient_history` (frozen v1 semantics).
 - Local Windows note: this run required a dedicated isolated PostgreSQL instance; CI uses the existing PostgreSQL service container.
