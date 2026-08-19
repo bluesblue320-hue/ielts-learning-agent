@@ -40,30 +40,48 @@ Always inspect the current phase documentation before implementing features.
 Current phase:
 
 ```text
-Phase 4 — Adaptive Writing Practice
+Phase 6 — Hierarchical Learning Memory & Longitudinal Progress
 ```
 
 Read:
 
 ```text
-docs/PHASE4_GRAPH.md
+docs/PHASE6_GRAPH.md
+docs/WRITING_MEMORY_POLICY.md
 docs/DEVELOPMENT_LOOP.md
 ```
 
-The Phase 3 graph is approved and its runtime nodes have been executed:
-learner-state policy and schemas, persistence models and migration, evidence
-extraction, the deterministic EWMA replay engine, the practice planner, the
-atomic learning-application service, learner/learning APIs, and concurrency
-hardening are implemented and validated against isolated PostgreSQL. Phase 3
-is complete; see [docs/PHASE3_GRAPH.md](docs/PHASE3_GRAPH.md) for the per-node
-status and [docs/PHASE3_AUDIT.md](docs/PHASE3_AUDIT.md) for the final audit.
+Phase 6 status:
 
-Phase 4 implements the bounded adaptive Writing loop on its dedicated branch:
-a Phase 3 recommendation is resolved to at most one durable practice, an
-essay-only submission is evaluated against the stored question, and the
-persisted evaluation is applied through Phase 3 to return the next
-recommendation. Phase 4 execution is pending its final internal audit and
-external review; Phase 5 must not start.
+```text
+Phase 1 = COMPLETE
+Phase 2 = COMPLETE
+Phase 3 = COMPLETE
+Phase 4 = COMPLETE
+Phase 5 = COMPLETE
+Phase 6 = DESIGN_ACTIVE
+P6-01 = COMPLETE
+P6-02 = COMPLETE
+P6-03 = NOT_STARTED
+Phase 7 = NOT_STARTED
+```
+
+Phase 6 is authorized for DESIGN/BASELINE work only in this run: P6-01
+(Baseline & Hierarchical Memory Capability Audit) and P6-02 (Hierarchical
+Learning Memory Contract Freeze) are complete. The audit proved that the
+existing durable Writing history can support the L0–L3 memory hierarchy
+without duplicate storage: `LearningUpdate` anchors L0 episodes, L1 atoms are
+read-model projections of existing rows, L2 patterns and the L3 profile are
+computed read models, and NO new database table is required. The frozen
+contract is [docs/WRITING_MEMORY_POLICY.md](docs/WRITING_MEMORY_POLICY.md)
+(versions `writing-memory-v1`, `writing-progress-v1`).
+
+Phase 6 implementation (P6-03 and later: memory schemas, read-model services,
+pattern engine, profile, history/progress/context APIs, web UX, E2E) is
+NOT_STARTED and must not begin until the frozen contract is accepted and
+implementation is explicitly authorized. No Phase 6 application code,
+frontend code, or migration exists yet. Do not implement P6-03 or later, and
+do not start Phase 7, without explicit instruction.
 
 The graph defines WHAT should be implemented.
 
