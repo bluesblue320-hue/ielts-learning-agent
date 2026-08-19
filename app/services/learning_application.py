@@ -45,7 +45,10 @@ from app.learner.memory_planner import (
     resolve_practice_v2_exact_tie,
     select_practice_v2_base,
 )
-from app.learner.planning_policy import PLANNER_VERSION
+from app.learner.planning_reconstruction import (
+    PersistedPlanningReconstructionError,
+    reconstruct_persisted_decision,
+)
 from app.learner.state_engine import rebuild_all_skill_states
 from app.learner.writing_evidence import (
     ExtractedWritingEvidence,
@@ -72,12 +75,9 @@ from app.schemas.learner import (
     LearnerSkillStateSet,
 )
 from app.schemas.planning import (
-    DecisionType,
+    AnyPracticeRecommendationDecision,
     PersistedPlannerContextSnapshot,
     PersistedRecommendationPlanningRecord,
-    PlannerReasonCode,
-    PracticeRecommendationDecision,
-    PracticeRecommendationDecisionV2,
 )
 from app.schemas.writing import EvaluationMetadata
 
@@ -126,7 +126,7 @@ class AppliedLearningResult:
 
     learning_update_id: int
     recommendation_id: int
-    recommendation: PracticeRecommendationDecision | PracticeRecommendationDecisionV2
+    recommendation: AnyPracticeRecommendationDecision
     reused: bool = False
 
 
@@ -170,45 +170,16 @@ def _extracted_from_row(row: LearningEvidence) -> ExtractedWritingEvidence:
 
 def _reconstruct_decision(
     row: PracticeRecommendation,
-) -> PracticeRecommendationDecision | PracticeRecommendationDecisionV2:
-    """Rebuild and validate one persisted v1 or v2 recommendation row."""
+) -> AnyPracticeRecommendationDecision:
+    """Rebuild a safe v1/v2 decision from its persisted recommendation row."""
 
-    decision_values = {
-        "decision_type": DecisionType(row.decision_type),
-        "target_skill": row.target_skill,
-        "learner_target_band": (
-            BandScore(value=Decimal(row.learner_target_band))
-            if row.learner_target_band is not None
-            else None
-        ),
-        "current_estimate": row.current_estimate,
-        "reason_codes": [PlannerReasonCode(code) for code in row.reason_codes],
-        "planner_version": row.planner_version,
-        "state_snapshot": LearnerSkillStateSet.model_validate(row.state_snapshot),
-    }
     try:
-        if row.planner_version == PLANNER_VERSION:
-            decision = PracticeRecommendationDecision(**decision_values)
-        elif row.planner_version == PLANNER_V2_VERSION:
-            decision = PracticeRecommendationDecisionV2(**decision_values)
-        else:
-            raise LearningApplicationError("unsupported persisted planner version")
-        snapshot = (
-            PersistedPlannerContextSnapshot.model_validate(
-                row.planner_context_snapshot
-            )
-            if row.planner_context_snapshot is not None
-            else None
-        )
-        PersistedRecommendationPlanningRecord(
-            decision=decision,
-            planner_context_snapshot=snapshot,
-        )
-        return decision
-    except ValidationError as error:
+        return reconstruct_persisted_decision(row)
+    except PersistedPlanningReconstructionError as error:
         raise LearningApplicationError(
             "persisted recommendation violates planner contract"
         ) from error
+
 
 def _resolve_existing(
     session: Session,

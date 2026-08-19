@@ -36,6 +36,7 @@ from app.schemas.memory import (
     SkillObservationAtom,
     TargetSnapshotAtom,
 )
+from app.schemas.planning import AnyPracticeRecommendationDecision
 from app.schemas.practice import PracticeLifecycleState
 
 
@@ -114,11 +115,11 @@ def target_snapshot_atom(
 def recommendation_observation_atom(
     row: PracticeRecommendation,
     *,
-    decision,
+    decision: AnyPracticeRecommendationDecision,
 ) -> RecommendationObservationAtom:
     """Project one persisted recommendation as an observation atom.
 
-    ``decision`` is the reconstructed ``PracticeRecommendationDecision``
+    ``decision`` is the reconstructed versioned public decision
     (see ``app.memory.episode_queries.reconstruct_decision``).
     """
     return RecommendationObservationAtom(

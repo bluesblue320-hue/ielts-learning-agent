@@ -9,7 +9,7 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.learner import LearnerSkillStateSet
-from app.schemas.planning import PracticeRecommendationDecision
+from app.schemas.planning import AnyPracticeRecommendationDecision
 
 
 class LearningApiSchema(BaseModel):
@@ -36,4 +36,4 @@ class LearningApplyResponse(LearningApiSchema):
     learning_update_id: int = Field(gt=0)
     reused: bool
     recommendation_id: int = Field(gt=0)
-    recommendation: PracticeRecommendationDecision
+    recommendation: AnyPracticeRecommendationDecision
