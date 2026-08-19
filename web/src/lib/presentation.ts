@@ -22,6 +22,7 @@ const errorCopy: Record<string, string> = {
   evaluation_not_found: "未找到这次评估，请重新提交或刷新页面。",
   practice_not_found: "未找到这项练习，请返回学习概览。",
   practice_conflict: "该练习当前状态不允许此操作，请刷新后重试。",
+  episode_not_found: "未找到这条学习记录，请返回写作历史。",
 };
 
 export function presentApiError(error: unknown): string {
