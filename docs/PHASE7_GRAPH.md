@@ -2,7 +2,7 @@
 
 ## Document status
 
-**IMPLEMENTATION_ACTIVE — External Design Review is APPROVED. P7-01 through P7-12 are COMPLETE; P7-13 through P7-14 are NOT_STARTED.**
+**IMPLEMENTATION_ACTIVE — External Design Review is APPROVED. P7-01 through P7-13 are COMPLETE; P7-14 is NOT_STARTED.**
 
 This graph was created on `phase/7-memory-aware-planning-v2` from verified
 `master` commit `fa34dc3499ab85e286340582353482c4b7388198` (`docs: finalize
@@ -42,7 +42,7 @@ START
   -> P7-10 Memory-Aware Recommendation UX [COMPLETE]
   -> P7-11 Context / Practice Lifecycle Compatibility [COMPLETE]
   -> P7-12 Concurrency / Idempotency / Migration Hardening [COMPLETE]
-  -> P7-13 Backend + Frontend + Browser E2E / CI
+  -> P7-13 Backend + Frontend + Browser E2E / CI [COMPLETE]
   -> P7-14 Internal Final Audit
   -> STOP -> External Review
 ```
@@ -295,5 +295,6 @@ P7-09 = COMPLETE
 P7-10 = COMPLETE
 P7-11 = COMPLETE
 P7-12 = COMPLETE
+P7-13 = COMPLETE
 Phase 8 = NOT_STARTED
 ```
