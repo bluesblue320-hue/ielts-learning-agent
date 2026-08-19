@@ -88,6 +88,7 @@ P7-06 = COMPLETE
 P7-07 = COMPLETE
 P7-08 = COMPLETE
 P7-09 = COMPLETE
+P7-10 = COMPLETE
 Phase 8 = NOT_STARTED
 ```
 
@@ -107,7 +108,7 @@ current planner (`writing-practice-gap-v1`) is unchanged. External review is
 APPROVED and Phase 6 was merged to master through PR #10 (merge commit
 `b8e419d8c146c921539f4654b5aeb0b56ed6f425`); see
 [docs/PHASE6_AUDIT.md](docs/PHASE6_AUDIT.md) for the internal audit and fresh
-validation results. External Design Review has authorized continuous implementation from P7-03 through P7-14, with every node retaining its mandatory quality gate. P7-03 through P7-09 are complete; P7-10 through P7-14 remain pending. The current planner (`writing-practice-gap-v1`) remains frozen. Do not start Phase 8, merge to master, or create a PR before external implementation review. See
+validation results. External Design Review has authorized continuous implementation from P7-03 through P7-14, with every node retaining its mandatory quality gate. P7-03 through P7-10 are complete; P7-11 through P7-14 remain pending. The current planner (`writing-practice-gap-v1`) remains frozen. Do not start Phase 8, merge to master, or create a PR before external implementation review. See
 [docs/PHASE7_GRAPH.md](docs/PHASE7_GRAPH.md) for the Phase 7 execution graph.
 
 The graph defines WHAT should be implemented.

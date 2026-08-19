@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { useLearnerContext } from "@/components/learner-context";
 import { apiClient, type LearningEpisodeDetail, type WritingSkill } from "@/lib/api/client";
 import { episodeTypeLabels, formatEpisodeTime } from "@/lib/memory-presentation";
-import { presentApiError, presentPracticeReasons, skillLabels } from "@/lib/presentation";
+import { presentApiError, presentPlanningExplanation, presentPracticeReasons, skillLabels } from "@/lib/presentation";
 
 export default function EpisodeDetailPage() {
   const params = useParams<{ episodeId: string }>();
@@ -17,6 +17,7 @@ export default function EpisodeDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const learnerId = cache?.currentLearnerId ?? null;
+  const planningExplanation = presentPlanningExplanation(detail?.recommendation);
 
   useEffect(() => {
     if (!isReady || learnerId === null || !Number.isInteger(episodeId)) return;
@@ -130,6 +131,11 @@ export default function EpisodeDetailPage() {
             {detail.recommendation.decision_type === "practice"
               ? `训练重点：${detail.recommendation.target_skill === null ? "—" : skillLabels[detail.recommendation.target_skill]}`
               : "本次没有针对性练习建议。"}
+            {planningExplanation !== null && (
+              <p className="supporting-copy" role="status">
+                推荐依据：{planningExplanation}
+              </p>
+            )}
           </section>
 
           <details className="audit-details">
