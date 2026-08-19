@@ -432,6 +432,14 @@ class PracticeRecommendation(Base):
             "jsonb_typeof(state_snapshot) = 'object'",
             name="ck_practice_recommendation_state_snapshot_object",
         ),
+        # P7 stores an internal audit envelope only when the strict domain
+        # boundary requires it. PostgreSQL deliberately enforces just the
+        # stable JSONB container shape, never planner tie semantics.
+        CheckConstraint(
+            "planner_context_snapshot IS NULL OR "
+            "jsonb_typeof(planner_context_snapshot) = 'object'",
+            name="ck_practice_recommendation_planner_context_snapshot_object",
+        ),
         CheckConstraint(
             _reason_sequences_check("reason_codes"),
             name="ck_practice_recommendation_reason_sequences",
@@ -487,6 +495,10 @@ class PracticeRecommendation(Base):
     reason_codes: Mapped[list[str]] = mapped_column(JSONB, nullable=False)
     planner_version: Mapped[str] = mapped_column(String(64), nullable=False)
     state_snapshot: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    planner_context_snapshot: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB,
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

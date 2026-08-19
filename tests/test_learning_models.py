@@ -86,6 +86,7 @@ PRACTICE_RECOMMENDATION_COLUMNS = {
     "reason_codes",
     "planner_version",
     "state_snapshot",
+    "planner_context_snapshot",
     "created_at",
 }
 
@@ -367,6 +368,11 @@ def test_reason_code_and_decision_constraints() -> None:
     assert "jsonb_typeof(state_snapshot) = 'object'" in checks[
         "ck_practice_recommendation_state_snapshot_object"
     ]
+    snapshot_check = checks[
+        "ck_practice_recommendation_planner_context_snapshot_object"
+    ]
+    assert "planner_context_snapshot IS NULL" in snapshot_check
+    assert "jsonb_typeof(planner_context_snapshot) = 'object'" in snapshot_check
 
     sequences = checks["ck_practice_recommendation_reason_sequences"]
     for sequence in (
@@ -415,6 +421,9 @@ def test_state_snapshot_requires_four_canonical_keys() -> None:
 def test_reason_codes_and_snapshot_use_structured_jsonb() -> None:
     assert isinstance(PracticeRecommendation.__table__.c.reason_codes.type, JSONB)
     assert isinstance(PracticeRecommendation.__table__.c.state_snapshot.type, JSONB)
+    snapshot = PracticeRecommendation.__table__.c.planner_context_snapshot
+    assert isinstance(snapshot.type, JSONB)
+    assert snapshot.nullable is True
 
 
 def test_canonical_replay_index_exists() -> None:
