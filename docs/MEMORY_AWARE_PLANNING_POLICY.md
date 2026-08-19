@@ -7,7 +7,9 @@ planner version:
 
 ```text
 planner_version: writing-practice-gap-memory-v2
-context_schema_version: writing-practice-gap-memory-v2-context-v1
+memory_context_version: writing-memory-aware-planning-context-v1
+selection_trace_version: writing-planner-selection-trace-v1
+planner_snapshot_version: writing-practice-gap-memory-v2-audit-v1
 memory_version: writing-memory-v1
 progress_version: writing-progress-v1
 ```
@@ -59,10 +61,12 @@ recent_practice_source_episode_ids: ordered list[LearningUpdate.id]
 ```
 
 It additionally carries `memory_version`, `progress_version`, and
-`context_schema_version`. It is not a `WritingProgressResponse`; the public
-response has unrelated presentation/read-model fields and must not become a
-write-path dependency. The future context builder owns a focused domain schema
-and uses Phase 6's frozen pattern and episode-window primitives.
+`memory_context_version`. `MemoryAwarePlanningContext` is planner input only
+and MUST NOT contain `PlannerSelectionTrace`. It is not a
+`WritingProgressResponse`; the public response has unrelated presentation/read-
+model fields and must not become a write-path dependency. The future context
+builder owns a focused domain schema and uses Phase 6's frozen pattern and
+episode-window primitives.
 
 `source_observation_ids` and `source_episode_ids` identify the same canonical
 trend/persistent-gap evidence window. `recent_practice_source_episode_ids`
@@ -147,21 +151,19 @@ grammatical_range_and_accuracy
 No scoring weights, aggregate score, confidence score, or unbounded heuristic
 is permitted.
 
-## 5. Reason codes and selection trace
+## 5. Reason codes and planner output trace
 
 Reason codes retain their v1 meaning and allowed ordering:
 
 - Every normal v2 practice begins with `largest_target_gap`.
-- Add `priority_tiebreak` only when the final canonical fallback narrows an
-  unresolved exact tie.
-- Add `insufficient_evidence` exactly when the selected state snapshot has
-  fewer than three evidence rows, as in v1.
-- No new Memory reason code is introduced.
+- Add `priority_tiebreak` if and only if the final `canonical_priority` stage actually narrows an unresolved tie.
+- Add `insufficient_evidence` exactly when the selected state snapshot has fewer than three evidence rows, as in v1.
+- Memory stages that narrow candidates add no new reason code.
 
-V2 auditability comes from a strict `selection_trace` inside the context
-snapshot, not a widened reason-code taxonomy. Its minimum shape is:
+`PlannerSelectionTrace` is planner output, separate from `MemoryAwarePlanningContext`. It exists only for a practice decision that began with an exact maximum-gap tie and has this strict shape:
 
 ```text
+trace_version: writing-planner-selection-trace-v1
 initial_max_gap_candidates: ordered canonical skill list
 stages: ordered list of {
   stage: persistent_gap | trend | recent_practice | canonical_priority
@@ -172,99 +174,104 @@ stages: ordered list of {
 selected_skill: canonical skill
 ```
 
-For a unique maximum gap, `stages` is empty. For an exact tie, each stage
-reached while at least two candidates remain is recorded, including a
-non-narrowing Memory stage. Stages after a single candidate is selected are
-omitted. Lists use canonical v1 skill order; no query/insertion ordering is
-allowed to affect the trace.
+The planner flow has no circular input/output schema:
 
-The trace does not duplicate Memory data: the corresponding per-skill values
-and provenance reside once in the same context snapshot.
+```text
+Context Builder
+  -> MemoryAwarePlanningContext (input facts + provenance only)
+  -> Planner v2
+  -> Decision + PlannerSelectionTrace (output)
+  -> Learning Application
+  -> PersistedPlannerContextSnapshot (audit envelope)
+```
 
-## 6. Decision-time snapshot and persistence
+All candidate lists are normalized to canonical v1 skill order. A stage is recorded only while at least two candidates remain. If a stage does not narrow, `candidates_after` MUST equal `candidates_before`; an empty attempted filter is never recorded as `candidates_after`. `canonical_priority` appears only when at least two candidates still remain and selects the first canonical skill. Stages after selection are omitted. A no-practice or unique-gap decision has no `PlannerSelectionTrace`.
 
-`PracticeRecommendation.state_snapshot` remains the complete decision-time
-state record for both versions. It is insufficient for v2 because it cannot
-preserve longitudinal signals that later accepted evidence or practices can
-change.
+## 6. Historical reconstruction and immutable audit snapshot
 
-P7-04 must add the following nullable JSONB field to the existing
-`practice_recommendations` table:
+`PracticeRecommendation.state_snapshot` and `PracticeRecommendation.learner_target_band` already preserve the exact current-state and target inputs for a historical recommendation. The remaining Memory facts can also be reconstructed from normalized authoritative rows when bounded by the owning `LearningUpdate U`.
+
+The current apply path acquires the learner row lock before inserting a `LearningUpdate`. Same-learner apply transactions are therefore serialized. For a committed U, the decision-time accepted set is reconstructible as committed same-learner `LearningUpdate` rows with `id <= U.id`; gaps from rolled-back or other-learner sequences are irrelevant. Future same-learner updates have later ids and are excluded.
+
+Within that accepted set:
+
+- restrict `LearningEvidence` to rows owned by those updates, then order each skill by `(source_created_at ASC, source_attempt_id ASC)` to reconstruct the exact trend and persistent-gap window;
+- late-arriving evidence applied after U is excluded by its later owning update even when its source timestamp is older;
+- order the accepted update episodes by `(LearningUpdate.created_at DESC, LearningUpdate.id DESC)` and project their optional actual `WritingPractice.target_skill` to reconstruct the historical recent-practice window;
+- use U's recommendation target snapshot and state snapshot rather than present learner values.
+
+Therefore historical context reconstruction is possible; recomputing today's unbounded progress is merely the wrong reconstruction query. Phase 7 still chooses a persisted snapshot as an intentional immutable decision-time audit record. This avoids making routine product explanations depend on replaying historical query semantics, makes the exact planner input/output self-contained, and permits direct comparison against authoritative-row reconstruction during audit. Normalized rows remain authoritative evidence and a verification source; the stored snapshot is authoritative for what the planner consumed and emitted at that decision.
+
+P7-04 must add one nullable JSONB column to `practice_recommendations`:
 
 ```text
 planner_context_snapshot JSONB NULL
 ```
 
-The migration is narrow and additive. It must accept only `NULL` or a JSON
-object at the database layer. A strict Pydantic/domain contract enforces:
+When present it validates as `PersistedPlannerContextSnapshot`, containing exactly:
 
 ```text
-writing-practice-gap-v1          -> planner_context_snapshot is NULL
-writing-practice-gap-memory-v2   -> planner_context_snapshot is present,
-                                    schema-valid, and contains selection_trace
+snapshot_version: writing-practice-gap-memory-v2-audit-v1
+memory_context: MemoryAwarePlanningContext
+selection_trace: PlannerSelectionTrace
 ```
 
-No new table and no generic planner-history table is permitted. Historical v1
-rows remain unchanged; they are never backfilled or reclassified. The v2
-snapshot is the authoritative answer to “why was this recommendation selected
-then?” Recomputing present-day Memory may be useful for current planning but
-must never replace a historical snapshot.
-
-## 7. Schema versioning and public compatibility
-
-The current `PracticeRecommendationDecision` is historically v1-specific. A
-future implementation must preserve a strict v1 model (with a compatibility
-alias where existing imports require it) and add a strict v2 model. The public
-decision type is their discriminated union on `planner_version`:
+Presence is minimal and conditional:
 
 ```text
-PracticeRecommendationDecisionV1
-  planner_version = writing-practice-gap-v1
-  planner_context_snapshot absent / persisted NULL
-
-PracticeRecommendationDecisionV2
-  planner_version = writing-practice-gap-memory-v2
-  planner_context_snapshot = strict v2 context and trace
+writing-practice-gap-v1
+  -> NULL
+writing-practice-gap-memory-v2 + no_practice
+  -> NULL
+writing-practice-gap-memory-v2 + practice + unique maximum gap
+  -> NULL
+writing-practice-gap-memory-v2 + practice + exact maximum-gap tie
+  -> REQUIRED PersistedPlannerContextSnapshot
 ```
 
-The apply response, practice-completion response, episode-detail reconstruction,
-history/context reads, and typed web client must use that union in P7-08/P7-09.
-Practice generation remains version-agnostic: it validates and uses the
-persisted decision's target skill and existing generator request fields; it
-does not receive context snapshot content.
+The migration accepts only NULL or a JSON object at the database layer; strict Pydantic/domain validation enforces the versioned envelope and conditional presence rule. A missing snapshot for a persisted v2 exact-tie practice is an invariant violation and must not be silently repaired from current progress. No new table, generic planner-history table, v1 backfill, or historical rewrite is permitted.
 
-For a v2 decision, a public explanation may report only structured factors
-that actually narrowed an exact tie: equal current gaps, established persistent
-gap, established declining/stable/improving trend, lower recent practice count,
-or canonical fallback. It must derive from the persisted trace, preserve the
-existing v1 explanation, and never expose raw ids or ask an LLM to explain.
+## 7. Internal schema and public product boundaries
 
-## 8. Transaction and late-arrival semantics
+The current `PracticeRecommendationDecision` is historically v1-specific. A future implementation preserves a strict v1 decision and adds a strict v2 decision, discriminated by `planner_version`. The planner application result may carry an optional `PlannerSelectionTrace`, and persistence reconstruction may carry an optional `PersistedPlannerContextSnapshot`; neither makes the full audit envelope part of the normal public recommendation object.
 
-The v2 context is derived inside the existing atomic learning-application
-transaction after the new `LearningEvidence` rows are flushed and all four
-states are canonically rebuilt, but before its recommendation is persisted and
-committed. There is no provider/LLM call in this transaction.
+Internal persisted/audit representation contains the full context, provenance ids, and trace only when section 6 requires it. Public product representation contains the existing recommendation decision fields, `planner_version`, and a safe deterministic `planning_explanation` for a relevant v2 exact tie. That explanation is derived from the persisted historical trace, never current progress, and may expose only semantic factors: equal current maximum gap, persistent-gap tie-break, trend tie-break, lower recent-practice count, or canonical fallback.
 
-Trend and persistent gap use Phase 6 canonical per-skill evidence order:
+Normal product fields MUST NOT expose source observation/episode ids or the raw JSONB audit envelope. If episode detail later needs a developer/audit provenance surface, P7-09 must define a distinct audit representation rather than equating the public recommendation with `PersistedPlannerContextSnapshot`.
+
+Apply, completion, history, and context APIs must reconstruct the correct v1/v2 public decision. Practice generation remains version-agnostic: it consumes the persisted target skill and existing generator request fields and never receives Memory context, trace, or the audit envelope.
+
+## 8. Transaction, pre-recommendation recency, and late arrival
+
+The v2 context is derived inside the existing atomic learning-application transaction after the new `LearningEvidence` rows and current `LearningUpdate` are flushed and all four states are canonically rebuilt, but before its `PracticeRecommendation` exists. There is no provider/LLM call in this transaction.
+
+P7-05 MUST NOT call Phase 6 `list_learner_episodes()` for transaction-time recency. That query inner-joins `PracticeRecommendation`, so it omits the in-flight update before recommendation persistence. Instead P7-05 owns a minimal pre-recommendation projection:
 
 ```text
-source_created_at ASC, source_attempt_id ASC
+PlanningPracticeEpisode
+  learning_update_id
+  created_at
+  practice_target_skill | null
 ```
 
-Thus newly inserted evidence participates immediately even if it describes an
-older attempt. Recent practice remains deliberately different: it uses the
-latest three learner-owned L0 episodes by
-`LearningUpdate.created_at DESC, LearningUpdate.id DESC`. An applied targeted
-practice present in that episode window participates immediately. These are
-frozen Phase 6 semantics, not apply-order heuristics.
+Its query follows only:
 
-Late arrival can legitimately alter a new decision's derived Memory context.
-It cannot change a persisted old v2 decision, because its decision-time
-context, source ids, trace, state snapshot, target, version, and reason codes
-are retained on that recommendation.
+```text
+LearningUpdate
+  -> WritingEvaluation
+  -> WritingAttempt
+  -> optional WritingPractice
+```
 
-## 9. Normative examples
+It has no `PracticeRecommendation`, route, or `WritingProgressResponse` dependency. It orders by `LearningUpdate.created_at DESC, LearningUpdate.id DESC`, applies `RECENT_PRACTICE_EPISODE_WINDOW = 3`, and includes the just-flushed current update immediately. A current initial-writing update has null practice target but still occupies a window slot and can push an older practice out. A current completed targeted-practice update counts against the actual `WritingPractice.target_skill`.
+
+Trend and persistent gap use `(source_created_at ASC, source_attempt_id ASC)`, so newly inserted evidence participates immediately even if it describes an older attempt. Late arrival can change the new decision's context but cannot change any stored earlier exact-tie snapshot. Future regression tests must prove both current episode window cases, the no-recommendation query boundary, late arrival, and equivalence between decision-time facts and bounded historical reconstruction.
+
+## 9. V2 activation and coexistence
+
+After Phase 7 implementation is explicitly activated, every newly applied Writing evaluation uses `writing-practice-gap-memory-v2`. Historical rows remain v1. No request parameter selects a planner version, no runtime feature flag is introduced in Phase 7, and no historical `planner_version`, reason, or decision row is rewritten. Idempotent replay returns the already-persisted version.
+
+## 10. Normative examples
 
 All gaps below are exact Decimal values and all candidate lists use canonical
 priority order.
@@ -280,15 +287,18 @@ priority order.
 | G. Low evidence | A selected v2 target has evidence count 2 → selection remains valid and reason adds `insufficient_evidence`, exactly as v1. |
 | H. Target achieved | Every current state is at/above target → `no_practice(target_achieved)` even if a historical trend is declining. |
 | I. Cold start | No state is observed → `no_practice(cold_start)`; no Memory context affects selection. |
-| J. Late arrival | An older source attempt is applied after newer evidence; its evidence enters canonical trend order immediately. The new decision snapshots the changed context; old v2 snapshots stay unchanged. |
+| J. Late arrival | An older source attempt is applied after newer evidence; it enters canonical trend order immediately. If the new decision has an exact tie, it snapshots that bounded context; earlier snapshots stay unchanged. |
 | K. Historical v1 | A row with `writing-practice-gap-v1` and NULL context reconstructs with the original v1 model and original reason semantics. |
 | L. Reordered logical input | Equivalent state/context values presented in a different collection/query order yield identical selected skill, reason codes, and canonicalized trace. |
+| M. Current initial episode | A just-flushed initial-writing update occupies one latest-three recency slot with null practice target and can evict an older completed practice. |
+| N. Current targeted episode | A just-flushed completed targeted-practice update occupies a slot and increments the count for its actual `WritingPractice.target_skill`. |
 
-## 10. Implementation acceptance boundary
+## 11. Implementation acceptance boundary
 
 P7-03 through P7-14 must test strict union validation, additive
 upgrade/downgrade, v1 reconstruction, all examples above, late arrival,
-decision-time provenance, transaction rollback/idempotency/concurrency, mixed
+decision-time provenance, the pre-recommendation initial/targeted recency cases,
+transaction rollback/idempotency/concurrency, mixed
 API output, generator/lifecycle compatibility, typed frontend handling, and
 browser explanation behavior.
 
