@@ -80,8 +80,9 @@ one evaluation is owned by at most one learner.
 - `initial_writing` ⇔ no `WritingPractice` references that attempt.
 
 A submitted-but-not-completed practice has an attempt and evaluation but no
-`LearningUpdate` yet; it is not an episode until completed. It remains visible
-in practice history as a pending practice and in context as a resume point.
+`LearningUpdate` yet; it is not an episode until completed. It is exposed
+through `/writing/context` while it is the relevant current practice; it is NOT
+listed in `/writing/history` (frozen v1 limitation, see 1.17).
 An unapplied initial evaluation is likewise NOT learner-owned; its recovery
 limitation is frozen in 1.17.
 
@@ -493,8 +494,10 @@ LearningUpdate.id DESC
 **Relevant practice (frozen).** The relevant practice is ONLY the
 `WritingPractice` linked to that current recommendation (via
 `writing_practices.recommendation_id`, which is UNIQUE, so there is at most
-one). Older unfinished practices remain visible in history but MUST NOT
-override the newer current recommendation in `/writing/context`.
+one). Older unfinished practices are historical data but are NOT surfaced in
+`/writing/history` once they stop being the relevant current practice (frozen
+v1 limitation); they MUST NOT override the newer current recommendation in
+`/writing/context`.
 
 **Resume action** (deterministic; no automatic next-practice generation):
 
@@ -531,6 +534,16 @@ states identifiable from persisted learner-owned data:
 - if browser/client state containing that evaluation identity is lost before
   apply, context falls back to `initial_writing`;
 - Phase 6 will NOT add a new ownership table merely to close this limitation.
+
+**Unfinished-practice history limitation (frozen).** `/writing/history`
+returns applied L0 episodes only (anchored on `LearningUpdate`). Durable but
+unfinished practices — `generated`, `submission_in_progress`, and
+`submitted`-but-unapplied — are NOT surfaced in `/writing/history` once they
+stop being the relevant current practice; they are exposed only through
+`/writing/context` while they remain the practice linked to the current
+recommendation. Phase 6 v1 does not add a `pending_practices` collection to
+history. Older unfinished practices remain historical information but never
+override the newest recommendation in `/writing/context`.
 
 ### 1.18 Version identifiers
 

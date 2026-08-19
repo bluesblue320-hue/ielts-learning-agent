@@ -423,7 +423,12 @@ evidence, and fresh validation results are in [PHASE6_AUDIT.md](PHASE6_AUDIT.md)
   authoritative source ids (`learning_update_id`, `learning_evidence_id`,
   `writing_evaluation_id`, `writing_practice_id`, `recommendation_id`,
   `attempt_id`); derived L2 objects are identified structurally by
-  `learner + skill + pattern kind + policy version`.
+  `learner + skill + pattern kind + policy version`; `SkillProgress`
+  provenance is exact and non-overlapping — `source_observation_ids` and
+  `source_episode_ids` both derive from the SAME canonical trend window (the
+  latter being the `LearningUpdate` ids owning those evidence rows), and
+  `recent_practice_source_episode_ids` is a separate field for practice
+  provenance.
 - **Required tests:** schema validation unit tests covering valid and invalid
   shapes, provenance-id presence, band validation, extra-field rejection.
 - **Migration permission:** NONE.
@@ -547,14 +552,19 @@ evidence, and fresh validation results are in [PHASE6_AUDIT.md](PHASE6_AUDIT.md)
 - **Dependencies:** `P6-04`, `P6-05`, `P6-06`, `P6-07`.
 - **Acceptance criteria:** All four endpoints return the frozen schemas;
   history order deterministic; episode detail enforces learner ownership and
-  defines `occurred_at` exactly as `LearningUpdate.created_at`; context
-  implements the frozen current-recommendation / relevant-practice rule
+  defines `occurred_at` exactly as `LearningUpdate.created_at`; episode
+  summaries expose `practice_target_skill` (the completed practice's actual
+  target, distinct from the next-recommendation target); context implements
+  the frozen current-recommendation / relevant-practice rule
   (latest `LearningUpdate` by `created_at DESC`, `id DESC`; relevant practice
   is ONLY the practice linked to that recommendation; older unfinished
   practices never override) with the frozen non-recursive resume-action
   transition and NO automatic next-practice generation; the resume v1
   limitation is enforced (unapplied initial evaluations are not discoverable
-  from `learner_id`); stable error codes
+  from `learner_id`); `/writing/history` returns applied L0 episodes only —
+  durable unfinished practices are NOT surfaced there once they stop being the
+  relevant current practice (frozen v1 limitation, no `pending_practices`
+  collection); stable error codes
   (`learner_not_found`, `episode_not_found`, `persistence_unavailable`).
 - **Required tests:** API tests for all endpoints against isolated PostgreSQL;
   ownership; ordering; error mapping; context resume-action branches.
