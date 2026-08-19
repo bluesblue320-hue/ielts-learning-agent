@@ -7,7 +7,7 @@ it is not intended to be only a chatbot or a thin LLM wrapper.
 
 ## Current status
 
-**Phase 1 = COMPLETE. Phase 2 = COMPLETE. Phase 3 = COMPLETE. Phase 4 = COMPLETE. Phase 5 = COMPLETE and MERGED through PR #9 (`feat: deliver Phase 5 Chinese-first web MVP`), merge commit `56498c3d59aad4ae645c5b78c6b6dc41bec62bcf`. Phase 6 = INTERNAL_AUDIT_COMPLETE (hierarchical Learning Memory implemented on `phase/6-hierarchical-learning-memory`; P6-16 internal audit complete; External Review = PENDING; implementation P6-03..P6-16 complete). Phase 7 = NOT_STARTED.**
+**Phase 1 = COMPLETE. Phase 2 = COMPLETE. Phase 3 = COMPLETE. Phase 4 = COMPLETE. Phase 5 = COMPLETE and MERGED through PR #9 (`feat: deliver Phase 5 Chinese-first web MVP`), merge commit `56498c3d59aad4ae645c5b78c6b6dc41bec62bcf`. Phase 6 = COMPLETE and MERGED through PR #10 (`feat: deliver Phase 6 hierarchical learning memory & longitudinal progress`), merge commit `b8e419d8c146c921539f4654b5aeb0b56ed6f425`. Phase 7 = NOT_STARTED.**
 
 Phase 3 adds a
 complete deterministic learner-state path on top of the Phase 2 Writing
@@ -30,9 +30,9 @@ pipeline:
   persistence models.
 
 The Phase 3 execution record is [docs/PHASE3_GRAPH.md](docs/PHASE3_GRAPH.md).
-Learning memory, an agent runtime, RAG, automatic lesson or
-exercise generation, and Speaking, Reading, and Listening workflows remain
-outside the implemented system (future phases).
+An agent runtime, RAG, automatic lesson or exercise generation, and Speaking,
+Reading, and Listening workflows remain outside the implemented system (future
+phases).
 
 ## Technology stack
 
@@ -131,7 +131,7 @@ product-score disclaimer. Phase 3 endpoints return the same safe error contract
 └── docs/
 ```
 
-Learning memory, an agent runtime, RAG, automatic content generation, and
+An agent runtime, RAG, automatic content generation, and
 multi-skill workflows remain outside the implemented system.
 
 ## Development guidance
@@ -139,18 +139,26 @@ multi-skill workflows remain outside the implemented system.
 Before changing the project, read these documents in order:
 
 1. [AGENTS.md](AGENTS.md)
-2. [Phase 4 graph](docs/PHASE4_GRAPH.md)
+2. [Phase 6 graph](docs/PHASE6_GRAPH.md) and the frozen
+   [Writing memory policy](docs/WRITING_MEMORY_POLICY.md)
 3. [Development loop](docs/DEVELOPMENT_LOOP.md)
 4. [Target architecture](docs/ARCHITECTURE.md)
 
 Phase 1 remains complete and preserved in
 [docs/PHASE1_GRAPH.md](docs/PHASE1_GRAPH.md). Phase 2 is complete and preserved
 in [docs/PHASE2_GRAPH.md](docs/PHASE2_GRAPH.md), with its accepted evidence in
-the final audit. Phase 3 is implemented and its per-node execution record is
-maintained in [docs/PHASE3_GRAPH.md](docs/PHASE3_GRAPH.md).
+[docs/PHASE2_AUDIT.md](docs/PHASE2_AUDIT.md). Phase 3 is implemented and its
+per-node execution record is maintained in
+[docs/PHASE3_GRAPH.md](docs/PHASE3_GRAPH.md). Phase 5 is complete and merged
+through PR #9.
 
-The completed validation evidence is recorded in the
-[Phase 2 final audit](docs/PHASE2_AUDIT.md).
+Phase 6 implements structured hierarchical Writing learning memory (L0 learning
+episodes, L1 learning atoms, L2 longitudinal patterns, L3 learner profile) as
+read models over the existing PostgreSQL rows — no new tables, no migrations.
+Its frozen contract is [docs/WRITING_MEMORY_POLICY.md](docs/WRITING_MEMORY_POLICY.md)
+(`writing-memory-v1`, `writing-progress-v1`); execution status is tracked in
+[docs/PHASE6_GRAPH.md](docs/PHASE6_GRAPH.md) and the internal audit is
+[docs/PHASE6_AUDIT.md](docs/PHASE6_AUDIT.md).
 
 ## Phase 5 Web MVP
 

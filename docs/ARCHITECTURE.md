@@ -181,12 +181,12 @@ remaining skills remain future work.
 Architecture follows verified product requirements. Phase 1 is complete and
 stopped at `P1-11`; Phase 2 is complete and stopped at `P2-15`; Phase 3 is
 complete; Phase 4 is the accepted implementation baseline; Phase 5 is
-implemented and merged; Phase 6 is INTERNAL_AUDIT_COMPLETE on branch
-`phase/6-hierarchical-learning-memory` (hierarchical Learning Memory read
-models over the existing Writing history, four frozen read APIs, `/history`
-and `/progress` UX, and dashboard resume; no new table, no migration, no
-provider abstraction). Phase 6 External Review is PENDING. Phase 7 remains
-NOT_STARTED.
+implemented and merged; Phase 6 is COMPLETE and merged to `master` through PR
+#10 (merge commit `b8e419d8c146c921539f4654b5aeb0b56ed6f425`): hierarchical
+Learning Memory read models over the existing Writing history, four frozen
+read APIs, `/history` and `/progress` UX, and dashboard resume; no new table,
+no migration, no provider abstraction. External Review is APPROVED. Phase 7
+remains NOT_STARTED.
 Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
 
 ## Phase 5 presentation layer
@@ -194,4 +194,4 @@ Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
 `web/` is a Chinese-first Next.js presentation layer. It calls FastAPI over JSON, caches only learner navigation/recommendation presentation fields in browser storage, and leaves evaluation, learner state, planning, lifecycle validation, and persistence authoritative in FastAPI/PostgreSQL.
 ## Phase 5 status
 
-Next.js presentation, FastAPI application/domain authority, and PostgreSQL source of truth are implemented. Phase 6 is INTERNAL_AUDIT_COMPLETE: the hierarchical learning memory subsystem (L0-L3 read models, history/progress/context APIs, `/history` and `/progress` UX, dashboard resume) is implemented and internally audited; External Review is PENDING; RAG, wider multi-skill work, and Phase 7 remain future and are NOT_STARTED.
+Next.js presentation, FastAPI application/domain authority, and PostgreSQL source of truth are implemented. Phase 6 is COMPLETE and merged to `master` through PR #10: the hierarchical learning memory subsystem (L0-L3 read models, history/progress/context APIs, `/history` and `/progress` UX, dashboard resume) is implemented, internally audited, externally approved, and merged. RAG, wider multi-skill work, and Phase 7 remain future and are NOT_STARTED.

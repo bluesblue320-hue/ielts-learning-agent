@@ -2,28 +2,26 @@
 
 ## Document status
 
-**EXECUTED — P6-01 through P6-15 COMPLETE; P6-16 = INTERNAL_AUDIT_COMPLETE; Phase 6 = INTERNAL_AUDIT_COMPLETE; External Review = PENDING; Phase 7 = NOT_STARTED.**
+**COMPLETE AND MERGED — P6-01 through P6-15 COMPLETE; P6-16 = INTERNAL_AUDIT_COMPLETE; External Review = APPROVED; PR #10 = MERGED; Phase 6 = COMPLETE; Phase 7 = NOT_STARTED.**
 
 The design run (P6-01/P6-02) completed and passed external design review
-repair. The implementation run then executed P6-03 through P6-16 continuously
-on this branch; see [PHASE6_AUDIT.md](PHASE6_AUDIT.md) for the final internal
-audit, fresh validation results, and the commit list. External review approval
-is not claimed.
+repair. The implementation run then executed P6-03 through P6-16 continuously;
+see [PHASE6_AUDIT.md](PHASE6_AUDIT.md) for the final internal audit, fresh
+validation results, and the commit list. External review is APPROVED and the
+phase was merged to `master` through PR #10 (`feat: deliver Phase 6
+hierarchical learning memory & longitudinal progress`, merge commit
+`b8e419d8c146c921539f4654b5aeb0b56ed6f425`).
 
-This graph is frozen on `phase/6-hierarchical-learning-memory`, created from
-`master` at `3f1b4a5772b1a5fecf863d2711def11de6f5ff0f` (`docs: finalize Phase 5
-merged status`). The working tree was clean before the branch was created.
+Historical design-run record (frozen): this graph was created on
+`phase/6-hierarchical-learning-memory`, created from `master` at
+`3f1b4a5772b1a5fecf863d2711def11de6f5ff0f` (`docs: finalize Phase 5 merged
+status`). The initial design run was authorized for DESIGN/BASELINE work only
+(`P6-01` baseline audit and `P6-02` contract freeze); at that point no
+application code, no frontend code, no Alembic migration, and no test changes
+had been made and Phase 6 implementation (`P6-03` or later) was not yet
+authorized.
 
-This run is authorized for DESIGN/BASELINE work only:
-
-- `P6-01` — Baseline & Hierarchical Memory Capability Audit
-- `P6-02` — Hierarchical Learning Memory Contract Freeze
-
-No application code, no frontend code, no Alembic migration, and no test
-changes were made in this run. Phase 6 implementation (`P6-03` or later) is
-NOT authorized and has NOT started. Phase 7 is NOT started.
-
-The authoritative frozen contract produced by this run is
+The authoritative frozen contract produced by this phase is
 [docs/WRITING_MEMORY_POLICY.md](WRITING_MEMORY_POLICY.md).
 
 ---
@@ -128,14 +126,16 @@ P6-15 Backend + Frontend + Browser E2E / CI [COMPLETE]
   ↓
 P6-16 Internal Final Audit [INTERNAL_AUDIT_COMPLETE]
   ↓
-STOP
+External Review [APPROVED]
   ↓
-External Review [PENDING]
+PR #10 [MERGED]
+  ↓
+STOP
 ```
 
 Dependency rule: a node may be activated only when every declared dependency is
-`COMPLETE`. `P6-03` through `P6-16` remain `NOT_STARTED` until the frozen
-contract (`WRITING_MEMORY_POLICY.md`) is accepted and Phase 6 implementation is
+`COMPLETE`. Execution proceeded P6-03 through P6-16 after the frozen contract
+(`WRITING_MEMORY_POLICY.md`) was accepted and Phase 6 implementation was
 explicitly authorized.
 
 ---
@@ -372,10 +372,10 @@ for `/writing/context` is frozen with a non-recursive transition;
 (half-band granularity); practice recency uses the separate
 `RECENT_PRACTICE_EPISODE_WINDOW = 3`; the completion timestamp is frozen to
 `LearningUpdate.created_at`; and synthetic memory ids (`memory_atom_id`,
-`pattern_id`, `profile_id`) are forbidden. Phase 6 remains
-`DESIGN_REVIEW_PENDING` — external review approval is not claimed yet.
+`pattern_id`, `profile_id`) are forbidden.
 
-Statuses after this design run:
+Statuses after the design run (historical; final state is at the end of this
+document):
 
 ```text
 Phase 1 = COMPLETE
@@ -388,7 +388,7 @@ P6-01 = COMPLETE
 P6-02 = COMPLETE
 P6-03..P6-15 = COMPLETE (implementation run)
 P6-16 = INTERNAL_AUDIT_COMPLETE
-External Review = PENDING
+External Review = PENDING (design run) -> APPROVED (final)
 Phase 7 = NOT_STARTED
 ```
 
@@ -738,7 +738,8 @@ evidence, and fresh validation results are in [PHASE6_AUDIT.md](PHASE6_AUDIT.md)
 - **Migration permission:** NONE.
 - **Route-back conditions:** Any finding routes back to its owning node.
 - **Stop conditions:** `P6-16 = INTERNAL_AUDIT_COMPLETE`; report `STOP`;
-  await External Review. Phase 7 must not start.
+  await External Review. Phase 7 must not start. (Achieved: external review
+  APPROVED, merged via PR #10.)
 
 ---
 
@@ -756,14 +757,16 @@ pgvector/Milvus/Qdrant/Elasticsearch/BM25, embedding models, TencentDB Agent
 Memory as a dependency, planner changes (`writing-practice-gap-v1` unchanged),
 `LearnerSkillState` replacement, production deployment architecture.
 
-Final stop condition for the Phase 6 execution run: `P6-01..P6-16 = COMPLETE`
-(with `P6-16 = INTERNAL_AUDIT_COMPLETE`), External Review approved, then
-`STOP`. Phase 7 remains NOT_STARTED and requires separate explicit authority
-and its own graph.
+Final stop condition for the Phase 6 execution run was: `P6-01..P6-16 =
+COMPLETE` (with `P6-16 = INTERNAL_AUDIT_COMPLETE`), External Review approved,
+then `STOP`. That condition has been reached: External Review = APPROVED and
+Phase 6 was merged to `master` through PR #10 (merge commit
+`b8e419d8c146c921539f4654b5aeb0b56ed6f425`). Phase 7 remains NOT_STARTED and
+requires separate explicit authority and its own graph.
 
 ---
 
-## 7. Final status (after internal audit)
+## 7. Final status (merged)
 
 ```text
 P6-01 = COMPLETE
@@ -782,10 +785,13 @@ P6-13 = COMPLETE
 P6-14 = COMPLETE
 P6-15 = COMPLETE
 P6-16 = INTERNAL_AUDIT_COMPLETE
-Phase 6 = INTERNAL_AUDIT_COMPLETE
-External Review = PENDING
+External Review = APPROVED
+PR #10 = MERGED
+Phase 6 = COMPLETE
 Phase 7 = NOT_STARTED
 ```
 
-Phase 6 implementation exists on this branch per [PHASE6_AUDIT.md](PHASE6_AUDIT.md).
-STOP — awaiting external review; Phase 7 must not start.
+Phase 6 implementation is merged to `master`; see
+[PHASE6_AUDIT.md](PHASE6_AUDIT.md) for the internal audit and
+[docs/WRITING_MEMORY_POLICY.md](WRITING_MEMORY_POLICY.md) for the frozen
+contract. STOP — Phase 7 must not start without separate explicit authority.

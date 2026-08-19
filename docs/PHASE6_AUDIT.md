@@ -1,6 +1,6 @@
 # Phase 6 Internal Final Audit
 
-**Status:** P6-16 = INTERNAL_AUDIT_COMPLETE; Phase 6 = INTERNAL_AUDIT_COMPLETE; External Review = PENDING; Phase 7 = NOT_STARTED.
+**Status:** P6-16 = INTERNAL_AUDIT_COMPLETE; External Review = APPROVED; PR #10 = MERGED; Phase 6 = COMPLETE; Phase 7 = NOT_STARTED.
 
 ## Baseline
 
@@ -10,7 +10,27 @@
 - **Implementation-start HEAD:** `9133487c9c1dd5287848f9ff09dccc34dc1ca9c7`
   (after the P6-01/P6-02 design commits `177faea`, `4ccc38a`, `9133487`)
 - **Reviewed HEAD (external review start):** `b5a83aa93efe7f24bd2612fbaa72f991d114f528`
-- **Final HEAD (validated implementation state):** `fd0ab2587c9e0d6a1418f8181f7e880fa709b54b`
+- **PR head SHA (final branch state):** `0f0b5754a2a7430a04493343c0ee357b12e48f14`
+
+## Merge finalization
+
+Phase 6 was merged to `master` after external review approval:
+
+| Item | Value |
+| --- | --- |
+| External Review | **APPROVED** |
+| PR | **#10** — `feat: deliver Phase 6 hierarchical learning memory & longitudinal progress` |
+| PR head SHA | `0f0b5754a2a7430a04493343c0ee357b12e48f14` |
+| Merge commit | `b8e419d8c146c921539f4654b5aeb0b56ed6f425` |
+| PR CI | **SUCCESS** (`Python 3.12 deterministic tests` passed before merge) |
+| Master push CI | **SUCCESS** — run `32213726859`, workflow `CI`, event `push`, branch `master`, head SHA `b8e419d8c146c921539f4654b5aeb0b56ed6f425`, conclusion `success` |
+| Final status | P6-01..P6-15 COMPLETE; P6-16 INTERNAL_AUDIT_COMPLETE; Phase 6 COMPLETE; Phase 7 NOT_STARTED |
+
+The master push CI run (`32213726859`) executed the normal deterministic gates
+in a single job (`Python 3.12 deterministic tests`): backend tests (pytest),
+web quality gates (lint, typecheck, unit tests, production build), and Chromium
+Playwright browser E2E — all passed. `.github/workflows/ci.yml` enforces these
+gates on `pull_request`; the PR CI for #10 passed before merge.
 
 ## External review repair (targeted, no redesign)
 
@@ -162,11 +182,11 @@ Re-run from the final repaired HEAD (all local/full deterministic gates):
 | `npm --prefix web run build` | passed (Next.js production build) |
 | `npm --prefix web run test:e2e` | **2 passed** (Phase 5 closed loop + Phase 6 memory flow; Chromium, FastAPI, deterministic fakes, isolated PostgreSQL) |
 
-CI truth: no GitHub Actions run exists for this final HEAD on the branch, so
-branch CI is NOT claimed green. `.github/workflows/ci.yml` enforces every gate
-above on `pull_request` (pytest, lint, typecheck, web test, build, Playwright
-E2E with Chromium + PostgreSQL service, no live DeepSeek); the final PR CI run
-remains the merge gate.
+CI truth: the local/full deterministic gates above were run from the final
+repaired HEAD and all passed (876 backend, 11 frontend unit, 2 Playwright).
+GitHub CI evidence is separate and recorded in [Merge finalization](#merge-finalization):
+PR #10 CI = SUCCESS and the master push CI run for the merge commit
+`b8e419d` (run `32213726859`) = SUCCESS, executing the same gates.
 
 ## Commits (Phase 6, chronological)
 
@@ -218,9 +238,10 @@ fd0ab25 docs: sync final audit HEAD
 ```text
 P6-01..P6-15 = COMPLETE
 P6-16 = INTERNAL_AUDIT_COMPLETE
-Phase 6 = INTERNAL_AUDIT_COMPLETE
-External Review = PENDING
+External Review = APPROVED
+PR #10 = MERGED
+Phase 6 = COMPLETE
 Phase 7 = NOT_STARTED
 ```
 
-STOP — awaiting external review. Phase 7 must not start without separate explicit authority.
+STOP — Phase 7 must not start without separate explicit authority.

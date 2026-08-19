@@ -59,7 +59,7 @@ Phase 2 = COMPLETE
 Phase 3 = COMPLETE
 Phase 4 = COMPLETE
 Phase 5 = COMPLETE
-Phase 6 = INTERNAL_AUDIT_COMPLETE
+Phase 6 = COMPLETE
 P6-01 = COMPLETE
 P6-02 = COMPLETE
 P6-03 = COMPLETE
@@ -76,14 +76,14 @@ P6-13 = COMPLETE
 P6-14 = COMPLETE
 P6-15 = COMPLETE
 P6-16 = INTERNAL_AUDIT_COMPLETE
-External Review = PENDING
+External Review = APPROVED
+PR #10 = MERGED
 Phase 7 = NOT_STARTED
 ```
 
 Phase 6 design (P6-01 audit, P6-02 contract freeze, versions
 `writing-memory-v1` / `writing-progress-v1`) and the full implementation
-(P6-03 through P6-16) are complete on branch
-`phase/6-hierarchical-learning-memory`. The hierarchical Learning Memory
+(P6-03 through P6-16) are complete. The hierarchical Learning Memory
 subsystem is implemented as read models over the existing durable Writing
 history: L0 episodes anchor on `LearningUpdate` (no duplicate storage), L1
 atoms are projections of persisted rows, L2 longitudinal patterns (trend,
@@ -93,9 +93,12 @@ APIs (`/writing/history`, `/writing/history/{episode_id}`, `/writing/progress`,
 `/writing/context`) expose them with full provenance. The web product adds
 `/history`, `/progress`, and a server-authoritative dashboard resume. No new
 database table, no migration, and no provider abstraction were introduced; the
-current planner (`writing-practice-gap-v1`) is unchanged. See
+current planner (`writing-practice-gap-v1`) is unchanged. External review is
+APPROVED and Phase 6 was merged to master through PR #10 (merge commit
+`b8e419d8c146c921539f4654b5aeb0b56ed6f425`); see
 [docs/PHASE6_AUDIT.md](docs/PHASE6_AUDIT.md) for the internal audit and fresh
-validation results. External review is PENDING; Phase 7 must not start.
+validation results. Phase 7 is NOT_STARTED and must not begin without separate
+explicit authority.
 
 The graph defines WHAT should be implemented.
 
