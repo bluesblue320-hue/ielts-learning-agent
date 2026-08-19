@@ -8,7 +8,7 @@ import inspect
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.db.session import create_session_factory
 from app.learner.memory_planning_policy import (
@@ -18,6 +18,7 @@ from app.learner.memory_planning_policy import (
     PLANNING_RECENT_PRACTICE_WINDOW,
     SELECTION_TRACE_VERSION,
 )
+from app.services.learning_application import apply_writing_evaluation
 from app.learner.memory_planning_context import (
     PlanningContextOwnerNotFoundError,
     build_memory_aware_planning_context,
@@ -248,3 +249,68 @@ def test_builder_has_no_episode_or_recommendation_dependency() -> None:
     assert "list_learner_episodes" not in source
     assert "PracticeRecommendation" not in source
     assert "LearningUpdate.created_at" not in source
+
+
+def test_owner_bound_recency_uses_acceptance_ids_not_transaction_start_order(
+    client: TestClient,
+    engine,
+) -> None:
+    """A transaction can start first yet be accepted after another update.
+
+    Planning recency and historical context are intentionally bounded by the
+    accepted ``LearningUpdate.id`` order, never by transaction start order or
+    source chronology.  The fifth update is deliberately newer than the owner
+    and must not appear in either owner-U reconstruction window.
+    """
+
+    _seed_learner(engine)
+    for offset, evaluation_id in enumerate(range(200, 205)):
+        _seed_full_evaluation(
+            engine,
+            evaluation_id=evaluation_id,
+            attempt_id=100 + offset,
+            created_at=DT + timedelta(minutes=offset),
+        )
+
+    session_factory = create_session_factory(engine)
+    with session_factory() as started_first:
+        # Begin A's database transaction without taking the learner lock.
+        started_first.execute(text("SELECT 1"))
+        accepted_first = client.post(
+            "/learners/1/writing/evaluations/201/apply"
+        )
+        assert accepted_first.status_code == 200
+        accepted_first_id = accepted_first.json()["learning_update_id"]
+
+        # A started first but is accepted second, once it acquires the learner
+        # lock after B has committed.
+        started_first_result = apply_writing_evaluation(
+            started_first,
+            learner_id=1,
+            writing_evaluation_id=200,
+        )
+
+    third = client.post("/learners/1/writing/evaluations/202/apply")
+    owner = client.post("/learners/1/writing/evaluations/203/apply")
+    future = client.post("/learners/1/writing/evaluations/204/apply")
+    assert third.status_code == owner.status_code == future.status_code == 200
+    third_id = third.json()["learning_update_id"]
+    owner_id = owner.json()["learning_update_id"]
+    future_id = future.json()["learning_update_id"]
+
+    assert accepted_first_id < started_first_result.learning_update_id < third_id < owner_id < future_id
+
+    context = _context(engine, owner_update_id=owner_id)
+    expected_recency = [owner_id, third_id, started_first_result.learning_update_id]
+    expected_canonical_source_window = [accepted_first_id, third_id, owner_id]
+    for skill in (
+        "task_response",
+        "coherence_and_cohesion",
+        "lexical_resource",
+        "grammatical_range_and_accuracy",
+    ):
+        item = getattr(context.skills, skill)
+        assert item.recent_practice_source_episode_ids == expected_recency
+        assert item.source_episode_ids == expected_canonical_source_window
+        assert future_id not in item.recent_practice_source_episode_ids
+        assert future_id not in item.source_episode_ids
