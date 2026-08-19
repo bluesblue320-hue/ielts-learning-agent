@@ -16,7 +16,7 @@ from sqlalchemy import select
 from app.api.dependencies.practice import get_practice_generator
 from app.api.dependencies.writing import get_writing_provider
 from app.db.session import create_session_factory
-from app.models.learning import Learner, PracticeRecommendation
+from app.models.learning import Learner, LearningUpdate, PracticeRecommendation
 from app.models.practice import WritingPractice
 from tests.fakes import FakePracticeGenerator, FakeProvider
 from tests.test_learning_api import _seed_learner, client, engine
@@ -390,3 +390,108 @@ def test_reads_make_zero_provider_calls(client: TestClient, engine) -> None:
         client.app.dependency_overrides.pop(get_practice_generator, None)
         client.app.dependency_overrides.pop(get_writing_provider, None)
     assert provider.requests == []
+
+
+def _set_current_recommendation_to_legacy_v1(engine) -> int:
+    """Represent a persisted Phase 3 recommendation without a v2 snapshot."""
+
+    with create_session_factory(engine)() as session:
+        recommendation = session.scalar(select(PracticeRecommendation))
+        assert recommendation is not None
+        learning_update = session.get(LearningUpdate, recommendation.learning_update_id)
+        assert learning_update is not None
+        recommendation.planner_version = "writing-practice-gap-v1"
+        recommendation.planner_context_snapshot = None
+        learning_update.planner_version = "writing-practice-gap-v1"
+        recommendation_id = recommendation.id
+        session.commit()
+    return recommendation_id
+
+
+def _assert_practice_lifecycle_version_compatibility(
+    client: TestClient,
+    engine,
+    *,
+    legacy_v1: bool,
+) -> None:
+    _seed_learner(engine, learner_id=1)
+    _apply_initial(client, engine)
+    expected_version = "writing-practice-gap-memory-v2"
+    if legacy_v1:
+        recommendation_id = _set_current_recommendation_to_legacy_v1(engine)
+        expected_version = "writing-practice-gap-v1"
+    else:
+        with create_session_factory(engine)() as session:
+            recommendation = session.scalar(select(PracticeRecommendation))
+            assert recommendation is not None
+            recommendation_id = recommendation.id
+
+    initial_context = client.get("/learners/1/writing/context")
+    assert initial_context.status_code == 200
+    initial_body = initial_context.json()
+    assert initial_body["resume_action"] == "generate_practice"
+    assert initial_body["current_recommendation_id"] == recommendation_id
+    assert initial_body["current_recommendation"]["planner_version"] == expected_version
+    if legacy_v1:
+        assert "planning_explanation" not in initial_body["current_recommendation"]
+    else:
+        assert initial_body["current_recommendation"]["planning_explanation"] is None
+
+    generator = FakePracticeGenerator()
+    client.app.dependency_overrides[get_practice_generator] = lambda: generator
+    try:
+        generated = client.post(
+            f"/learners/1/writing/recommendations/{recommendation_id}/practice"
+        )
+        assert generated.status_code == 200
+        practice_id = generated.json()["practice"]["id"]
+    finally:
+        client.app.dependency_overrides.pop(get_practice_generator, None)
+    assert len(generator.requests) == 1
+    assert generator.requests[0].planner_version == expected_version
+
+    generated_context = client.get("/learners/1/writing/context")
+    assert generated_context.status_code == 200
+    assert generated_context.json()["resume_action"] == "submit_practice"
+    assert generated_context.json()["current_recommendation_id"] == recommendation_id
+    assert generated_context.json()["current_recommendation"]["planner_version"] == expected_version
+
+    _submit_practice(client, practice_id)
+    submitted_context = client.get("/learners/1/writing/context")
+    assert submitted_context.status_code == 200
+    assert submitted_context.json()["resume_action"] == "complete_practice"
+    assert submitted_context.json()["current_recommendation_id"] == recommendation_id
+    assert submitted_context.json()["current_recommendation"]["planner_version"] == expected_version
+
+    completed = client.post(f"/learners/1/writing/practices/{practice_id}/complete")
+    assert completed.status_code == 200
+    completed_body = completed.json()
+    assert completed_body["next_recommendation_id"] != recommendation_id
+    assert completed_body["next_recommendation"]["planner_version"] == (
+        "writing-practice-gap-memory-v2"
+    )
+
+    resumed = client.get("/learners/1/writing/context")
+    assert resumed.status_code == 200
+    resumed_body = resumed.json()
+    assert resumed_body["latest_learning_update_id"] == completed_body["learning_update_id"]
+    assert resumed_body["current_recommendation_id"] == completed_body["next_recommendation_id"]
+    assert resumed_body["current_recommendation"] == completed_body["next_recommendation"]
+    assert resumed_body["current_recommendation"]["planner_version"] == (
+        "writing-practice-gap-memory-v2"
+    )
+    assert resumed_body["relevant_practice"] is None
+
+
+def test_p7_v1_recommendation_completes_through_server_authoritative_resume(
+    client: TestClient,
+    engine,
+) -> None:
+    _assert_practice_lifecycle_version_compatibility(client, engine, legacy_v1=True)
+
+
+def test_p7_v2_recommendation_completes_through_server_authoritative_resume(
+    client: TestClient,
+    engine,
+) -> None:
+    _assert_practice_lifecycle_version_compatibility(client, engine, legacy_v1=False)
