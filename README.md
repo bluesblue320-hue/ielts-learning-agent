@@ -7,7 +7,7 @@ it is not intended to be only a chatbot or a thin LLM wrapper.
 
 ## Current status
 
-**Phase 1 = COMPLETE. Phase 2 = COMPLETE. Phase 3 = COMPLETE. Phase 4 = COMPLETE. Phase 5 = COMPLETE and MERGED through PR #9 (`feat: deliver Phase 5 Chinese-first web MVP`), merge commit `56498c3d59aad4ae645c5b78c6b6dc41bec62bcf`. Phase 6 = COMPLETE and MERGED through PR #10 (`feat: deliver Phase 6 hierarchical learning memory & longitudinal progress`), merge commit `b8e419d8c146c921539f4654b5aeb0b56ed6f425`. Phase 7 = NOT_STARTED.**
+**Phase 1 = COMPLETE. Phase 2 = COMPLETE. Phase 3 = COMPLETE. Phase 4 = COMPLETE. Phase 5 = COMPLETE and MERGED through PR #9 (`feat: deliver Phase 5 Chinese-first web MVP`), merge commit `56498c3d59aad4ae645c5b78c6b6dc41bec62bcf`. Phase 6 = COMPLETE and MERGED through PR #10 (`feat: deliver Phase 6 hierarchical learning memory & longitudinal progress`), merge commit `b8e419d8c146c921539f4654b5aeb0b56ed6f425`. Phase 7 = DESIGN_ACTIVE: P7-01 baseline audit is complete; P7-02 planner v2 contract freeze is pending; implementation is not authorized.**
 
 Phase 3 adds a
 complete deterministic learner-state path on top of the Phase 2 Writing
@@ -139,8 +139,9 @@ multi-skill workflows remain outside the implemented system.
 Before changing the project, read these documents in order:
 
 1. [AGENTS.md](AGENTS.md)
-2. [Phase 6 graph](docs/PHASE6_GRAPH.md) and the frozen
-   [Writing memory policy](docs/WRITING_MEMORY_POLICY.md)
+2. [Phase 7 graph](docs/PHASE7_GRAPH.md), the Phase 6
+   [Writing memory policy](docs/WRITING_MEMORY_POLICY.md), and the frozen
+   Phase 7 planner policy when available
 3. [Development loop](docs/DEVELOPMENT_LOOP.md)
 4. [Target architecture](docs/ARCHITECTURE.md)
 
@@ -159,6 +160,10 @@ Its frozen contract is [docs/WRITING_MEMORY_POLICY.md](docs/WRITING_MEMORY_POLIC
 (`writing-memory-v1`, `writing-progress-v1`); execution status is tracked in
 [docs/PHASE6_GRAPH.md](docs/PHASE6_GRAPH.md) and the internal audit is
 [docs/PHASE6_AUDIT.md](docs/PHASE6_AUDIT.md).
+
+Phase 7 is design-active only. Its baseline audit is recorded in
+[docs/PHASE7_GRAPH.md](docs/PHASE7_GRAPH.md); no Phase 7 application,
+frontend, migration, or test implementation has been started.
 
 ## Phase 5 Web MVP
 
