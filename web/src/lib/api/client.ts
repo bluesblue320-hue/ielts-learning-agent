@@ -136,6 +136,141 @@ export type ClosedLoopResult = {
   next_recommendation: PracticeRecommendation;
 };
 
+// --- Phase 6 hierarchical learning memory read contracts (P6-09) ----------
+// These types mirror the frozen backend read models. The browser never
+// recomputes trend / persistent gap / resume action / ownership / episode
+// type; those are backend authority.
+
+export type EpisodeType = "initial_writing" | "targeted_practice";
+export type TrendStatus =
+  | "improving"
+  | "stable"
+  | "declining"
+  | "insufficient_history";
+export type PersistentGapStatus = "established" | "insufficient_history";
+export type ResumeAction =
+  | "initial_writing"
+  | "no_action"
+  | "generate_practice"
+  | "submit_practice"
+  | "await_submission"
+  | "complete_practice";
+
+export type EpisodeSkillObservation = {
+  skill: WritingSkill;
+  observed_band: BandScore;
+  learning_evidence_id: number;
+  source_attempt_id: number;
+  source_created_at: string;
+};
+
+export type EpisodeSkillObservationSet = Record<WritingSkill, EpisodeSkillObservation>;
+
+export type LearningEpisodeSummary = {
+  episode_id: number;
+  episode_type: EpisodeType;
+  occurred_at: string;
+  writing_evaluation_id: number;
+  attempt_id: number;
+  writing_practice_id: number | null;
+  recommendation_id: number;
+  recommendation_decision_type: "practice" | "no_practice";
+  recommendation_target_skill: WritingSkill | null;
+  recommendation_reason_codes: string[];
+  planner_version: string;
+  skill_observations: EpisodeSkillObservationSet;
+};
+
+export type WritingHistoryResponse = {
+  learner_id: number;
+  episodes: LearningEpisodeSummary[];
+};
+
+export type LearningEvidenceView = {
+  id: number;
+  learning_update_id: number;
+  learner_id: number;
+  writing_evaluation_id: number;
+  skill: WritingSkill;
+  observed_band: BandScore;
+  source_created_at: string;
+  source_attempt_id: number;
+  provider: string;
+  model: string;
+  prompt_version: string;
+  rubric_version: string;
+  scoring_policy_version: string;
+  thinking_mode: "enabled" | "disabled";
+  created_at: string;
+};
+
+export type LearningUpdateView = {
+  id: number;
+  learner_id: number;
+  writing_evaluation_id: number;
+  skill_taxonomy_version: string;
+  state_policy_version: string;
+  planner_version: string;
+  created_at: string;
+};
+
+export type WritingAttemptView = {
+  attempt_id: number;
+  question: string;
+  essay: string;
+  word_count: number;
+  created_at: string;
+};
+
+export type LearningEpisodeDetail = {
+  episode: LearningEpisodeSummary;
+  learning_update: LearningUpdateView;
+  attempt: WritingAttemptView;
+  evaluation: WritingEvaluationResponse;
+  evidence: LearningEvidenceView[];
+  recommendation: PracticeRecommendation;
+  practice: PracticeResponse | null;
+};
+
+export type SkillProgress = {
+  learner_id: number;
+  skill: WritingSkill;
+  policy_version: "writing-progress-v1";
+  current_estimate: string | null;
+  evidence_count: number;
+  trend: TrendStatus;
+  persistent_gap: boolean;
+  persistent_gap_status: PersistentGapStatus;
+  recent_observation_count: number;
+  recent_practice_count: number;
+  latest_observation_time: string | null;
+  last_episode_id: number | null;
+  source_observation_ids: number[];
+  source_episode_ids: number[];
+};
+
+export type SkillProgressSet = Record<WritingSkill, SkillProgress>;
+
+export type WritingProgressResponse = {
+  learner_id: number;
+  current_writing_target_band: BandScore;
+  current_state: LearnerStateResponse["states"];
+  skills: SkillProgressSet;
+  memory_version: "writing-memory-v1";
+  progress_version: "writing-progress-v1";
+};
+
+export type WritingContextResponse = {
+  learner_id: number;
+  resume_action: ResumeAction;
+  has_learner_owned_episodes: boolean;
+  latest_learning_update_id: number | null;
+  current_recommendation_id: number | null;
+  current_recommendation: PracticeRecommendation | null;
+  relevant_practice: PracticeResponse | null;
+  current_state: LearnerStateResponse["states"];
+};
+
 type FetchLike = typeof fetch;
 type RequestOptions = Omit<RequestInit, "body" | "method"> & {
   body?: unknown;
@@ -244,6 +379,16 @@ export function createApiClient(options: ApiClientOptions = {}) {
         `/learners/${learnerId}/writing/practices/${practiceId}/complete`,
         { method: "POST" },
       ),
+    getWritingHistory: (learnerId: number) =>
+      request<WritingHistoryResponse>(`/learners/${learnerId}/writing/history`),
+    getWritingHistoryEpisode: (learnerId: number, episodeId: number) =>
+      request<LearningEpisodeDetail>(
+        `/learners/${learnerId}/writing/history/${episodeId}`,
+      ),
+    getWritingProgress: (learnerId: number) =>
+      request<WritingProgressResponse>(`/learners/${learnerId}/writing/progress`),
+    getWritingContext: (learnerId: number) =>
+      request<WritingContextResponse>(`/learners/${learnerId}/writing/context`),
   };
 }
 
