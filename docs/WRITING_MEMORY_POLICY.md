@@ -3,7 +3,8 @@
 ## Status
 
 - **Node:** `P6-02` — Hierarchical Learning Memory Contract Freeze
-- **State:** `COMPLETE` (frozen and accepted by the P6-01/P6-02 design run)
+- **State:** `COMPLETE` (frozen by the P6-01/P6-02 design run; refined by
+  targeted external design review repair — docs-only)
 - **Memory version:** `writing-memory-v1`
 - **Progress-policy version:** `writing-progress-v1`
 - **Authority:** [PHASE6_GRAPH.md](PHASE6_GRAPH.md), executed under
@@ -81,6 +82,8 @@ one evaluation is owned by at most one learner.
 A submitted-but-not-completed practice has an attempt and evaluation but no
 `LearningUpdate` yet; it is not an episode until completed. It remains visible
 in practice history as a pending practice and in context as a resume point.
+An unapplied initial evaluation is likewise NOT learner-owned; its recovery
+limitation is frozen in 1.17.
 
 **L0 storage.** L0 is NOT duplicated. It IS the existing normalized PostgreSQL
 rows (`learning_updates`, `learning_evidence`, `writing_evaluations`,
@@ -97,7 +100,7 @@ derived from one L0 episode, with provenance back to its authoritative source.
 | --- | --- | --- |
 | `skill_observation` | `skill`, `observed_band`, canonical order values, provenance | one `LearningEvidence` row |
 | `practice_completed` | `skill`, practice id, episode id, completion time | `WritingPractice` (submitted) + its applied `LearningUpdate` |
-| `target_snapshot` | `writing_target_band` at episode time | `PracticeRecommendation.learner_target_band` / `Learner.writing_target_band` |
+| `target_snapshot` | the learner's Writing target band at episode time (historical) | `PracticeRecommendation.learner_target_band` (only) |
 | `recommendation_observation` | the full planner decision | one `PracticeRecommendation` row |
 
 **Provenance requirement.** Every L1 atom must expose stable source ids:
@@ -111,6 +114,15 @@ L1 atom
 
 Provenance-free atoms are forbidden. If a source cannot be identified, the
 atom must not be produced.
+
+**Historical vs current target (frozen).** The `target_snapshot` atom's
+historical episode target MUST come from
+`PracticeRecommendation.learner_target_band`. The current
+`Learner.writing_target_band` MUST NOT be used as an episode-time fallback; it
+remains authoritative only for the L3 current target and for the
+current-target-relative persistent gap (1.10). Historical target snapshot and
+current learner target are distinct, separately sourced values and must never
+be conflated in a response.
 
 **L1 storage.** In `writing-memory-v1`, L1 atoms are read-model projections of
 existing rows; `skill_observation` and `recommendation_observation` already
@@ -150,6 +162,9 @@ L2 pattern
   -> source L0 episodes (LearningUpdate.id list)
 ```
 
+A derived L2 object has no invented persistent id in v1; it is identified
+structurally by `learner + skill + pattern kind + policy version` (see 1.7).
+
 **L2 storage.** Read-model / computed. No L2 table in `writing-memory-v1`.
 
 ### 1.5 L3 — Learner Learning Profile
@@ -162,7 +177,9 @@ NOT a generic chatbot profile.
 
 ```text
 learner_id
-writing_target_band                       (current, from Learner)
+writing_target_band                       (CURRENT learner target, from Learner;
+                                           NOT an episode-time fallback for any
+                                           historical target_snapshot, per 1.3)
 current four-skill state                  (read from LearnerSkillState: estimate,
                                            evidence_count, revision, last_evidence_id,
                                            state_policy_version) — reference, not replacement
@@ -170,7 +187,7 @@ per-skill:
   current_estimate
   evidence_count
   trend
-  persistent_gap
+  persistent_gap                          (current-target-relative, per 1.10)
   recent_observation_count
   recent_practice_count
   latest_observation_time
@@ -235,6 +252,13 @@ still expose enough stable provenance for drill-down: `learning_update_id`,
 `recommendation_id`, `attempt_id` where applicable. Never produce an
 authoritative memory fact with no source.
 
+**No synthetic memory ids (frozen).** L1/L2/L3 are read models in v1 and MUST
+NOT invent persistent memory ids. Do not create fake `memory_atom_id`,
+`pattern_id`, or `profile_id` values unless backed by an actual persisted
+entity. Use only existing authoritative source ids (the list above). A derived
+L2 object is identified structurally by `learner + skill + pattern kind +
+policy version` and MUST expose its source ids for drill-down.
+
 ### 1.8 History ordering
 
 Learner-owned L0 episodes are returned in deterministic order:
@@ -250,6 +274,13 @@ BigInteger sequence guarantees total order). No other ordering is valid.
 ### 1.9 Trend policy
 
 **Version:** `writing-progress-v1`. **Window:** `TREND_WINDOW = 3`.
+**Threshold:** `TREND_DELTA_THRESHOLD = Decimal("0.5")`.
+
+**Granularity rationale (frozen).** The canonical trend series is
+`LearningEvidence.observed_band`, which stores IELTS half-bands only
+(`0, 0.5, 1.0, ..., 9.0`). The smallest non-zero delta is therefore `0.5`.
+A `0.25` threshold would be finer than the data granularity and is forbidden
+for `writing-progress-v1`.
 
 **Series.** The canonical trend series for one skill is the criterion observed
 band sequence over the canonical per-skill observation ordering
@@ -261,14 +292,14 @@ the frozen P6-01 decision; EWMA estimates are NOT mixed into the trend series
 
 ```text
 usable = canonical observations for the skill
-if count(usable) < 3:
+if count(usable) < TREND_WINDOW:
     trend = insufficient_history
 else:
     latest  = usable[-1].observed_band      # exact Decimal
     oldest  = usable[-3].observed_band      # exact Decimal
     delta   = latest - oldest               # exact Decimal arithmetic
-    if delta >= +0.25: trend = improving
-    elif delta <= -0.25: trend = declining
+    if delta >= TREND_DELTA_THRESHOLD: trend = improving
+    elif delta <= -TREND_DELTA_THRESHOLD: trend = declining
     else: trend = stable
 ```
 
@@ -283,7 +314,7 @@ For one skill, using the same canonical observation sequence as the trend
 policy:
 
 ```text
-if count(usable) < 3:
+if count(usable) < TREND_WINDOW:
     persistent_gap = false
     status = insufficient_history
 else:
@@ -295,6 +326,10 @@ else:
     else:
         persistent_gap = false
 ```
+
+`persistent_gap` is current-target-relative: it compares against the learner's
+current `writing_target_band`, NOT the historical target snapshot of any
+episode (see 1.3). The two values are distinct and never interchangeable.
 
 **Constraints.** No confidence score. No LLM. No hidden heuristic weighting.
 The current `Learner.writing_target_band` is the live reference (the learner
@@ -324,11 +359,20 @@ Generated-but-unsubmitted practice MUST NOT be called "completed". Only
 - `completed_practice_count` = `submitted` + applied practices for the skill.
 - `latest_practice` = most recent durable practice by `created_at DESC`,
   `id DESC`.
-- `latest_completed_practice_time` = `LearningUpdate.created_at` of the most
-  recent applied practice episode (or the practice `updated_at` when the link
-  is unambiguous); the frozen representation is the episode `occurred_at`.
-- `recent_practice_count` = completed practices for the skill among the latest
-  `TREND_WINDOW` episodes (episode ordering per 1.8).
+- `completed_at` (frozen) = the `LearningUpdate.created_at` of the applied
+  practice episode. Completion semantics = `submitted` + linked evaluation
+  applied. There is NO fallback to `WritingPractice.updated_at` or any other
+  timestamp. If the API/read model uses an episode `occurred_at`, it is
+  defined exactly as `LearningUpdate.created_at` (single source, see 1.17).
+- `recent_practice_count` = completed targeted practices for the skill among
+  the latest `RECENT_PRACTICE_EPISODE_WINDOW` learner-owned L0 episodes
+  (episode ordering per 1.8).
+
+**Practice-recent window (frozen).** `RECENT_PRACTICE_EPISODE_WINDOW = 3` is a
+separate, independently versioned constant of `writing-progress-v1`. It is NOT
+the trend window and MUST NOT be defined in terms of `TREND_WINDOW`. The two
+windows may share the numeric value `3` in v1, but they are distinct concepts
+and must be declared as distinct constants.
 
 **Linkage** (frozen, 1:1 at every hop):
 
@@ -433,28 +477,68 @@ context for a known learner ID. It does NOT mean authentication, cross-device
 login, account discovery, or identity recovery. Browser storage remains an
 identity hint; PostgreSQL remains the learning truth.
 
+**Episode occurred_at (frozen).** `occurred_at` is defined exactly as
+`LearningUpdate.created_at` — one source, no alternatives. It is used by
+history, progress, and context identically.
+
+**Current recommendation (frozen).** The current recommendation is the
+`PracticeRecommendation` owned by the learner's latest `LearningUpdate`,
+ordered:
+
+```text
+LearningUpdate.created_at DESC
+LearningUpdate.id DESC
+```
+
+**Relevant practice (frozen).** The relevant practice is ONLY the
+`WritingPractice` linked to that current recommendation (via
+`writing_practices.recommendation_id`, which is UNIQUE, so there is at most
+one). Older unfinished practices remain visible in history but MUST NOT
+override the newer current recommendation in `/writing/context`.
+
 **Resume action** (deterministic; no automatic next-practice generation):
 
 ```text
-no episodes                        -> initial_writing
+no LearningUpdate                                -> initial_writing
+latest recommendation = no_practice              -> stop / no_action
 latest recommendation = practice and
-  no practice for that recommendation -> generate_practice
-latest practice = generated        -> submit_practice
-latest practice = submission_in_progress -> await_submission (recheck)
-latest practice = submitted and evaluation not applied -> complete_practice
-latest practice = submitted and applied -> latest recommendation action
-                                            (practice -> generate_practice;
-                                             no_practice -> stop / no_action)
+  no practice linked to that recommendation      -> generate_practice
+linked practice = generated                      -> submit_practice
+linked practice = submission_in_progress         -> await_submission / recheck
+linked practice = submitted and linked evaluation
+  has no LearningUpdate                          -> complete_practice
+linked practice = submitted and linked evaluation
+  has a LearningUpdate                           -> unreachable for the current
+     recommendation: a completed practice belongs to the recommendation of an
+     OLDER LearningUpdate, and the completion itself created a NEW latest
+     LearningUpdate / recommendation. Recompute current context from the new
+     latest LearningUpdate — a single non-recursive lookup — never from the
+     completed practice itself.
 ```
 
-The endpoint returns the action and its supporting context; it never generates
-a practice.
+The transition is precise and non-recursive in implementation terms: exactly
+one lookup of the latest `LearningUpdate` → its `PracticeRecommendation` → its
+optional linked `WritingPractice`, then a single branch decision. The endpoint
+returns the action and its supporting context; it never generates a practice.
+
+**Resume v1 limitation (frozen).** Server-authoritative resume works only for
+states identifiable from persisted learner-owned data:
+
+- submitted targeted practices are learner-owned through `WritingPractice`
+  and can be recovered before complete/apply;
+- an unapplied initial `WritingEvaluation` persisted by `/writing/evaluate`
+  is NOT learner-owned and cannot be discovered from `learner_id` alone;
+- if browser/client state containing that evaluation identity is lost before
+  apply, context falls back to `initial_writing`;
+- Phase 6 will NOT add a new ownership table merely to close this limitation.
 
 ### 1.18 Version identifiers
 
 ```text
 writing-memory-v1      (memory hierarchy, semantics, provenance, boundaries)
-writing-progress-v1    (trend policy, persistent-gap policy, practice-history windows)
+writing-progress-v1    (trend policy TREND_WINDOW=3, TREND_DELTA_THRESHOLD=0.5;
+                         persistent-gap policy;
+                         RECENT_PRACTICE_EPISODE_WINDOW=3)
 ```
 
 The Phase 3/4 versions remain authoritative and unchanged:
@@ -468,23 +552,27 @@ The Phase 3/4 versions remain authoritative and unchanged:
 ### 2.1 Trend examples (`writing-progress-v1`)
 
 Reference implementation: `tests/test_progress_policy.py` (future, P6-06).
+Threshold: `TREND_DELTA_THRESHOLD = Decimal("0.5")` — observed bands are IELTS
+half-bands, so the smallest non-zero delta is `0.5`.
 
 | Example | Canonical observed bands | Trend |
 | --- | --- | --- |
 | A. insufficient | `6.0` | `insufficient_history` |
 | B. insufficient | `6.0, 6.5` | `insufficient_history` |
-| C. improving | `6.0, 6.5, 7.0` | `improving` (delta +1.0) |
-| D. improving boundary | `6.0, 6.5, 6.5` | `improving` (delta +0.5 ≥ 0.25) |
+| C. improving | `6.0, 6.5, 7.0` | `improving` (delta +1.0 ≥ +0.5) |
+| D. improving boundary | `6.0, 6.5, 6.5` | `improving` (delta +0.5 = threshold) |
 | E. stable | `6.5, 6.0, 6.5` | `stable` (delta 0.0) |
 | F. stable boundary | `6.5, 6.5, 6.5` | `stable` |
-| G. declining | `7.0, 6.5, 6.0` | `declining` (delta −1.0) |
-| H. declining boundary | `7.0, 6.5, 6.5` | `declining` (delta −0.5 ≤ −0.25) |
+| G. declining | `7.0, 6.5, 6.0` | `declining` (delta −1.0 ≤ −0.5) |
+| H. declining boundary | `7.0, 6.5, 6.5` | `declining` (delta −0.5 = threshold) |
 | I. four observations | `6.0, 6.5, 7.0, 6.5` | window over `usable[-3:]` = `6.5, 7.0, 6.5` → delta 0.0 → `stable` |
+| J. half-band granularity | `6.0, 6.0, 6.5` | `improving` (delta +0.5) |
 
 ### 2.2 Persistent-gap examples
 
 Reference implementation: `tests/test_progress_policy.py` (future, P6-06).
-Target = `7.0`.
+Current target = `7.0` (current-target-relative; historical `target_snapshot`
+values are irrelevant here).
 
 | Example | Canonical observed bands | persistent_gap |
 | --- | --- | --- |
@@ -500,16 +588,18 @@ Target = `7.0`.
 | --- | --- |
 | practice generated, never submitted | `practice_count` includes it; `completed_practice_count` excludes it; latest practice shows `generated` |
 | practice claimed (`submission_in_progress`) | not completed; never called completed |
-| practice submitted, evaluation applied | `completed_practice_count` includes it; `practice_completed` atom exists |
+| practice submitted, evaluation applied | `completed_practice_count` includes it; `practice_completed` atom exists; `completed_at` = the applied `LearningUpdate.created_at` |
 | practice submitted, evaluation NOT applied | durable `submitted` practice; not completed; context resume action = `complete_practice` |
+| older practice unfinished, newer recommendation exists | older practice stays in history; `/writing/context` uses ONLY the current recommendation's linked practice |
 
 ---
 
 ## 3. Implementation notes
 
-- The frozen P6-02 constants (e.g., `TREND_WINDOW = 3`, `+0.25` / `−0.25`
-  thresholds) will be materialized by a future node (P6-06) in a constants
-  module mirroring this document; they contain no engine logic.
+- The frozen P6-02 constants (e.g., `TREND_WINDOW = 3`,
+  `TREND_DELTA_THRESHOLD = Decimal("0.5")`, `RECENT_PRACTICE_EPISODE_WINDOW = 3`)
+  will be materialized by a future node (P6-06) in a constants module mirroring
+  this document; they contain no engine logic.
 - The trend/persistent-gap engine (P6-06) consumes the canonical per-skill
   observation sequence exactly as defined; it never infers rules from data and
   never calls an LLM.

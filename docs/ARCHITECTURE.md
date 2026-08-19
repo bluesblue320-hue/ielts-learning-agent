@@ -181,11 +181,12 @@ remaining skills remain future work.
 Architecture follows verified product requirements. Phase 1 is complete and
 stopped at `P1-11`; Phase 2 is complete and stopped at `P2-15`; Phase 3 is
 complete; Phase 4 is the accepted implementation baseline; Phase 5 is
-implemented and merged. Phase 6 is DESIGN_ACTIVE: its P6-01 baseline audit
-and P6-02 hierarchical learning memory contract freeze are complete
-(`docs/PHASE6_GRAPH.md`, `docs/WRITING_MEMORY_POLICY.md`); Phase 6
-implementation (P6-03 and later) is NOT_STARTED and requires separate explicit
-authority. Phase 7 remains NOT_STARTED.
+implemented and merged. Phase 6 is DESIGN_REVIEW_PENDING: its P6-01 baseline
+audit and P6-02 hierarchical learning memory contract freeze are complete
+(`docs/PHASE6_GRAPH.md`, `docs/WRITING_MEMORY_POLICY.md`) and the contract was
+refined after external design review; Phase 6 implementation (P6-03 and later)
+is NOT_STARTED and requires separate explicit authority. Phase 7 remains
+NOT_STARTED.
 Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
 
 ## Phase 5 presentation layer
@@ -193,4 +194,4 @@ Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
 `web/` is a Chinese-first Next.js presentation layer. It calls FastAPI over JSON, caches only learner navigation/recommendation presentation fields in browser storage, and leaves evaluation, learner state, planning, lifecycle validation, and persistence authoritative in FastAPI/PostgreSQL.
 ## Phase 5 status
 
-Next.js presentation, FastAPI application/domain authority, and PostgreSQL source of truth are implemented. Phase 6 is DESIGN_ACTIVE: the hierarchical learning memory audit (P6-01) and contract freeze (P6-02) are complete; memory implementation, RAG, wider multi-skill work, and Phase 7 remain future and are NOT_STARTED.
+Next.js presentation, FastAPI application/domain authority, and PostgreSQL source of truth are implemented. Phase 6 is DESIGN_REVIEW_PENDING: the hierarchical learning memory audit (P6-01) and contract freeze (P6-02) are complete and the contract was refined after external design review; memory implementation, RAG, wider multi-skill work, and Phase 7 remain future and are NOT_STARTED.

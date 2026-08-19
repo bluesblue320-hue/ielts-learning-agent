@@ -59,22 +59,24 @@ Phase 2 = COMPLETE
 Phase 3 = COMPLETE
 Phase 4 = COMPLETE
 Phase 5 = COMPLETE
-Phase 6 = DESIGN_ACTIVE
+Phase 6 = DESIGN_REVIEW_PENDING
 P6-01 = COMPLETE
 P6-02 = COMPLETE
 P6-03 = NOT_STARTED
 Phase 7 = NOT_STARTED
 ```
 
-Phase 6 is authorized for DESIGN/BASELINE work only in this run: P6-01
-(Baseline & Hierarchical Memory Capability Audit) and P6-02 (Hierarchical
-Learning Memory Contract Freeze) are complete. The audit proved that the
-existing durable Writing history can support the L0–L3 memory hierarchy
-without duplicate storage: `LearningUpdate` anchors L0 episodes, L1 atoms are
-read-model projections of existing rows, L2 patterns and the L3 profile are
-computed read models, and NO new database table is required. The frozen
-contract is [docs/WRITING_MEMORY_POLICY.md](docs/WRITING_MEMORY_POLICY.md)
-(versions `writing-memory-v1`, `writing-progress-v1`).
+Phase 6 design/baseline work is complete: P6-01 (Baseline & Hierarchical
+Memory Capability Audit) and P6-02 (Hierarchical Learning Memory Contract
+Freeze). The audit proved that the existing durable Writing history can
+support the L0–L3 memory hierarchy without duplicate storage: `LearningUpdate`
+anchors L0 episodes, L1 atoms are read-model projections of existing rows, L2
+patterns and the L3 profile are computed read models, and NO new database
+table is required. The frozen contract is
+[docs/WRITING_MEMORY_POLICY.md](docs/WRITING_MEMORY_POLICY.md) (versions
+`writing-memory-v1`, `writing-progress-v1`). External design review requested
+targeted contract repair; the repair was applied docs-only and is pending
+re-review acceptance. External approval is not claimed.
 
 Phase 6 implementation (P6-03 and later: memory schemas, read-model services,
 pattern engine, profile, history/progress/context APIs, web UX, E2E) is

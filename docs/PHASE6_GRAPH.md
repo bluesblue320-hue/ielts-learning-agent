@@ -5,6 +5,11 @@
 **DESIGN/BASELINE RUN — P6-01 COMPLETE, P6-02 COMPLETE; P6-03 through P6-16
 NOT_STARTED; Phase 6 = DESIGN_REVIEW_PENDING; Phase 7 = NOT_STARTED.**
 
+External design review requested targeted contract repair (docs-only). The
+repair was applied to [WRITING_MEMORY_POLICY.md](WRITING_MEMORY_POLICY.md) and
+this graph without redesign; re-review is pending and external approval is not
+claimed.
+
 This graph is frozen on `phase/6-hierarchical-learning-memory`, created from
 `master` at `3f1b4a5772b1a5fecf863d2711def11de6f5ff0f` (`docs: finalize Phase 5
 merged status`). The working tree was clean before the branch was created.
@@ -323,7 +328,16 @@ state + per-skill summary) beside the L2 per-skill patterns, avoiding a fifth
 `/profile` endpoint while keeping L3 semantics explicit. `/context` is
 justified because no existing endpoint can answer "where should the learner
 continue" server-authoritatively (there is no latest-recommendation or
-latest-practice read today).
+latest-practice read today). The context contract is frozen in
+`WRITING_MEMORY_POLICY.md` §1.17: current recommendation = the
+`PracticeRecommendation` owned by the latest `LearningUpdate`
+(`created_at DESC`, `id DESC`); relevant practice = ONLY the practice linked to
+that current recommendation (older unfinished practices never override it);
+episode `occurred_at` = `LearningUpdate.created_at` (single source); and the
+resume v1 limitation is frozen — an unapplied initial `WritingEvaluation` is
+not learner-owned and cannot be recovered from `learner_id` alone, so context
+falls back to `initial_writing` when browser state is lost before apply, and
+Phase 6 will NOT add a new ownership table to close this limitation.
 
 ---
 
@@ -346,6 +360,20 @@ state-vs-memory boundary, the planner boundary, the qualitative-data boundary,
 the read-model/materialization decision, the API contract candidates, and the
 memory-adapter decision. No database schema is frozen (the audit proves no
 table is required for v1).
+
+**External design review repair (docs-only).** After the first design
+submission, targeted contract repair was applied to `WRITING_MEMORY_POLICY.md`
+and this graph without changing the approved overall architecture: the resume
+v1 limitation is frozen; the current-recommendation / relevant-practice rule
+for `/writing/context` is frozen with a non-recursive transition;
+`target_snapshot` provenance is restricted to
+`PracticeRecommendation.learner_target_band` (no current-target fallback);
+`writing-progress-v1` uses `TREND_DELTA_THRESHOLD = Decimal("0.5")`
+(half-band granularity); practice recency uses the separate
+`RECENT_PRACTICE_EPISODE_WINDOW = 3`; the completion timestamp is frozen to
+`LearningUpdate.created_at`; and synthetic memory ids (`memory_atom_id`,
+`pattern_id`, `profile_id`) are forbidden. Phase 6 remains
+`DESIGN_REVIEW_PENDING` — external review approval is not claimed yet.
 
 Statuses after this design run:
 
@@ -388,7 +416,12 @@ explicitly authorized.
 - **Dependencies:** `P6-02` (contract), existing `app/schemas/*`.
 - **Acceptance criteria:** Every schema validates provenance ids; L3/L2/L1/L0
   shapes match the policy doc exactly; no schema duplicates `LearnerSkillState`
-  semantics as authoritative state.
+  semantics as authoritative state; no invented persistent memory ids
+  (`memory_atom_id`, `pattern_id`, `profile_id`) — only the existing
+  authoritative source ids (`learning_update_id`, `learning_evidence_id`,
+  `writing_evaluation_id`, `writing_practice_id`, `recommendation_id`,
+  `attempt_id`); derived L2 objects are identified structurally by
+  `learner + skill + pattern kind + policy version`.
 - **Required tests:** schema validation unit tests covering valid and invalid
   shapes, provenance-id presence, band validation, extra-field rejection.
 - **Migration permission:** NONE.
@@ -452,15 +485,20 @@ explicitly authorized.
   gap, observation counts, and completed-practice counts, exactly per
   `writing-progress-v1` in `WRITING_MEMORY_POLICY.md`.
 - **Scope:** Frozen constants module (e.g., `app/memory/progress_policy.py`
-  mirroring `TREND_WINDOW = 3` and thresholds) and pure engine
-  (`app/memory/pattern_engine.py`) over canonical observation sequences.
+  mirroring `TREND_WINDOW = 3`, `TREND_DELTA_THRESHOLD = Decimal("0.5")`, and
+  the separately versioned `RECENT_PRACTICE_EPISODE_WINDOW = 3`) and pure
+  engine (`app/memory/pattern_engine.py`) over canonical observation
+  sequences.
 - **Allowed files:** `app/memory/`, `app/schemas/memory*`, tests.
 - **Forbidden scope:** LLM inference of longitudinal facts, hidden weighting,
   confidence scores, planner inputs, new tables, web code.
 - **Dependencies:** `P6-02` (trend/persistent-gap policy), `P6-04`, `P6-05`.
 - **Acceptance criteria:** Engine matches the policy examples exactly with
-  exact `Decimal` arithmetic; every pattern exposes source observation ids and
-  source episode ids for drill-down; determinism tests with reordered input.
+  exact `Decimal` arithmetic (`TREND_DELTA_THRESHOLD = 0.5`; trend
+  insufficient when fewer than 3 observations); `recent_practice_count` uses
+  the separate `RECENT_PRACTICE_EPISODE_WINDOW`, never `TREND_WINDOW`; every
+  pattern exposes source observation ids and source episode ids for drill-down
+  and has no invented pattern id; determinism tests with reordered input.
 - **Required tests:** trend window/threshold tests (all branches:
   insufficient, improving, stable, declining), persistent-gap tests, count
   tests, drill-down id presence, determinism.
@@ -506,9 +544,15 @@ explicitly authorized.
   authentication, new tables, web code, LLM calls.
 - **Dependencies:** `P6-04`, `P6-05`, `P6-06`, `P6-07`.
 - **Acceptance criteria:** All four endpoints return the frozen schemas;
-  history order deterministic; episode detail enforces learner ownership;
-  context returns a deterministic server-authoritative resume action with NO
-  automatic next-practice generation; stable error codes
+  history order deterministic; episode detail enforces learner ownership and
+  defines `occurred_at` exactly as `LearningUpdate.created_at`; context
+  implements the frozen current-recommendation / relevant-practice rule
+  (latest `LearningUpdate` by `created_at DESC`, `id DESC`; relevant practice
+  is ONLY the practice linked to that recommendation; older unfinished
+  practices never override) with the frozen non-recursive resume-action
+  transition and NO automatic next-practice generation; the resume v1
+  limitation is enforced (unapplied initial evaluations are not discoverable
+  from `learner_id`); stable error codes
   (`learner_not_found`, `episode_not_found`, `persistence_unavailable`).
 - **Required tests:** API tests for all endpoints against isolated PostgreSQL;
   ownership; ordering; error mapping; context resume-action branches.
@@ -590,9 +634,14 @@ explicitly authorized.
 - **Forbidden scope:** Authentication, account discovery, identity recovery,
   automatic next-practice generation, backend changes.
 - **Dependencies:** `P6-09`.
-- **Acceptance criteria:** Resume action reflects the server's
-  authoritative context; interrupted sessions recover after browser storage is
-  cleared (learner id re-entered); no fabricated practice generation.
+- **Acceptance criteria:** Resume action reflects the server's authoritative
+  context using only persisted learner-owned data. Submitted targeted
+  practices are learner-owned through `WritingPractice` and recoverable before
+  complete/apply. An unapplied initial `WritingEvaluation` identity is NOT
+  recoverable from `learner_id` alone; when browser/client state carrying that
+  identity is lost before apply, context falls back to `initial_writing`.
+  No fabricated practice generation. No new ownership table is introduced to
+  close the resume v1 limitation.
 - **Required tests:** unit tests where useful; browser E2E coverage in
   `P6-15`.
 - **Migration permission:** NONE.
