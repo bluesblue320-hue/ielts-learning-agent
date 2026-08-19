@@ -85,15 +85,15 @@ progress, planner, API, concurrency, memory, practice, and E2E tests.
    `LearningUpdate.planner_version` and `PracticeRecommendation.planner_version`
    are nonblank strings, not v1 literals. Thus they can record v2 without a
    column change, but v2 context cannot be stored today.
-4. **Safe transaction-time derivation and query boundary.** Deterministic Memory can be computed in the existing apply transaction after the new update/evidence flush and state rebuild. Trend/gap may reuse pure Phase 6 policy functions. Recency MUST NOT call `list_learner_episodes()`: that query inner-joins a recommendation that does not yet exist. P7-05 needs a planner-owned pre-recommendation projection over `LearningUpdate -> WritingEvaluation -> WritingAttempt -> optional WritingPractice`.
-5. **Safe inputs.** Per skill: `trend`, `persistent_gap`, `persistent_gap_status`, `recent_practice_count`, plus Memory/progress/context versions and ordered source observation/episode/practice-window ids. Current target/state remain separate Phase 3 planner inputs.
+4. **Safe transaction-time derivation and query boundary.** Deterministic Memory can be computed in the existing apply transaction after the new update/evidence flush and state rebuild. Trend/gap may reuse pure Phase 6 policy functions. Recency MUST NOT call `list_learner_episodes()`: that query inner-joins a recommendation that does not yet exist. P7-05 needs a planner-owned pre-recommendation projection over `LearningUpdate -> WritingEvaluation -> WritingAttempt -> optional WritingPractice`, ordered by accepted-update `LearningUpdate.id DESC`. Memory context is built lazily only after base selection detects an exact tie.
+5. **Safe inputs.** Per skill: `trend`, `persistent_gap`, `persistent_gap_status`, `recent_practice_count`, plus Memory/progress/context versions and ordered source observation/episode/practice-window ids. Recent-practice count is a Phase 7 planner-owned accepted-update signal, not Phase 6 public progress recency. Current target/state remain separate Phase 3 planner inputs.
 6. **Excluded inputs.** Raw essays/questions, feedback, strengths, weaknesses, error tags, recommended skills, provider/model metadata, prompts, and LLM reasoning remain excluded.
-7. **Historical reconstruction.** It is possible when bounded by recommendation owner `LearningUpdate U`. Same-learner apply transactions acquire the learner lock before inserting updates, so committed same-learner rows with `id <= U.id` are the decision-time accepted set. Restrict evidence to that set and canonically order it to rebuild trend/gap; order those episodes by `(created_at DESC, id DESC)` and project actual practice targets to rebuild recency. Later-applied old evidence has a later owning-update id and is excluded. U's recommendation target and state snapshot provide the other exact inputs.
+7. **Historical reconstruction.** It is possible when bounded by recommendation owner `LearningUpdate U`. Same-learner apply transactions acquire the learner lock before inserting updates, so committed same-learner rows with `id <= U.id` are the decision-time accepted set. Restrict evidence to that set and canonically order it to rebuild trend/gap; order accepted rows by `id DESC`, limit to the planning window, and project actual practice targets to rebuild recency. Later-applied old evidence has a later owning-update id and is excluded. U's recommendation target and state snapshot provide the other exact inputs.
 8. **Persistence decision and tradeoff.** Keep one additive nullable `planner_context_snapshot JSONB`, not because reconstruction is impossible, but as an intentional immutable decision-time audit snapshot. Authoritative-row reconstruction remains an audit verification path. The snapshot is required only for a v2 exact-tie practice decision; it is NULL for v1, v2 no-practice, and v2 unique-gap decisions. No new table is justified.
 9. **Reason codes.** Keep the v1 taxonomy/sequences. `priority_tiebreak` appears iff final canonical priority actually narrows an unresolved tie; Memory stages never add it.
 10. **Schema coexistence.** Preserve strict v1/v2 decisions discriminated by `planner_version`, but separate planner input `MemoryAwarePlanningContext`, output `PlannerSelectionTrace`, and persisted `PersistedPlannerContextSnapshot`. The full audit envelope is internal and is not the normal public recommendation schema.
 11. **Selection trace.** Required only for exact-tie practice decisions. It is planner output, not context input. It records canonical candidate lists and considered stages; a non-narrowing stage has identical before/after lists, never an empty filtered output.
-12. **Late arrival and recency.** Newly flushed evidence participates immediately under canonical source order. A minimal `PlanningPracticeEpisode` query includes the current flushed update without requiring a recommendation, uses the latest-three update order, lets initial writing occupy a slot, and counts a targeted completion against actual `WritingPractice.target_skill`. Stored exact-tie snapshots remain immutable.
+12. **Late arrival and recency.** Newly flushed evidence participates immediately under canonical source order. A minimal `PlanningPracticeEpisode` query includes the current flushed update without requiring a recommendation, uses planner-owned accepted-update `id DESC` order, lets initial writing occupy a slot, and counts a targeted completion against actual `WritingPractice.target_skill`. Stored exact-tie snapshots remain immutable.
 13. **Mixed history/API impact.** Internal reconstruction validates optional conditional audit envelopes for v1/v2 rows. Normal product responses expose existing decision fields, version, and a safe `planning_explanation` derived from the persisted historical trace—never current progress or raw provenance ids. Any developer audit surface must be separate.
 14. **Practice-generation impact.** No generator policy or prompt change is
     needed. Practice generation already accepts a persisted recommendation and
@@ -161,40 +161,33 @@ TencentDB, and non-Writing skills) apply to every node.
 
 ### P7-05 — Decision-Time Memory Context Builder
 
-- **Purpose/scope:** Build planner-owned deterministic input context after the current update/evidence flush, including a minimal pre-recommendation recency projection.
+- **Purpose/scope:** Build context only for an exact tie, using a minimal pre-recommendation projection and planner-owned accepted-update recency.
 - **Dependencies:** P7-03, P7-04.
-- **Allowed files:** focused `app/learner/` context/query module, narrow imports, and unit tests.
-- **Forbidden scope:** `list_learner_episodes()` for transaction recency, PracticeRecommendation joins, routes, HTTP response coupling, provider calls, web, or persistence writes.
-- **Acceptance/tests:** canonical evidence order; current flushed update participates; initial writing occupies a recent window slot; targeted completion counts actual practice target; latest-three ordering/provenance and bounded historical reconstruction match; reordered inputs repeat exactly.
+- **Allowed files:** focused `app/learner/` context/query module, policy constants, and unit tests.
+- **Forbidden scope:** `list_learner_episodes()`, PracticeRecommendation joins, created-at planner recency, routes, HTTP response coupling, provider calls, web, persistence writes, or Phase 6 progress changes.
+- **Acceptance/tests:** `PLANNING_RECENT_PRACTICE_WINDOW = 3`; same-learner `LearningUpdate.id DESC`; current flushed update first; initial writing occupies a slot; targeted completion counts actual practice target; historical owner-U reconstruction uses `id <= U.id`, `id DESC`, and the same limit.
 - **Migration permission:** no.
-- **Route-back/stop:** return to P7-01 if the accepted-update boundary or Session visibility is disproven; stop before selection logic.
+- **Route-back/stop:** return to P7-01 if accepted-update identity ordering is disproven; stop before tie resolution.
 
 ### P7-06 — Deterministic Planner v2 Engine
 
-- **Purpose/scope:** Implement pure v2 current-gap-first selection and trace.
+- **Purpose/scope:** Implement base selection first and the pure Memory tie resolver second.
 - **Dependencies:** P7-03, P7-05.
 - **Allowed files:** planner v2/policy modules and unit tests.
-- **Forbidden scope:** v1 algorithm changes, ORM, service, routes, web,
-  weighting heuristics, LLM calls.
-- **Acceptance/tests:** all frozen examples, reordered logical inputs, unique
-  maximum-gap non-override, and exact reason-code semantics pass.
+- **Forbidden scope:** requiring Memory context for no-practice or unique-gap decisions, v1 changes, ORM, services, routes, web, weights, or LLM calls.
+- **Acceptance/tests:** no-practice and unique-gap outcomes require no context; `MemoryAwarePlanningContext` is required iff exact maximum-gap candidate count is greater than one; frozen tie hierarchy/trace and reordered-input determinism pass.
 - **Migration permission:** no.
-- **Route-back/stop:** return to P7-02 for policy ambiguity; stop before apply
-  integration.
+- **Route-back/stop:** return to P7-02 for policy ambiguity; stop before apply integration.
 
 ### P7-07 — Atomic Learning-Application Integration
 
-- **Purpose/scope:** Activate v2 for every new apply, pass input context to the
-  planner, and persist the conditional exact-tie audit envelope atomically.
+- **Purpose/scope:** Activate v2 for every new apply; perform base selection first; lazily build/persist Memory context only for an exact tie.
 - **Dependencies:** P7-04, P7-05, P7-06.
 - **Allowed files:** learning-application service, focused tests and imports.
-- **Forbidden scope:** provider call, separate transaction, request version
-  selector, feature flag, historical rewrite, generator prompt change, web.
-- **Acceptance/tests:** one update/four evidence/four states/one recommendation;
-  only exact-tie practice carries an envelope; rollback/idempotency preserve the
-  original persisted planner version and decision.
+- **Forbidden scope:** any Memory query for no-practice/unique-gap branches, provider call, separate transaction, request version selector, feature flag, historical rewrite, generator prompt change, or web.
+- **Acceptance/tests:** irrelevant Memory failure cannot block no-practice/unique-gap results; exact tie uses the current id-ordered window and conditional envelope; rollback/idempotency preserve the original version and decision.
 - **Migration permission:** no.
-- **Route-back/stop:** return to P7-05 on transaction-read issues.
+- **Route-back/stop:** return to P7-05 on accepted-update query issues.
 
 ### P7-08 — Mixed v1/v2 Reconstruction & Backward Compatibility
 
@@ -249,17 +242,13 @@ TencentDB, and non-Writing skills) apply to every node.
 
 ### P7-12 — Concurrency / Idempotency / Migration Hardening
 
-- **Purpose/scope:** Prove v2 context persistence under races and migration
-  edge cases.
+- **Purpose/scope:** Prove conditional context persistence and accepted-update recency under races and migration edge cases.
 - **Dependencies:** P7-04, P7-07, P7-11.
-- **Allowed files:** focused service/migration tests and only minimal repairs.
-- **Forbidden scope:** new locks, broad infrastructure, provider work, web
-  features.
-- **Acceptance/tests:** PostgreSQL concurrent apply/idempotency, rollback,
-  late-arrival, pre-recommendation recency boundary, upgrade/downgrade, and mixed-row tests pass.
-- **Migration permission:** corrective only; no new unrelated revision.
-- **Route-back/stop:** return to owner node for semantic failure; stop on any
-  unbounded locking or new persistence requirement.
+- **Allowed files:** focused service/migration tests and minimal repairs.
+- **Forbidden scope:** new locks, broad infrastructure, provider work, web features, or Phase 6 recency changes.
+- **Acceptance/tests:** same-learner transactions whose start order differs from update insertion/acceptance order still place the current update first by id; owner-U reconstruction matches `id <= U.id`, `id DESC`, LIMIT 3; lazy no-practice/unique-gap paths avoid Memory queries; PostgreSQL idempotency, rollback, late arrival, migration, and mixed rows pass.
+- **Migration permission:** corrective only; no unrelated revision.
+- **Route-back/stop:** return failures to the owning node; stop on unbounded locking or new storage need.
 
 ### P7-13 — Backend + Frontend + Browser E2E / CI
 

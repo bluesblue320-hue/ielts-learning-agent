@@ -10,6 +10,7 @@ planner_version: writing-practice-gap-memory-v2
 memory_context_version: writing-memory-aware-planning-context-v1
 selection_trace_version: writing-planner-selection-trace-v1
 planner_snapshot_version: writing-practice-gap-memory-v2-audit-v1
+PLANNING_RECENT_PRACTICE_WINDOW: 3
 memory_version: writing-memory-v1
 progress_version: writing-progress-v1
 ```
@@ -39,16 +40,25 @@ LLM reasoning, embeddings, semantic retrieval, or wall-clock decay. v2 is not
 an agent runtime, LLM planner, reinforcement-learning system, RAG feature, or
 multi-agent orchestration.
 
-## 2. Authoritative inputs
+## 2. Authoritative inputs and lazy Memory consultation
 
-The v2 decision accepts:
+Every v2 decision begins with only the existing `LearnerSkillStateSet` decision-time snapshot and learner Writing target. The deterministic base selection completes all no-practice branches and calculates the exact maximum positive target-gap candidate set before any Memory query.
 
-1. the existing `LearnerSkillStateSet` decision-time snapshot;
-2. the learner's Writing target band; and
-3. one strict application-owned `MemoryAwarePlanningContext`.
+```text
+State + Target
+  -> deterministic base selection
+     -> target_unset / cold_start / incomplete_state / target_achieved
+        -> finish without MemoryAwarePlanningContext
+     -> unique maximum positive gap
+        -> finish without MemoryAwarePlanningContext
+     -> exact maximum-gap tie
+        -> build MemoryAwarePlanningContext
+        -> resolve tie
+```
 
-The context has exactly these planner-relevant fields for every canonical
-Writing skill, in canonical skill order:
+`MemoryAwarePlanningContext` is REQUIRED only for the exact-tie branch. It is not an input to no-practice or unique-gap decisions, and an irrelevant Memory query failure must not prevent either deterministic result.
+
+For an exact tie, the context has these planner-relevant fields for every canonical Writing skill in canonical order:
 
 ```text
 trend: declining | stable | improving | insufficient_history
@@ -60,18 +70,9 @@ source_episode_ids: ordered list[LearningUpdate.id]
 recent_practice_source_episode_ids: ordered list[LearningUpdate.id]
 ```
 
-It additionally carries `memory_version`, `progress_version`, and
-`memory_context_version`. `MemoryAwarePlanningContext` is planner input only
-and MUST NOT contain `PlannerSelectionTrace`. It is not a
-`WritingProgressResponse`; the public response has unrelated presentation/read-
-model fields and must not become a write-path dependency. The future context
-builder owns a focused domain schema and uses Phase 6's frozen pattern and
-episode-window primitives.
+It additionally carries `memory_version`, `progress_version`, and `memory_context_version`. It is planner input only and MUST NOT contain `PlannerSelectionTrace`. It is not a `WritingProgressResponse`; the future builder owns a focused domain schema.
 
-`source_observation_ids` and `source_episode_ids` identify the same canonical
-trend/persistent-gap evidence window. `recent_practice_source_episode_ids`
-identifies the frozen latest-three L0 episode window used to count completed
-targeted practices. These ids are audit provenance, not user-facing text.
+Trend and persistent-gap fields reuse the deterministic `writing-progress-v1` observation policy and provenance. The planning `recent_practice_count` does not reuse Phase 6 episode recency semantics: it is a planner-owned decision-time signal in `writing-memory-aware-planning-context-v1`, derived from the latest `PLANNING_RECENT_PRACTICE_WINDOW = 3` accepted same-learner updates ordered by `LearningUpdate.id DESC`. Its source episode ids identify that exact accepted-update window, including initial-writing entries. Phase 7 does not modify `writing-progress-v1` or public `/progress` ordering.
 
 ## 3. Current-state precedence and no-practice branches
 
@@ -130,12 +131,11 @@ the set. Insufficient history is neither favorable nor unfavorable; it is not
 silently ranked as an established trend. This conservative rule avoids choosing
 a skill merely because another equally weak skill has more observed history.
 
-### 4.3 Recent practice
+### 4.3 Planning recent practice
 
-Retain candidates with the lowest `recent_practice_count`. This uses the
-existing `writing-progress-v1` completed-targeted-practice count in the latest
-three learner-owned L0 episodes. Generated, claimed, and submitted-but-
-unapplied practices do not count.
+Retain candidates with the lowest `recent_practice_count`. For the current learner, take the latest `PLANNING_RECENT_PRACTICE_WINDOW = 3` accepted `LearningUpdate` rows by `id DESC`. Each applied targeted-practice update counts once for its actual `WritingPractice.target_skill`; an initial-writing update counts for no skill but still occupies a slot. Generated, claimed, and submitted-but-unapplied practices do not count because they have no accepted `LearningUpdate`.
+
+This is a Phase 7 planner-context signal. It intentionally does not redefine or claim identity with Phase 6 `RECENT_PRACTICE_EPISODE_WINDOW` or public `writing-progress-v1` recency.
 
 ### 4.4 Canonical fallback
 
@@ -174,18 +174,20 @@ stages: ordered list of {
 selected_skill: canonical skill
 ```
 
-The planner flow has no circular input/output schema:
+The planner output flow for an exact tie has no circular schema:
 
 ```text
-Context Builder
+State + Target
+  -> base selection detects exact tie
+  -> Context Builder
   -> MemoryAwarePlanningContext (input facts + provenance only)
-  -> Planner v2
+  -> tie resolver
   -> Decision + PlannerSelectionTrace (output)
   -> Learning Application
   -> PersistedPlannerContextSnapshot (audit envelope)
 ```
 
-All candidate lists are normalized to canonical v1 skill order. A stage is recorded only while at least two candidates remain. If a stage does not narrow, `candidates_after` MUST equal `candidates_before`; an empty attempted filter is never recorded as `candidates_after`. `canonical_priority` appears only when at least two candidates still remain and selects the first canonical skill. Stages after selection are omitted. A no-practice or unique-gap decision has no `PlannerSelectionTrace`.
+No-practice and unique-gap branches finish before the Context Builder. All candidate lists are normalized to canonical v1 skill order. A stage is recorded only while at least two candidates remain. If a stage does not narrow, `candidates_after` MUST equal `candidates_before`; an empty attempted filter is never recorded as `candidates_after`. `canonical_priority` appears only when at least two candidates still remain and selects the first canonical skill. Stages after selection are omitted. A no-practice or unique-gap decision has no `PlannerSelectionTrace`.
 
 ## 6. Historical reconstruction and immutable audit snapshot
 
@@ -197,7 +199,7 @@ Within that accepted set:
 
 - restrict `LearningEvidence` to rows owned by those updates, then order each skill by `(source_created_at ASC, source_attempt_id ASC)` to reconstruct the exact trend and persistent-gap window;
 - late-arriving evidence applied after U is excluded by its later owning update even when its source timestamp is older;
-- order the accepted update episodes by `(LearningUpdate.created_at DESC, LearningUpdate.id DESC)` and project their optional actual `WritingPractice.target_skill` to reconstruct the historical recent-practice window;
+- order accepted updates by `LearningUpdate.id DESC`, take `PLANNING_RECENT_PRACTICE_WINDOW = 3`, and project optional actual `WritingPractice.target_skill` to reconstruct planning recency; U is necessarily the first entry;
 - use U's recommendation target snapshot and state snapshot rather than present learner values.
 
 Therefore historical context reconstruction is possible; recomputing today's unbounded progress is merely the wrong reconstruction query. Phase 7 still chooses a persisted snapshot as an intentional immutable decision-time audit record. This avoids making routine product explanations depend on replaying historical query semantics, makes the exact planner input/output self-contained, and permits direct comparison against authoritative-row reconstruction during audit. Normalized rows remain authoritative evidence and a verification source; the stored snapshot is authoritative for what the planner consumed and emitted at that decision.
@@ -241,31 +243,34 @@ Normal product fields MUST NOT expose source observation/episode ids or the raw 
 
 Apply, completion, history, and context APIs must reconstruct the correct v1/v2 public decision. Practice generation remains version-agnostic: it consumes the persisted target skill and existing generator request fields and never receives Memory context, trace, or the audit envelope.
 
-## 8. Transaction, pre-recommendation recency, and late arrival
+## 8. Transaction, accepted-update recency, and late arrival
 
-The v2 context is derived inside the existing atomic learning-application transaction after the new `LearningEvidence` rows and current `LearningUpdate` are flushed and all four states are canonically rebuilt, but before its `PracticeRecommendation` exists. There is no provider/LLM call in this transaction.
+The application first completes deterministic base selection from state and target. It builds Memory context lazily only when the maximum-gap candidate count is greater than one. For that exact tie, context is derived inside the existing atomic transaction after the current `LearningUpdate` and evidence are flushed and state is rebuilt, but before its `PracticeRecommendation` exists. There is no provider/LLM call.
 
-P7-05 MUST NOT call Phase 6 `list_learner_episodes()` for transaction-time recency. That query inner-joins `PracticeRecommendation`, so it omits the in-flight update before recommendation persistence. Instead P7-05 owns a minimal pre-recommendation projection:
+P7-05 MUST NOT call Phase 6 `list_learner_episodes()` or join `PracticeRecommendation`. It owns this minimal pre-recommendation projection:
 
 ```text
 PlanningPracticeEpisode
   learning_update_id
-  created_at
   practice_target_skill | null
 ```
 
-Its query follows only:
+The query follows only `LearningUpdate -> WritingEvaluation -> WritingAttempt -> optional WritingPractice` and freezes planner accepted-learning chronology:
 
 ```text
-LearningUpdate
-  -> WritingEvaluation
-  -> WritingAttempt
-  -> optional WritingPractice
+PLANNING_RECENT_PRACTICE_WINDOW = 3
+WHERE LearningUpdate.learner_id = current learner
+ORDER BY LearningUpdate.id DESC
+LIMIT PLANNING_RECENT_PRACTICE_WINDOW
 ```
 
-It has no `PracticeRecommendation`, route, or `WritingProgressResponse` dependency. It orders by `LearningUpdate.created_at DESC, LearningUpdate.id DESC`, applies `RECENT_PRACTICE_EPISODE_WINDOW = 3`, and includes the just-flushed current update immediately. A current initial-writing update has null practice target but still occupies a window slot and can push an older practice out. A current completed targeted-practice update counts against the actual `WritingPractice.target_skill`.
+Same-learner apply is serialized by the learner `FOR UPDATE` lock before `LearningUpdate` insertion, so the id order is the supported application's deterministic acceptance sequence. The just-flushed update is therefore the first entry. A current initial-writing update has null practice target but occupies a slot; a current targeted-practice update counts immediately for actual `WritingPractice.target_skill`.
 
-Trend and persistent gap use `(source_created_at ASC, source_attempt_id ASC)`, so newly inserted evidence participates immediately even if it describes an older attempt. Late arrival can change the new decision's context but cannot change any stored earlier exact-tie snapshot. Future regression tests must prove both current episode window cases, the no-recommendation query boundary, late arrival, and equivalence between decision-time facts and bounded historical reconstruction.
+`LearningUpdate.created_at` is deliberately rejected for planner recency. Its PostgreSQL `func.now()` default reflects the transaction timestamp, and a transaction that starts earlier but acquires the learner lock later can insert a higher-id accepted update with an older timestamp. A created-at LIMIT window could therefore exclude the current update under contention.
+
+Observation chronology remains different: trend/persistent gap order evidence by `(source_created_at ASC, source_attempt_id ASC)`. Planner accepted-learning chronology orders updates by `LearningUpdate.id DESC`. Phase 7 changes neither Phase 6 L0 episode ordering nor `writing-progress-v1` public recency.
+
+Historical reconstruction for owner U restricts to the same learner and `LearningUpdate.id <= U.id`, then orders `id DESC` and limits to the planning window. Future regression tests must prove current initial/targeted entries, differing transaction-start versus accepted-insertion order, late-arriving evidence, and exact reconstruction at U.
 
 ## 9. V2 activation and coexistence
 
@@ -290,16 +295,11 @@ priority order.
 | J. Late arrival | An older source attempt is applied after newer evidence; it enters canonical trend order immediately. If the new decision has an exact tie, it snapshots that bounded context; earlier snapshots stay unchanged. |
 | K. Historical v1 | A row with `writing-practice-gap-v1` and NULL context reconstructs with the original v1 model and original reason semantics. |
 | L. Reordered logical input | Equivalent state/context values presented in a different collection/query order yield identical selected skill, reason codes, and canonicalized trace. |
-| M. Current initial episode | A just-flushed initial-writing update occupies one latest-three recency slot with null practice target and can evict an older completed practice. |
-| N. Current targeted episode | A just-flushed completed targeted-practice update occupies a slot and increments the count for its actual `WritingPractice.target_skill`. |
+| M. Current initial episode | A just-flushed initial-writing update is first in the latest-three accepted-update id window, has null practice target, and can evict an older completed practice. |
+| N. Current targeted episode | A just-flushed completed targeted-practice update is first by accepted-update id and increments the count for its actual `WritingPractice.target_skill`. |
 
 ## 11. Implementation acceptance boundary
 
-P7-03 through P7-14 must test strict union validation, additive
-upgrade/downgrade, v1 reconstruction, all examples above, late arrival,
-decision-time provenance, the pre-recommendation initial/targeted recency cases,
-transaction rollback/idempotency/concurrency, mixed
-API output, generator/lifecycle compatibility, typed frontend handling, and
-browser explanation behavior.
+P7-03 through P7-14 must test strict version/schema validation, the conditional snapshot matrix, all examples above, lazy Memory consultation, observation chronology, accepted-update id recency, same-learner contention where transaction-start and insertion order differ, current initial/targeted entries, exact owner-U reconstruction, late arrival, rollback/idempotency, mixed public/internal APIs, generator/lifecycle compatibility, typed frontend behavior, and browser explanation behavior.
 
 This design run creates none of those tests and implements none of that code.
