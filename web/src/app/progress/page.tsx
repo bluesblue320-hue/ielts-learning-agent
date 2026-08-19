@@ -29,7 +29,7 @@ function ProgressCard({ skill, target }: { skill: SkillProgress; target: string 
             {skill.persistent_gap_status === "insufficient_history"
               ? persistentGapLabels.insufficient_history
               : skill.persistent_gap
-                ? persistentGapLabels.established
+                ? "是"
                 : "否"}
           </strong>
         </li>

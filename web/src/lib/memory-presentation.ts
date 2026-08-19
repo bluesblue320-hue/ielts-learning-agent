@@ -27,7 +27,6 @@ export const trendExplanations: Record<TrendStatus, string> = {
 };
 
 export const persistentGapLabels = {
-  established: "低于目标分数",
   insufficient_history: "证据不足",
 } as const;
 
