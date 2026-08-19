@@ -8,7 +8,7 @@ provenance behavior. They exercise no ORM, database, service, or LLM behavior.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
@@ -21,6 +21,7 @@ from app.memory.pattern_engine import (
     recent_observation_count,
     recent_practice_count_for_skill,
     recent_practice_source_episode_ids,
+    trend_source_episode_ids,
     trend_source_observation_ids,
 )
 from app.memory.progress_policy import (
@@ -37,6 +38,7 @@ def _points(*bands: str) -> list[SkillObservationPoint]:
     return [
         SkillObservationPoint(
             learning_evidence_id=i + 1,
+            learning_update_id=i + 1,
             observed_band=Decimal(band),
             source_created_at=DT,
         )
@@ -44,7 +46,13 @@ def _points(*bands: str) -> list[SkillObservationPoint]:
     ]
 
 
-def _episode(episode_id: int, *, etype: str, skill: str | None = "task_response") -> LearningEpisodeSummary:
+def _episode(
+    episode_id: int,
+    *,
+    etype: str,
+    practice_skill: str | None = "task_response",
+    recommendation_skill: str | None = "task_response",
+) -> LearningEpisodeSummary:
     return LearningEpisodeSummary(
         episode_id=episode_id,
         episode_type=etype,  # type: ignore[arg-type]
@@ -52,9 +60,10 @@ def _episode(episode_id: int, *, etype: str, skill: str | None = "task_response"
         writing_evaluation_id=200 + episode_id,
         attempt_id=100 + episode_id,
         writing_practice_id=episode_id if etype == "targeted_practice" else None,
+        practice_target_skill=practice_skill if etype == "targeted_practice" else None,
         recommendation_id=10 + episode_id,
         recommendation_decision_type="practice" if etype == "targeted_practice" else "no_practice",
-        recommendation_target_skill=skill,
+        recommendation_target_skill=recommendation_skill,
         recommendation_reason_codes=["largest_target_gap"] if etype == "targeted_practice" else ["cold_start"],
         planner_version="writing-practice-gap-v1",
         skill_observations={
@@ -191,10 +200,10 @@ class TestCountsAndProvenance:
 
     def test_recent_practice_count_window(self) -> None:
         episodes = [
-            _episode(7, etype="targeted_practice", skill="task_response"),
-            _episode(6, etype="targeted_practice", skill="lexical_resource"),
-            _episode(5, etype="initial_writing", skill=None),
-            _episode(4, etype="targeted_practice", skill="task_response"),  # outside window
+            _episode(7, etype="targeted_practice", practice_skill="task_response"),
+            _episode(6, etype="targeted_practice", practice_skill="lexical_resource"),
+            _episode(5, etype="initial_writing", practice_skill=None),
+            _episode(4, etype="targeted_practice", practice_skill="task_response"),  # outside window
         ]
         # Only the latest 3 episodes count.
         assert recent_practice_count_for_skill(episodes, skill="task_response") == 1
@@ -205,10 +214,56 @@ class TestCountsAndProvenance:
     def test_recent_practice_window_constant_is_separate(self) -> None:
         # 4 targeted practices: only the latest RECENT_PRACTICE_EPISODE_WINDOW count.
         episodes = [
-            _episode(9, etype="targeted_practice", skill="task_response"),
-            _episode(8, etype="targeted_practice", skill="task_response"),
-            _episode(7, etype="targeted_practice", skill="task_response"),
-            _episode(6, etype="targeted_practice", skill="task_response"),
+            _episode(9, etype="targeted_practice", practice_skill="task_response"),
+            _episode(8, etype="targeted_practice", practice_skill="task_response"),
+            _episode(7, etype="targeted_practice", practice_skill="task_response"),
+            _episode(6, etype="targeted_practice", practice_skill="task_response"),
         ]
         assert RECENT_PRACTICE_EPISODE_WINDOW == 3
         assert recent_practice_count_for_skill(episodes, skill="task_response") == 3
+
+    def test_review_regression_practice_target_differs_from_next_recommendation(self) -> None:
+        # The completed practice targeted task_response, but the NEXT planner
+        # recommendation targeted coherence_and_cohesion. The practice must be
+        # counted only for its actual WritingPractice target.
+        episodes = [
+            _episode(
+                7,
+                etype="targeted_practice",
+                practice_skill="task_response",
+                recommendation_skill="coherence_and_cohesion",
+            ),
+            _episode(6, etype="initial_writing", practice_skill=None, recommendation_skill="task_response"),
+            _episode(5, etype="initial_writing", practice_skill=None, recommendation_skill="task_response"),
+        ]
+        assert recent_practice_count_for_skill(episodes, skill="task_response") == 1
+        assert recent_practice_count_for_skill(episodes, skill="coherence_and_cohesion") == 0
+        assert recent_practice_count_for_skill(episodes, skill="lexical_resource") == 0
+
+    def test_trend_source_episode_ids_follow_observation_window(self) -> None:
+        # learning_update_id of each point is the episode OWNING the evidence.
+        points = [
+            SkillObservationPoint(learning_evidence_id=101, learning_update_id=201, observed_band=Decimal("6.0"), source_created_at=DT),
+            SkillObservationPoint(learning_evidence_id=102, learning_update_id=202, observed_band=Decimal("6.5"), source_created_at=DT),
+            SkillObservationPoint(learning_evidence_id=103, learning_update_id=203, observed_band=Decimal("7.0"), source_created_at=DT),
+        ]
+        assert trend_source_observation_ids(points) == [101, 102, 103]
+        assert trend_source_episode_ids(points) == [201, 202, 203]
+
+    def test_review_regression_late_arrival_provenance_matches_canonical_window(self) -> None:
+        # Canonical observation order differs from apply/LearningUpdate order.
+        # Points arrive (apply chronology): update 2 (older attempt), update 1,
+        # update 3; canonical order is by source_created_at (older first).
+        points = [
+            # apply order: update 2 first (attempt DT+1), then update 1 (attempt DT+2), then update 3 (attempt DT+3)
+            SkillObservationPoint(learning_evidence_id=5, learning_update_id=2, observed_band=Decimal("7.0"), source_created_at=DT + timedelta(minutes=1)),
+            SkillObservationPoint(learning_evidence_id=1, learning_update_id=1, observed_band=Decimal("6.0"), source_created_at=DT + timedelta(minutes=2)),
+            SkillObservationPoint(learning_evidence_id=9, learning_update_id=3, observed_band=Decimal("6.5"), source_created_at=DT + timedelta(minutes=3)),
+        ]
+        canonical = sorted(points, key=lambda p: p.source_created_at)
+        # Canonical bands 7.0, 6.0, 6.5 -> delta -0.5 -> declining.
+        assert compute_trend(canonical).trend == "declining"
+        # The trend window's evidence ids and owning episode ids are EXACTLY
+        # the canonical-window points, not the apply chronology.
+        assert trend_source_observation_ids(canonical) == [5, 1, 9]
+        assert trend_source_episode_ids(canonical) == [2, 1, 3]

@@ -133,10 +133,18 @@ def test_episode_summary_band_and_practice_id_validation() -> None:
     with pytest.raises(ValidationError):
         LearningEpisodeSummary.model_validate(bad_band)
     targeted = LearningEpisodeSummary.model_validate(
-        _summary_payload(episode_type="targeted_practice", writing_practice_id=55)
+        _summary_payload(
+            episode_type="targeted_practice",
+            writing_practice_id=55,
+            practice_target_skill="task_response",
+        )
     )
     assert targeted.episode_type == "targeted_practice"
     assert targeted.writing_practice_id == 55
+    assert targeted.practice_target_skill == "task_response"
+    # initial_writing keeps practice_target_skill null.
+    initial = LearningEpisodeSummary.model_validate(_summary_payload())
+    assert initial.practice_target_skill is None
 
 
 def test_history_response_boundary() -> None:
@@ -292,7 +300,8 @@ def _progress_payload(skill: str, *, band: str, trend: str, gap: bool = True) ->
         "latest_observation_time": DT.isoformat(),
         "last_episode_id": 7,
         "source_observation_ids": [1, 2, 3],
-        "source_episode_ids": [5, 6, 7],
+        "source_episode_ids": [11, 12, 13],
+        "recent_practice_source_episode_ids": [3, 2, 1],
     }
 
 

@@ -105,6 +105,12 @@ class LearningEpisodeSummary(MemorySchema):
 
     ``episode_id`` IS the persisted ``LearningUpdate.id`` (the L0 episode
     anchor). ``occurred_at`` is defined exactly as ``LearningUpdate.created_at``.
+
+    ``practice_target_skill`` is derived from the linked
+    ``WritingPractice.target_skill`` (the practice just completed); it is
+    ``None`` for ``initial_writing`` episodes. ``recommendation_target_skill``
+    remains the NEXT planner recommendation's target and may differ from the
+    completed practice's target; the two are never conflated.
     """
 
     episode_id: int = Field(gt=0)
@@ -113,6 +119,7 @@ class LearningEpisodeSummary(MemorySchema):
     writing_evaluation_id: int = Field(gt=0)
     attempt_id: int = Field(gt=0)
     writing_practice_id: int | None = Field(default=None, gt=0)
+    practice_target_skill: WritingSkillKey | None = None
     recommendation_id: int = Field(gt=0)
     recommendation_decision_type: Literal["practice", "no_practice"]
     recommendation_target_skill: WritingSkillKey | None = None
@@ -223,6 +230,18 @@ class SkillProgress(MemorySchema):
     Identified structurally by ``learner_id + skill + pattern kind +
     policy_version``; no synthetic ``pattern_id``. ``current_estimate`` is read
     from the authoritative ``LearnerSkillState`` (never recomputed here).
+
+    Provenance fields are exact and non-overlapping:
+
+    - ``source_observation_ids``: the ``LearningEvidence.id`` values of the
+      latest canonical trend window that produced ``trend``/``persistent_gap``;
+    - ``source_episode_ids``: the ``LearningUpdate.id`` values OWNING those
+      same trend-window evidence rows (exact L0 drill-down, independent of
+      apply chronology);
+    - ``recent_practice_source_episode_ids``: the latest
+      ``RECENT_PRACTICE_EPISODE_WINDOW`` episode ids used for
+      ``recent_practice_count`` — a separate provenance meaning, never merged
+      into ``source_episode_ids``.
     """
 
     learner_id: int = Field(gt=0)
@@ -239,6 +258,7 @@ class SkillProgress(MemorySchema):
     last_episode_id: int | None = Field(default=None, gt=0)
     source_observation_ids: list[int] = Field(default_factory=list)
     source_episode_ids: list[int] = Field(default_factory=list)
+    recent_practice_source_episode_ids: list[int] = Field(default_factory=list)
 
 
 class SkillProgressSet(MemorySchema):

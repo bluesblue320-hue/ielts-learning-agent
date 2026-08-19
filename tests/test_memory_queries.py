@@ -197,6 +197,7 @@ def test_episode_type_initial_writing(client: TestClient, engine) -> None:
     assert len(episodes) == 1
     assert episodes[0].episode_type == "initial_writing"
     assert episodes[0].writing_practice_id is None
+    assert episodes[0].practice_target_skill is None
     # occurred_at is the DB-assigned LearningUpdate.created_at (not the seed DT).
     assert episodes[0].occurred_at.tzinfo is not None
 
@@ -211,8 +212,11 @@ def test_episode_type_targeted_practice(client: TestClient, engine) -> None:
     latest = episodes[0]
     assert latest.episode_type == "targeted_practice"
     assert latest.writing_practice_id is not None
+    # The completed practice's ACTUAL target skill (from WritingPractice).
+    assert latest.practice_target_skill == "task_response"
     assert latest.episode_id == result["learning_update_id"]
     assert episodes[1].episode_type == "initial_writing"
+    assert episodes[1].practice_target_skill is None
 
 
 def test_episode_detail_full_provenance(client: TestClient, engine) -> None:

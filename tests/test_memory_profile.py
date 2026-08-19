@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from fastapi.testclient import TestClient
@@ -25,11 +25,13 @@ def _apply_with_bands(
     evaluation_id: int,
     attempt_id: int,
     task_response: str,
+    created_at: datetime = DT,
 ) -> int:
     _seed_full_evaluation(
         engine,
         evaluation_id=evaluation_id,
         attempt_id=attempt_id,
+        created_at=created_at,
         bands={
             "task_response": task_response,
             "coherence_and_cohesion": "6.5",
@@ -135,10 +137,38 @@ def test_traceability_and_determinism(client: TestClient, engine) -> None:
     with create_session_factory(engine)() as session:
         second = build_learner_progress(session, learner_id=1)
     assert first.model_dump(mode="json") == second.model_dump(mode="json")
-    # Drill-down source ids are real persisted evidence ids (task_response
-    # evidence is inserted first per apply: ids 1, 5, 9).
+    # Drill-down source ids are real persisted ids: task_response evidence is
+    # inserted first per apply (ids 1, 5, 9), owned by updates 1, 2, 3.
     assert first.skills.task_response.source_observation_ids == [1, 5, 9]
+    assert first.skills.task_response.source_episode_ids == [1, 2, 3]
+    assert first.skills.task_response.recent_practice_source_episode_ids == [3, 2, 1]
     assert first.skills.task_response.last_episode_id == 3
+
+
+def test_review_regression_late_arrival_provenance(client: TestClient, engine) -> None:
+    """Canonical observation order differs from LearningUpdate apply order.
+
+    Apply chronology: E200 (attempt DT+2) -> update 1; E201 (attempt DT+1)
+    -> update 2 (late arrival); E202 (attempt DT+3) -> update 3. Canonical
+    per-skill order is by attempt time: E201 (7.0), E200 (6.0), E202 (6.5)
+    -> delta -0.5 -> declining. Provenance ids must point to the episodes that
+    actually produced the trend (updates 2, 1, 3), not the apply order.
+    """
+    _seed_learner(engine, learner_id=1)
+    _apply_with_bands(client, engine, evaluation_id=200, attempt_id=100, task_response="6.0", created_at=DT + timedelta(minutes=2))
+    _apply_with_bands(client, engine, evaluation_id=201, attempt_id=101, task_response="7.0", created_at=DT + timedelta(minutes=1))
+    _apply_with_bands(client, engine, evaluation_id=202, attempt_id=102, task_response="6.5", created_at=DT + timedelta(minutes=3))
+    with create_session_factory(engine)() as session:
+        progress = build_learner_progress(session, learner_id=1)
+    tr = progress.skills.task_response
+    # Canonical bands 7.0, 6.0, 6.5 -> declining (proves canonical ordering).
+    assert tr.trend == "declining"
+    # Evidence ids inserted in apply order: TR evidence ids are 1 (E200), 5 (E201), 9 (E202).
+    assert tr.source_observation_ids == [5, 1, 9]
+    # Owning episodes: E201 -> update 2, E200 -> update 1, E202 -> update 3.
+    assert tr.source_episode_ids == [2, 1, 3]
+    # The recent-practice window is apply/latest-episode based (separate field).
+    assert tr.recent_practice_source_episode_ids == [3, 2, 1]
 
 
 def test_learner_not_found(client: TestClient, engine) -> None:

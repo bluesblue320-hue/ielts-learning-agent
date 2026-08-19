@@ -30,6 +30,7 @@ from app.memory.pattern_engine import (
     recent_observation_count,
     recent_practice_count_for_skill,
     recent_practice_source_episode_ids,
+    trend_source_episode_ids,
     trend_source_observation_ids,
 )
 from app.memory.progress_policy import PROGRESS_POLICY_VERSION
@@ -65,6 +66,7 @@ def _evidence_points(
     return [
         SkillObservationPoint(
             learning_evidence_id=row.id,
+            learning_update_id=row.learning_update_id,
             observed_band=Decimal(row.observed_band),
             source_created_at=row.source_created_at,
         )
@@ -167,7 +169,10 @@ def build_learner_progress(
                 latest_observation_time=latest_observation_time(points),
                 last_episode_id=episodes[0].episode_id if episodes else None,
                 source_observation_ids=trend_source_observation_ids(points),
-                source_episode_ids=recent_practice_source_episode_ids(episodes),
+                source_episode_ids=trend_source_episode_ids(points),
+                recent_practice_source_episode_ids=recent_practice_source_episode_ids(
+                    episodes
+                ),
             )
         return WritingProgressResponse(
             learner_id=learner_id,

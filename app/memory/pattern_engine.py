@@ -30,9 +30,15 @@ from app.schemas.memory import (
 
 @dataclass(frozen=True)
 class SkillObservationPoint:
-    """One canonical per-skill observation (evidence id + band + source time)."""
+    """One canonical per-skill observation.
+
+    ``learning_update_id`` is the persisted ``LearningUpdate.id`` that OWNS
+    this evidence row; it is the exact L0 episode for this observation,
+    independent of apply chronology.
+    """
 
     learning_evidence_id: int
+    learning_update_id: int
     observed_band: Decimal
     source_created_at: datetime
 
@@ -107,6 +113,18 @@ def trend_source_observation_ids(
     return [point.learning_evidence_id for point in points[-TREND_WINDOW:]]
 
 
+def trend_source_episode_ids(
+    points: Sequence[SkillObservationPoint],
+) -> list[int]:
+    """The LearningUpdate ids OWNING the latest trend-window observations.
+
+    These are the exact L0 episodes that produced the trend / persistent-gap
+    result. They are derived from the SAME canonical window as
+    ``trend_source_observation_ids`` and never from generic latest history.
+    """
+    return [point.learning_update_id for point in points[-TREND_WINDOW:]]
+
+
 def recent_practice_count_for_skill(
     episodes: Sequence[LearningEpisodeSummary],
     *,
@@ -117,15 +135,18 @@ def recent_practice_count_for_skill(
 
     A targeted-practice episode implies its linked practice is submitted and
     its evaluation applied (a ``LearningUpdate`` exists), so it counts as
-    completed. Episode ordering is the frozen ``LearningUpdate.created_at
-    DESC, id DESC`` order (the caller supplies it).
+    completed. Attribution uses the completed practice's actual
+    ``practice_target_skill`` (the linked ``WritingPractice.target_skill``),
+    NOT the episode's next-recommendation target, which may differ. Episode
+    ordering is the frozen ``LearningUpdate.created_at DESC, id DESC`` order
+    (the caller supplies it).
     """
     window = episodes[:RECENT_PRACTICE_EPISODE_WINDOW]
     return sum(
         1
         for episode in window
         if episode.episode_type == "targeted_practice"
-        and episode.recommendation_target_skill == skill
+        and episode.practice_target_skill == skill
     )
 
 

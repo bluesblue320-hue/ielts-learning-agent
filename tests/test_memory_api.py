@@ -264,6 +264,96 @@ def test_older_unfinished_practice_does_not_override(client: TestClient, engine)
     assert len(history) == 2
 
 
+def _practice_payload(task_response: str) -> dict[str, object]:
+    """Submission payload with a custom task_response band."""
+    base = {"band": {"value": "6.0"}, "evidence": ["Evidence."], "feedback": "Feedback."}
+    tr = {"band": {"value": task_response}, "evidence": ["Evidence."], "feedback": "Feedback."}
+    return {
+        "criteria": {
+            "task_response": tr,
+            "coherence_and_cohesion": base,
+            "lexical_resource": base,
+            "grammatical_range_and_accuracy": base,
+        },
+        "strengths": ["S."],
+        "weaknesses": ["W."],
+        "error_tags": [],
+        "recommended_skills": [],
+        "feedback": "F.",
+    }
+
+
+def test_review_regression_practice_attribution_at_api(client: TestClient, engine) -> None:
+    """Completed practice target differs from the next recommendation target.
+
+    Initial apply: task_response 6.0, others 6.5 -> practice target
+    task_response. Practice submission: task_response 7.0, others 6.0 -> after
+    apply, EWMA gaps make coherence_and_cohesion the next recommendation. The
+    completed practice must be counted only for task_response.
+    """
+    _seed_learner(engine, learner_id=1)
+    _apply_initial(client, engine)
+    with create_session_factory(engine)() as session:
+        recommendation = session.scalar(select(PracticeRecommendation))
+        assert recommendation is not None
+        assert recommendation.target_skill == "task_response"
+        recommendation_id = recommendation.id
+    generator = FakePracticeGenerator()
+    provider = FakeProvider([_practice_payload("7.0")])
+    client.app.dependency_overrides[get_practice_generator] = lambda: generator
+    client.app.dependency_overrides[get_writing_provider] = lambda: provider
+    try:
+        generated = client.post(
+            f"/learners/1/writing/recommendations/{recommendation_id}/practice"
+        )
+        assert generated.status_code == 200
+        practice_id = generated.json()["practice"]["id"]
+        submitted = client.post(
+            f"/learners/1/writing/practices/{practice_id}/submit",
+            json={"essay": "A practice essay that shifts the next recommendation."},
+        )
+        assert submitted.json()["status"] == "submitted"
+        completed = client.post(f"/learners/1/writing/practices/{practice_id}/complete")
+        assert completed.status_code == 200
+    finally:
+        client.app.dependency_overrides.pop(get_practice_generator, None)
+        client.app.dependency_overrides.pop(get_writing_provider, None)
+
+    history = client.get("/learners/1/writing/history").json()["episodes"]
+    latest = history[0]
+    assert latest["episode_type"] == "targeted_practice"
+    assert latest["practice_target_skill"] == "task_response"
+    assert latest["recommendation_target_skill"] == "coherence_and_cohesion"
+
+    progress = client.get("/learners/1/writing/progress").json()
+    assert progress["skills"]["task_response"]["recent_practice_count"] == 1
+    assert progress["skills"]["coherence_and_cohesion"]["recent_practice_count"] == 0
+    assert progress["skills"]["lexical_resource"]["recent_practice_count"] == 0
+    assert progress["skills"]["grammatical_range_and_accuracy"]["recent_practice_count"] == 0
+
+
+def test_review_unfinished_practice_history_v1_limitation(client: TestClient, engine) -> None:
+    """/writing/history returns applied L0 episodes only (frozen v1 limitation).
+
+    A durable but unfinished practice (generated, never submitted) is NOT
+    surfaced in history once it is not the relevant current practice; no
+    pending collection is exposed in v1.
+    """
+    _seed_learner(engine, learner_id=1)
+    _apply_initial(client, engine)
+    _generate_practice(client, engine)  # practice remains generated
+    history_response = client.get("/learners/1/writing/history")
+    assert history_response.status_code == 200
+    body = history_response.json()
+    assert set(body) == {"learner_id", "episodes"}
+    assert len(body["episodes"]) == 1
+    assert body["episodes"][0]["episode_type"] == "initial_writing"
+    with create_session_factory(engine)() as session:
+        practice = session.scalar(select(WritingPractice))
+        assert practice is not None
+        assert practice.lifecycle_state == "generated"
+
+
 def test_unapplied_initial_evaluation_is_not_server_recoverable(client: TestClient, engine) -> None:
     _seed_learner(engine, learner_id=1)
     provider = FakeProvider([_payload()])

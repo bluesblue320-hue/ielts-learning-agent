@@ -166,6 +166,7 @@ def _episode_join_stmt(*, learner_id: int, episode_id: int | None = None):
             PracticeRecommendation.reason_codes.label("recommendation_reason_codes"),
             PracticeRecommendation.planner_version.label("recommendation_planner_version"),
             WritingPractice.id.label("writing_practice_id"),
+            WritingPractice.target_skill.label("practice_target_skill"),
         )
         .join(
             WritingEvaluation,
@@ -204,6 +205,7 @@ def _summary_from_row(row, evidence_by_episode: dict[int, dict[str, LearningEvid
         writing_evaluation_id=row.writing_evaluation_id,
         attempt_id=row.attempt_id,
         writing_practice_id=row.writing_practice_id,
+        practice_target_skill=row.practice_target_skill,
         recommendation_id=row.recommendation_id,
         recommendation_decision_type=row.recommendation_decision_type,
         recommendation_target_skill=row.recommendation_target_skill,
