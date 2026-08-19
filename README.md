@@ -7,7 +7,7 @@ it is not intended to be only a chatbot or a thin LLM wrapper.
 
 ## Current status
 
-**Phase 1 = COMPLETE. Phase 2 = COMPLETE. Phase 3 = COMPLETE. Phase 4 = COMPLETE and merged baseline. Phase 5 is implemented on `phase/5-web-product-mvp` and FINAL_REVIEW_PENDING. Phase 6 is NOT_STARTED.**
+**Phase 1 = COMPLETE. Phase 2 = COMPLETE. Phase 3 = COMPLETE. Phase 4 = COMPLETE. Phase 5 = COMPLETE and MERGED through PR #9 (`feat: deliver Phase 5 Chinese-first web MVP`), merge commit `56498c3d59aad4ae645c5b78c6b6dc41bec62bcf`. Phase 6 = NOT_STARTED.**
 
 Phase 3 adds a
 complete deterministic learner-state path on top of the Phase 2 Writing
@@ -154,4 +154,4 @@ The completed validation evidence is recorded in the
 
 ## Phase 5 Web MVP
 
-Phase 5 is implemented and awaits final external review. The Chinese-first Next.js, TypeScript, and Tailwind frontend is a presentation client for FastAPI and PostgreSQL; it does not own scoring, learner state, planning, or practice policy.
+Phase 5 is complete and merged through PR #9. The Chinese-first Next.js, TypeScript, and Tailwind frontend is a presentation client for FastAPI and PostgreSQL; it does not own scoring, learner state, planning, or practice policy.

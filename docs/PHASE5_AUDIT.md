@@ -1,8 +1,8 @@
 # Phase 5 Internal Final Audit
 
-**Status:** INTERNAL_AUDIT_COMPLETE — external review pending.
+**Status:** P5-16 = INTERNAL_AUDIT_COMPLETE; External Review = APPROVED; PR #9 = MERGED; Phase 5 = COMPLETE.
 
-P5-01 through P5-15 are complete on `phase/5-web-product-mvp`. The Chinese-first Next.js client remains presentation-only; FastAPI owns all evaluation, state, planning, practice lifecycle, and persistence, and PostgreSQL remains authoritative.
+P5-01 through P5-15 are complete. External Review approved the completed Phase 5 graph, and PR #9 (`feat: deliver Phase 5 Chinese-first web MVP`) merged it to `master` at `56498c3d59aad4ae645c5b78c6b6dc41bec62bcf`. The Chinese-first Next.js client remains presentation-only; FastAPI owns all evaluation, state, planning, practice lifecycle, and persistence, and PostgreSQL remains authoritative.
 
 ## P5-15 evidence
 
@@ -48,3 +48,7 @@ Final isolated PostgreSQL backend validation: `python -m pytest -q --strict-mark
 - `npm --prefix web test`: **8 passed**
 - `npm --prefix web run build`: passed
 - `npm --prefix web run test:e2e`: **1 passed (9.3s)** using Chromium, FastAPI, deterministic providers, and isolated PostgreSQL
+
+## Merge finalization
+
+The CI run triggered by merge commit `56498c3d59aad4ae645c5b78c6b6dc41bec62bcf` completed successfully: [GitHub Actions run 32115061678](https://github.com/bluesblue320-hue/ielts-learning-agent/actions/runs/32115061678). Its backend tests, frontend quality gates (lint, typecheck, unit tests, and production build), and Chromium Playwright browser E2E all succeeded. Phase 6 remains NOT_STARTED.

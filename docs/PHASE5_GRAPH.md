@@ -2,11 +2,11 @@
 
 ## Document status
 
-**FINAL REVIEW PENDING — P5-01 through P5-15 complete; P5-16 internal audit complete.**
+**COMPLETE AND MERGED — P5-01 through P5-15 complete; P5-16 internal audit complete; External Review approved; PR #9 merged.**
 
 This graph is frozen on `phase/5-web-product-mvp`, created from `master` at
 `6aef28490d918905553c8c2335fd1d3c406bd7b9` (`Merge pull request #8 from
-bluesblue320-hue/phase/4-adaptive-writing-practice`). The working tree was clean before the branch was created. P5-01 and P5-02 were completed as the design baseline; P5-03 through P5-15 were subsequently executed on this frozen graph, followed by the P5-16 internal audit.
+bluesblue320-hue/phase/4-adaptive-writing-practice`). The working tree was clean before the branch was created. P5-01 and P5-02 were completed as the design baseline; P5-03 through P5-15 were subsequently executed on this frozen graph, followed by the P5-16 internal audit. External Review approved the completed graph, and PR #9 (`feat: deliver Phase 5 Chinese-first web MVP`) merged it to `master` at `56498c3d59aad4ae645c5b78c6b6dc41bec62bcf`.
 
 Phase 4 is the accepted implementation baseline. Its Phase 2 evaluation,
 Phase 3 learner-state/planning, and Phase 4 practice lifecycle policies remain
@@ -68,10 +68,10 @@ P5-07 + P5-08 -> P5-09 Evaluation + Apply UX [COMPLETE] -> P5-10 Recommendation 
   -> P5-11 Practice Workspace [COMPLETE] -> P5-12 Submission Feedback [COMPLETE] -> P5-13 Complete + Replan UX [COMPLETE]
   -> P5-14 UX Resilience / Responsive / Accessibility [COMPLETE]
   -> P5-15 Browser E2E + CI + Production Build [COMPLETE]
-  -> P5-16 Internal Final Audit [INTERNAL_AUDIT_COMPLETE] -> STOP -> External Review
+  -> P5-16 Internal Final Audit [INTERNAL_AUDIT_COMPLETE] -> External Review [APPROVED] -> PR #9 [MERGED] -> STOP
 ```
 
-All declared dependencies were satisfied in order. P5-01 through P5-15 are COMPLETE; P5-16 is INTERNAL_AUDIT_COMPLETE; Phase 5 is FINAL_REVIEW_PENDING.
+All declared dependencies were satisfied in order. P5-01 through P5-15 are COMPLETE; P5-16 is INTERNAL_AUDIT_COMPLETE; External Review is APPROVED; PR #9 is MERGED; Phase 5 is COMPLETE.
 
 ---
 
@@ -189,8 +189,11 @@ Executed final state:
 ```text
 P5-01..P5-15 = COMPLETE
 P5-16 = INTERNAL_AUDIT_COMPLETE
-Phase 5 = FINAL_REVIEW_PENDING
-STOP -> External Review
+External Review = APPROVED
+PR #9 = MERGED
+Phase 5 = COMPLETE
+STOP
+Phase 6 = NOT_STARTED
 ```
 
 ---
@@ -202,6 +205,6 @@ RAG/vector storage/semantic memory; LangGraph or multi-agent runtime; Redis,
 Celery, Kafka; admin/social/leaderboard features; full i18n or English UI
 mode; and production cloud deployment, Kubernetes, or microservices.
 
-Final stop condition: `P5-01..P5-15 = COMPLETE`; `P5-16 = INTERNAL_AUDIT_COMPLETE`; `Phase 5 = FINAL_REVIEW_PENDING`; `STOP -> External Review`. Phase 6 remains NOT_STARTED.
+Final stop condition: `P5-01..P5-15 = COMPLETE`; `P5-16 = INTERNAL_AUDIT_COMPLETE`; `External Review = APPROVED`; `PR #9 = MERGED`; `Phase 5 = COMPLETE`; `STOP`. Phase 6 remains NOT_STARTED.
 
-External-review findings are routed back to their owning completed nodes for targeted repair and revalidation, then return to external review. The dependency graph and node set remain unchanged.
+External-review findings were routed back to their owning completed nodes for targeted repair and revalidation, then returned to external review for approval. The dependency graph and node set remain unchanged.
