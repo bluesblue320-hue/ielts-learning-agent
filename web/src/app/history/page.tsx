@@ -46,13 +46,32 @@ export default function HistoryPage() {
     );
   }
 
+  async function retry() {
+    if (learnerId === null) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await apiClient.getWritingHistory(learnerId);
+      setEpisodes(result.episodes);
+    } catch (reason) {
+      setError(presentApiError(reason));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   return (
     <section>
       <p className="eyebrow">学习记忆</p>
       <h1>写作历史</h1>
       <p className="supporting-copy">这里按时间倒序记录你每次完成的写作评估与针对性练习。</p>
       {isLoading && <p className="status-copy" aria-live="polite">正在读取学习历史…</p>}
-      {error !== null && <p className="error-message" role="alert">{error}</p>}
+      {error !== null && (
+        <p className="error-message" role="alert">{error}</p>
+      )}
+      {error !== null && (
+        <button className="retry-action" onClick={retry} type="button">重试</button>
+      )}
       {episodes !== null && episodes.length === 0 && !isLoading && (
         <p className="supporting-copy">还没有学习记录。完成首次写作评估并应用学习更新后，记录会出现在这里。</p>
       )}

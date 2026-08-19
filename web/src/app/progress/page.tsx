@@ -88,12 +88,31 @@ export default function ProgressPage() {
     );
   }
 
+  async function retry() {
+    if (learnerId === null) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await apiClient.getWritingProgress(learnerId);
+      setProgress(result);
+    } catch (reason) {
+      setError(presentApiError(reason));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   return (
     <section>
       <p className="eyebrow">纵向进步</p>
       <h1>学习进度</h1>
       {isLoading && <p className="status-copy" aria-live="polite">正在读取学习进度…</p>}
-      {error !== null && <p className="error-message" role="alert">{error}</p>}
+      {error !== null && (
+        <p className="error-message" role="alert">{error}</p>
+      )}
+      {error !== null && (
+        <button className="retry-action" onClick={retry} type="button">重试</button>
+      )}
       {progress !== null && (
         <>
           <p className="supporting-copy">
