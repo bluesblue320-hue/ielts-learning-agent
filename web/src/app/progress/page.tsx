@@ -39,7 +39,11 @@ function ProgressCard({ skill, target }: { skill: SkillProgress; target: string 
       </ul>
       {skill.source_episode_ids.length > 0 && (
         <p className="drill-down">
-          <Link href={`/history/${skill.source_episode_ids[0]}`}>查看最近学习记录 →</Link>
+          {[...new Set(skill.source_episode_ids)].map((episodeId) => (
+            <Link className="drill-down-link" href={`/history/${episodeId}`} key={episodeId}>
+              查看学习记录 #{episodeId}
+            </Link>
+          ))}
         </p>
       )}
     </article>

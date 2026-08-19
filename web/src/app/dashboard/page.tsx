@@ -23,23 +23,30 @@ export default function DashboardPage() {
     if (!isReady || learnerId === null) return;
     const activeLearnerId: number = learnerId;
     let active = true;
-    async function load() {
-      setIsLoading(true);
-      setError(null);
+    async function loadState() {
       try {
-        const [stateResult, contextResult] = await Promise.all([
-          apiClient.getLearnerState(activeLearnerId),
-          apiClient.getWritingContext(activeLearnerId),
-        ]);
-        if (active) {
-          setState(stateResult);
-          setContext(contextResult);
-        }
+        const result = await apiClient.getLearnerState(activeLearnerId);
+        if (active) setState(result);
+      } catch (reason) {
+        if (active) setError(presentApiError(reason));
+      }
+    }
+    async function loadContext() {
+      try {
+        const result = await apiClient.getWritingContext(activeLearnerId);
+        if (active) setContext(result);
       } catch (reason) {
         if (active) setError(presentApiError(reason));
       } finally {
         if (active) setIsLoading(false);
       }
+    }
+    async function load() {
+      setIsLoading(true);
+      setError(null);
+      // Load state and context independently so a resume-context failure does
+      // not blank the authoritative state grid.
+      await Promise.all([loadState(), loadContext()]);
     }
     void load();
     return () => { active = false; };
