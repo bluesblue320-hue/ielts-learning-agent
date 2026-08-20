@@ -9,6 +9,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.llm.provider import ProviderError, ProviderErrorCategory
+from app.agent.observation import AgentObservationPersistenceError
+from app.agent.selector import AgentStalePracticeError, AgentSelectionError
 from app.memory.errors import (
     EpisodeNotFoundError,
     MemoryInvariantError,
@@ -323,12 +325,15 @@ def register_learning_error_handlers(application: FastAPI) -> None:
         PracticeOwnershipError,
         RecommendationOwnershipError,
         PracticeNotSubmittedError,
+        AgentStalePracticeError,
+        AgentSelectionError,
     ):
         application.add_exception_handler(error_type, practice_conflict_handler)
     application.add_exception_handler(EpisodeNotFoundError, episode_not_found_handler)
     for error_type in (
         MemoryPersistenceError,
         MemoryInvariantError,
+        AgentObservationPersistenceError,
     ):
         application.add_exception_handler(error_type, memory_persistence_error_handler)
 
