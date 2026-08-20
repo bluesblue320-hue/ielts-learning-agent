@@ -104,7 +104,7 @@ The core agent coordinates the learning loop. Planner, Memory, Evaluator, and IE
 | --- | --- | --- |
 | Core Learning Agent | Coordinate state, planning, tools, evaluation, and replanning | Deferred |
 | Learner Model | Represent goals, current level, skill mastery, weaknesses, and history as structured persistent data | Implemented Phase 3 learner state and persistence |
-| Planner | Select the next learning objective using deterministic priorities, with constrained generation where useful | Implemented deterministic Phase 3 planner |
+| Planner | Select the next learning objective using deterministic priorities, with constrained generation where useful | Phase 3 deterministic planner v1 is historically supported; Phase 7 deterministic memory-aware planner v2 is implemented |
 | Memory | Separate stable profile data, learning events, and derived patterns | Implemented Phase 6 read models (`writing-memory-v1` / `writing-progress-v1`); no new tables |
 | Writing Evaluator | Convert a Task 2 submission into validated structured evidence through the provider protocol | Implemented for Writing Task 2 only |
 | LLM Provider | Isolate vendor HTTP behavior behind a typed contract | Protocol, test fake, and DeepSeek adapter implemented; no runtime fake selection |

@@ -149,7 +149,7 @@ Before changing the project, read these documents in order:
 1. [AGENTS.md](AGENTS.md)
 2. [Phase 7 graph](docs/PHASE7_GRAPH.md), the Phase 6
    [Writing memory policy](docs/WRITING_MEMORY_POLICY.md), and the frozen
-   Phase 7 planner policy when available
+   [Phase 7 memory-aware planner policy](docs/MEMORY_AWARE_PLANNING_POLICY.md)
 3. [Development loop](docs/DEVELOPMENT_LOOP.md)
 4. [Target architecture](docs/ARCHITECTURE.md)
 
@@ -169,9 +169,11 @@ Its frozen contract is [docs/WRITING_MEMORY_POLICY.md](docs/WRITING_MEMORY_POLIC
 [docs/PHASE6_GRAPH.md](docs/PHASE6_GRAPH.md) and the internal audit is
 [docs/PHASE6_AUDIT.md](docs/PHASE6_AUDIT.md).
 
-Phase 7 is design-active only. Its baseline audit is recorded in
-[docs/PHASE7_GRAPH.md](docs/PHASE7_GRAPH.md); no Phase 7 application,
-frontend, migration, or test implementation has been started.
+Phase 7 is COMPLETE and merged through PR #11. `writing-practice-gap-memory-v2`
+is active for new Writing applies, while historical
+`writing-practice-gap-v1` remains supported. Memory is consulted only for exact
+maximum-gap ties. The frozen execution record is
+[docs/PHASE7_GRAPH.md](docs/PHASE7_GRAPH.md); Phase 8 = NOT_STARTED.
 
 ## Phase 5 Web MVP
 

@@ -50,9 +50,9 @@ START
   -> STOP
 ```
 
-Nodes activate only after every dependency is complete. External Design Review has authorized continuous implementation through P7-14; each node is still a mandatory commit, test, and push checkpoint.
+Nodes activated only after every dependency was complete. External Design Review authorized continuous implementation through P7-14; each node retained its mandatory commit, test, and push checkpoint.
 
-## P7-01 — Baseline & Memory-Aware Planning Capability Audit — COMPLETE
+## Historical P7-01 — Baseline & Memory-Aware Planning Capability Audit — COMPLETE
 
 ### Evidence inspected
 
@@ -99,24 +99,25 @@ progress, planner, API, concurrency, memory, practice, and E2E tests.
     needed. Practice generation already accepts a persisted recommendation and
     consumes target skill, target band, reasons, and planner version. It must
     remain agnostic to Memory and never receive the context snapshot.
-15. **Tests required later.** Preserve every v1 planner/schema/API/history/
+15. **Tests subsequently required (historical design-run constraint).** Preserve every v1 planner/schema/API/history/
     practice test. Add v2 pure-engine matrices, strict schema and migration
     tests, context provenance/reconstruction tests, canonical-order late-arrival
     tests, atomic apply/idempotency/concurrency tests, mixed-history API tests,
     typed-client tests, dashboard explanation tests, and Chromium E2E for a
-    persisted v2 explanation. Tests are forbidden in this design run.
+    persisted v2 explanation. Tests were forbidden in that design run.
 
-### P7-01 conclusion
+### Historical P7-01 conclusion
 
 `writing-practice-gap-memory-v2` is feasible as a deterministic, conservative
 planner. It requires one narrow additive migration, a planner-owned context builder with a pre-recommendation recency query, strict versioned decision schemas, and a conditional immutable audit snapshot for exact ties. It does not require a new table, provider call, generator change,
 or frontend change until later authorized nodes.
 
-## Implementation node definitions — NOT AUTHORIZED
+## Historical implementation node definitions
 
-Each node below specifies future scope only. `allowed files` are inclusive;
-the Phase 7 global exclusions (LLM planner, agent runtime, vectors/RAG,
-TencentDB, and non-Writing skills) apply to every node.
+The definitions below are preserved as the pre-implementation execution
+contract; P7-03 through P7-14 have since been completed. `allowed files` are
+inclusive, and the Phase 7 global exclusions (LLM planner, agent runtime,
+vectors/RAG, TencentDB, and non-Writing skills) applied to every node.
 
 ### P7-02 — Memory-Aware Planner v2 Contract Freeze — COMPLETE
 
