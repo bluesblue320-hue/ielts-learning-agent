@@ -92,10 +92,12 @@ def _context() -> MemoryAwarePlanningContext:
 
 
 def _snapshot() -> PersistedPlannerContextSnapshot:
+    context = _context().model_dump()
+    context["skills"]["task_response"]["trend"] = "declining"
     return PersistedPlannerContextSnapshot.model_validate(
         {
             "snapshot_version": "writing-practice-gap-memory-v2-audit-v1",
-            "memory_context": _context().model_dump(),
+            "memory_context": context,
             "selection_trace": {
                 "trace_version": "writing-planner-selection-trace-v1",
                 "initial_max_gap_candidates": [

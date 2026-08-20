@@ -1,6 +1,6 @@
 # Phase 7 Internal Final Audit
 
-**Status:** P7-14 = INTERNAL_AUDIT_COMPLETE. External implementation review is pending. Phase 7 remains `IMPLEMENTATION_ACTIVE`; no pull request, merge to `master`, or Phase 8 work is authorized.
+**Status:** P7-14 = INTERNAL_AUDIT_COMPLETE. The external-review repair is complete locally; external implementation review remains pending. Phase 7 is `INTERNAL_AUDIT_COMPLETE`; no pull request, merge to `master`, or Phase 8 work is authorized.
 
 ## Baseline and scope
 
@@ -8,7 +8,8 @@
 - **Branch:** `phase/7-memory-aware-planning-v2`
 - **Base `master`:** `fa34dc3499ab85e286340582353482c4b7388198`
 - **Implementation start:** `2c78211e` (`docs: finalize Phase 7 planner v2 contract`)
-- **Audited implementation HEAD:** `449c597c0f9bbf828a7d086a0eb08cb0a78892b6`
+- **Previously audited implementation HEAD:** `449c597c0f9bbf828a7d086a0eb08cb0a78892b6`
+- **External-review repair scope:** deterministic snapshot semantic replay, valid fixtures and regressions, neutral trend explanation copy, and status synchronization only.
 
 Phase 7 adds a deterministic, memory-aware v2 Writing planner. It does not
 alter the frozen v1 planner, Phase 6 progress policy, practice lifecycle, or
@@ -59,20 +60,37 @@ provider contract.
 - No Phase 8 code, production credentials, Docker/configuration change,
   pull request, or `master` merge was made.
 
+## External implementation-review repair
+
+- Persisted v2 exact-tie recommendations now replay their stored state snapshot
+  and immutable Memory context during reconstruction. The replay must reproduce
+  the exact maximum-gap candidates, complete selection trace, and persisted
+  decision; a mismatch is rejected rather than repaired or recomputed from
+  current Memory.
+- Schema and reconstruction fixtures now contain a planner-valid declining vs.
+  stable trend resolution. Focused regressions reject impossible trend,
+  recent-practice, persistent-gap, and canonical-priority/reason-code traces,
+  while a valid snapshot reconstructs successfully.
+- The product copy for `trend_tiebreak` is neutral: it says the system selected
+  by recent performance trend rather than incorrectly claiming a decline. The
+  pure planner also proves stable can correctly precede improving.
+- This repair changes no v1 planner code, v2 selection order, migration, table,
+  snapshot-presence matrix, context window, or practice-generation boundary.
+
 ## Fresh validation evidence
 
 | Gate | Result |
 | --- | --- |
-| Full isolated PostgreSQL backend suite | `911 passed, 1 warning` |
-| Focused P7-12 context suite | `8 passed, 1 warning` |
-| P7-12 hardening matrix | `20 passed, 1 warning` |
+| Targeted planner/schema/reconstruction backend tests | `19 passed, 1 skipped, 1 warning` (the skipped case requires isolated PostgreSQL) |
+| Full backend `python -m pytest -q --strict-markers` without a test database | `746 passed, 168 skipped, 1 warning` |
+| Full isolated PostgreSQL backend suite | Not run locally: Docker Desktop daemon is unavailable |
+| Alembic head check | `0005_planner_context_snapshot (head)` |
 | Frontend lint / typecheck / unit tests / production build | passed / passed / `13 passed` / passed |
-| Chromium E2E | `4 passed`: existing closed-loop and Phase 6 flows, plus v1 actionable and v2 exact-tie explanation paths |
-| GitHub Actions run `32270467658` | **SUCCESS**: backend tests, web quality gates, and Chromium E2E passed on `449c597` |
+| Chromium E2E | Not run locally: it requires isolated PostgreSQL and Docker Desktop is unavailable |
+| Branch CI | Pending repaired-branch push |
 
 The sole warning is the existing Starlette `TestClient` deprecation warning
 from `httpx`; it does not affect the Phase 7 behavior under test.
-
 ## Commit inventory
 
 ```text
@@ -109,8 +127,8 @@ d84e4ea  test: verify Phase 7 practice lifecycle compatibility
 ```text
 P7-01..P7-13 = COMPLETE
 P7-14 = INTERNAL_AUDIT_COMPLETE
-External implementation review = PENDING
-Phase 7 = IMPLEMENTATION_ACTIVE
+External Implementation Review = PENDING
+Phase 7 = INTERNAL_AUDIT_COMPLETE
 Phase 8 = NOT_STARTED
 ```
 

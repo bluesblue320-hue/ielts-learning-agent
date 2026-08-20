@@ -30,7 +30,7 @@ test("P7 explanation copy is deterministic, Chinese-first, and safely versioned"
         factors: ["equal_maximum_target_gap", "trend_tiebreak"],
       },
     } as never),
-    "当前多个能力与目标分差距相同。同等薄弱项中，该能力近期表现下降。",
+    "当前多个能力与目标分差距相同。同等薄弱项中，系统根据近期表现趋势优先选择了这一项。",
   );
   assert.equal(
     presentPlanningExplanation({

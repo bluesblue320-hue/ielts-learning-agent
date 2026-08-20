@@ -13,6 +13,10 @@ from decimal import Decimal
 from pydantic import ValidationError
 
 from app.learner.memory_planning_policy import PLANNER_V2_VERSION
+from app.learner.memory_planner import (
+    resolve_practice_v2_exact_tie,
+    select_practice_v2_base,
+)
 from app.learner.planning_policy import PLANNER_VERSION
 from app.models.learning import PracticeRecommendation
 from app.schemas.common import BandScore
@@ -33,6 +37,55 @@ from app.schemas.planning import (
 
 class PersistedPlanningReconstructionError(ValueError):
     """A stored recommendation does not satisfy its versioned contract."""
+
+
+def _validate_v2_snapshot_semantics(
+    record: PersistedRecommendationPlanningRecord,
+) -> None:
+    """Replay a stored exact-tie envelope without consulting current Memory.
+
+    Structural schema validation proves that an envelope has the expected
+    shape. This replay additionally proves that its immutable context could
+    have produced both the persisted v2 decision and its complete trace.
+    """
+
+    decision = record.decision
+    snapshot = record.planner_context_snapshot
+    if (
+        decision.planner_version != PLANNER_V2_VERSION
+        or decision.decision_type != DecisionType.PRACTICE
+        or snapshot is None
+    ):
+        return
+
+    assert decision.learner_target_band is not None
+    base_selection = select_practice_v2_base(
+        learner_target_band=decision.learner_target_band,
+        states=decision.state_snapshot,
+    )
+    if not base_selection.requires_memory_context:
+        raise PersistedPlanningReconstructionError(
+            "v2 planner snapshot exists without an exact maximum-gap tie"
+        )
+    if (
+        list(base_selection.exact_max_gap_candidates)
+        != snapshot.selection_trace.initial_max_gap_candidates
+    ):
+        raise PersistedPlanningReconstructionError(
+            "v2 planner snapshot candidates differ from the replayed exact tie"
+        )
+
+    expected = resolve_practice_v2_exact_tie(
+        base_selection=base_selection,
+        memory_context=snapshot.memory_context,
+    )
+    if (
+        expected.decision != decision
+        or expected.selection_trace != snapshot.selection_trace
+    ):
+        raise PersistedPlanningReconstructionError(
+            "persisted v2 planner snapshot is not semantically self-consistent"
+        )
 
 
 def reconstruct_persisted_planning_record(
@@ -69,10 +122,12 @@ def reconstruct_persisted_planning_record(
             if row.planner_context_snapshot is not None
             else None
         )
-        return PersistedRecommendationPlanningRecord(
+        record = PersistedRecommendationPlanningRecord(
             decision=decision,
             planner_context_snapshot=snapshot,
         )
+        _validate_v2_snapshot_semantics(record)
+        return record
     except (ArithmeticError, TypeError, ValidationError, ValueError) as error:
         if isinstance(error, PersistedPlanningReconstructionError):
             raise

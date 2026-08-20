@@ -2,7 +2,7 @@
 
 ## Document status
 
-**IMPLEMENTATION_ACTIVE — External Design Review is APPROVED. P7-01 through P7-13 are COMPLETE; P7-14 is INTERNAL_AUDIT_COMPLETE. External implementation review is pending.**
+**INTERNAL_AUDIT_COMPLETE — External Design Review is APPROVED. P7-01 through P7-13 are COMPLETE; P7-14 is INTERNAL_AUDIT_COMPLETE. External implementation review is pending.**
 
 This graph was created on `phase/7-memory-aware-planning-v2` from verified
 `master` commit `fa34dc3499ab85e286340582353482c4b7388198` (`docs: finalize
@@ -282,7 +282,7 @@ Phase 3 = COMPLETE
 Phase 4 = COMPLETE
 Phase 5 = COMPLETE
 Phase 6 = COMPLETE
-Phase 7 = IMPLEMENTATION_ACTIVE
+Phase 7 = INTERNAL_AUDIT_COMPLETE
 P7-01 = COMPLETE
 P7-02 = COMPLETE
 P7-03 = COMPLETE
@@ -297,5 +297,6 @@ P7-11 = COMPLETE
 P7-12 = COMPLETE
 P7-13 = COMPLETE
 P7-14 = INTERNAL_AUDIT_COMPLETE
+External Implementation Review = PENDING
 Phase 8 = NOT_STARTED
 ```

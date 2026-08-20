@@ -90,6 +90,7 @@ def _snapshot() -> PersistedPlannerContextSnapshot:
         }
         for skill in SKILLS
     }
+    skill_context["task_response"]["trend"] = "declining"
     return PersistedPlannerContextSnapshot.model_validate(
         {
             "snapshot_version": "writing-practice-gap-memory-v2-audit-v1",
@@ -222,6 +223,101 @@ def test_invalid_snapshot_matrix_is_never_silently_repaired() -> None:
             reconstruct_persisted_planning_record(row)
         with pytest.raises(MemoryInvariantError):
             reconstruct_decision(row)
+
+
+def test_semantically_impossible_exact_tie_snapshots_are_rejected() -> None:
+    decision = _decision(version="writing-practice-gap-memory-v2", tied=True)
+
+    invalid_trend = _snapshot().model_dump(mode="json")
+    invalid_trend["memory_context"]["skills"]["task_response"]["trend"] = "stable"
+
+    invalid_recent_practice = _snapshot().model_dump(mode="json")
+    invalid_recent_practice["memory_context"]["skills"]["task_response"][
+        "trend"
+    ] = "stable"
+    invalid_recent_practice["selection_trace"]["stages"] = [
+        {
+            "stage": "persistent_gap",
+            "candidates_before": ["task_response", "coherence_and_cohesion"],
+            "candidates_after": ["task_response", "coherence_and_cohesion"],
+            "narrowed": False,
+        },
+        {
+            "stage": "trend",
+            "candidates_before": ["task_response", "coherence_and_cohesion"],
+            "candidates_after": ["task_response", "coherence_and_cohesion"],
+            "narrowed": False,
+        },
+        {
+            "stage": "recent_practice",
+            "candidates_before": ["task_response", "coherence_and_cohesion"],
+            "candidates_after": ["task_response"],
+            "narrowed": True,
+        },
+    ]
+
+    invalid_persistent_gap = _snapshot().model_dump(mode="json")
+    invalid_persistent_gap["selection_trace"]["stages"] = [
+        {
+            "stage": "persistent_gap",
+            "candidates_before": ["task_response", "coherence_and_cohesion"],
+            "candidates_after": ["task_response"],
+            "narrowed": True,
+        }
+    ]
+
+    invalid_priority_reason = _snapshot().model_dump(mode="json")
+    invalid_priority_reason["memory_context"]["skills"]["task_response"][
+        "trend"
+    ] = "stable"
+    invalid_priority_reason["selection_trace"]["stages"] = [
+        {
+            "stage": "persistent_gap",
+            "candidates_before": ["task_response", "coherence_and_cohesion"],
+            "candidates_after": ["task_response", "coherence_and_cohesion"],
+            "narrowed": False,
+        },
+        {
+            "stage": "trend",
+            "candidates_before": ["task_response", "coherence_and_cohesion"],
+            "candidates_after": ["task_response", "coherence_and_cohesion"],
+            "narrowed": False,
+        },
+        {
+            "stage": "recent_practice",
+            "candidates_before": ["task_response", "coherence_and_cohesion"],
+            "candidates_after": ["task_response", "coherence_and_cohesion"],
+            "narrowed": False,
+        },
+        {
+            "stage": "canonical_priority",
+            "candidates_before": ["task_response", "coherence_and_cohesion"],
+            "candidates_after": ["task_response"],
+            "narrowed": True,
+        },
+    ]
+
+    for snapshot in (
+        invalid_trend,
+        invalid_recent_practice,
+        invalid_persistent_gap,
+        invalid_priority_reason,
+    ):
+        row = _row(
+            decision,
+            PersistedPlannerContextSnapshot.model_validate(snapshot),
+        )
+        with pytest.raises(PersistedPlanningReconstructionError):
+            reconstruct_persisted_planning_record(row)
+
+
+def test_valid_exact_tie_snapshot_reconstructs_after_semantic_replay() -> None:
+    decision = _decision(version="writing-practice-gap-memory-v2", tied=True)
+    record = reconstruct_persisted_planning_record(_row(decision, _snapshot()))
+
+    assert record.decision == decision
+    assert record.planner_context_snapshot == _snapshot()
+
 
 def test_exact_tie_api_projects_v2_decision_without_audit_envelope(
     client,

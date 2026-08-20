@@ -220,6 +220,25 @@ def test_trend_requires_established_history_for_every_remaining_candidate() -> N
     assert insufficient.selection_trace.stages[2].narrowed is True
 
 
+def test_stable_trend_precedes_improving_trend() -> None:
+    result = plan_practice_v2(
+        learner_target_band=_target(),
+        states=_tie_states(),
+        memory_context=_context(
+            trends={
+                "task_response": "stable",
+                "coherence_and_cohesion": "improving",
+            }
+        ),
+    )
+
+    assert result.decision.target_skill == "task_response"
+    assert _reason_values(result) == ["largest_target_gap"]
+    assert result.selection_trace is not None
+    assert result.selection_trace.stages[-1].stage == "trend"
+    assert result.selection_trace.stages[-1].narrowed is True
+
+
 def test_recent_practice_then_canonical_priority_have_frozen_semantics() -> None:
     recency = plan_practice_v2(
         learner_target_band=_target(),
