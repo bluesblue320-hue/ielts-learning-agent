@@ -83,11 +83,11 @@ provider contract.
 | --- | --- |
 | Targeted planner/schema/reconstruction backend tests | `19 passed, 1 skipped, 1 warning` (the skipped case requires isolated PostgreSQL) |
 | Full backend `python -m pytest -q --strict-markers` without a test database | `746 passed, 168 skipped, 1 warning` |
-| Full isolated PostgreSQL backend suite | Not run locally: Docker Desktop daemon is unavailable |
+| Full isolated PostgreSQL backend suite | GitHub Actions run `32319064557`: `914 passed, 1 warning` |
 | Alembic head check | `0005_planner_context_snapshot (head)` |
 | Frontend lint / typecheck / unit tests / production build | passed / passed / `13 passed` / passed |
-| Chromium E2E | Not run locally: it requires isolated PostgreSQL and Docker Desktop is unavailable |
-| Branch CI | Pending repaired-branch push |
+| Chromium E2E | GitHub Actions run `32319064557`: `4 passed (13.6s)` |
+| Branch CI | [run `32319064557`](https://github.com/bluesblue320-hue/ielts-learning-agent/actions/runs/32319064557) **SUCCESS** on `b3336c9950dfd2210dfa8ce5e5305091058b43c1`; frontend unit tests: `13 passed` |
 
 The sole warning is the existing Starlette `TestClient` deprecation warning
 from `httpx`; it does not affect the Phase 7 behavior under test.
