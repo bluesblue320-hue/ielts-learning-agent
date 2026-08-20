@@ -108,6 +108,26 @@ class WritingPractice(Base):
             " AND attempt_id IS NULL)",
             name="ck_writing_practice_attempt_nullability",
         ),
+        # The submission claim is a durable lease. Each lifecycle state has
+        # one exact metadata shape so partial claims cannot become valid data.
+        CheckConstraint(
+            "(lifecycle_state = 'generated'"
+            " AND submission_fingerprint IS NULL"
+            " AND claim_token IS NULL"
+            " AND submission_claimed_at IS NULL"
+            " AND attempt_id IS NULL)"
+            " OR (lifecycle_state = 'submission_in_progress'"
+            " AND submission_fingerprint IS NOT NULL"
+            " AND claim_token IS NOT NULL"
+            " AND submission_claimed_at IS NOT NULL"
+            " AND attempt_id IS NULL)"
+            " OR (lifecycle_state = 'submitted'"
+            " AND submission_fingerprint IS NOT NULL"
+            " AND claim_token IS NULL"
+            " AND submission_claimed_at IS NULL"
+            " AND attempt_id IS NOT NULL)",
+            name="ck_writing_practice_submission_state_matrix",
+        ),
         Index(
             "ix_writing_practice_learner_state",
             "learner_id",
@@ -136,6 +156,9 @@ class WritingPractice(Base):
     lifecycle_state: Mapped[str] = mapped_column(String(32), nullable=False)
     submission_fingerprint: Mapped[str | None] = mapped_column(String(128))
     claim_token: Mapped[str | None] = mapped_column(String(128))
+    submission_claimed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
     attempt_id: Mapped[int | None] = mapped_column(
         BigInteger,
         ForeignKey("writing_attempts.id", ondelete="RESTRICT"),

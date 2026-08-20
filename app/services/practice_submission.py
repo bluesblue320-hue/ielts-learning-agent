@@ -5,8 +5,9 @@ from __future__ import annotations
 import hashlib
 import json
 import secrets
+from datetime import timedelta
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -16,6 +17,8 @@ from app.schemas.practice import PracticeLifecycleState, PracticeSubmission, Sub
 from app.schemas.writing import WritingSubmission
 from app.services.writing_evaluation import WritingEvaluationService
 from app.services.writing_persistence import WritingEvaluationPersistenceService
+
+SUBMISSION_CLAIM_LEASE_SECONDS = 300
 
 
 class PracticeSubmissionError(Exception):
@@ -130,11 +133,37 @@ class PracticeSubmissionService:
                         evaluation_id=evaluation.id,
                     )
                 if practice.lifecycle_state == PracticeLifecycleState.SUBMISSION_IN_PROGRESS.value:
-                    return SubmissionResult(status="in_progress")
+                    if practice.submission_fingerprint != fingerprint:
+                        return SubmissionResult(status="conflict")
+                    if practice.submission_claimed_at is None:
+                        raise PracticeSubmissionPersistenceError(
+                            "in-progress writing practice has no claim timestamp"
+                        )
+                    database_now = self._session.scalar(select(func.current_timestamp()))
+                    if database_now is None:  # pragma: no cover - PostgreSQL invariant
+                        raise PracticeSubmissionPersistenceError(
+                            "database did not return a claim timestamp"
+                        )
+                    if (
+                        database_now - practice.submission_claimed_at
+                        < timedelta(seconds=SUBMISSION_CLAIM_LEASE_SECONDS)
+                    ):
+                        return SubmissionResult(status="in_progress")
+                    token = secrets.token_urlsafe(32)
+                    practice.claim_token = token
+                    practice.submission_claimed_at = database_now
+                    self._session.flush()
+                    return token, trusted_submission
                 token = secrets.token_urlsafe(32)
+                database_now = self._session.scalar(select(func.current_timestamp()))
+                if database_now is None:  # pragma: no cover - PostgreSQL invariant
+                    raise PracticeSubmissionPersistenceError(
+                        "database did not return a claim timestamp"
+                    )
                 practice.lifecycle_state = PracticeLifecycleState.SUBMISSION_IN_PROGRESS.value
                 practice.submission_fingerprint = fingerprint
                 practice.claim_token = token
+                practice.submission_claimed_at = database_now
                 self._session.flush()
                 return token, trusted_submission
         except PracticeSubmissionError:
@@ -163,6 +192,7 @@ class PracticeSubmissionService:
                     practice.lifecycle_state = PracticeLifecycleState.GENERATED.value
                     practice.submission_fingerprint = None
                     practice.claim_token = None
+                    practice.submission_claimed_at = None
         except SQLAlchemyError as error:
             self._session.rollback()
             raise PracticeSubmissionPersistenceError(
@@ -195,6 +225,7 @@ class PracticeSubmissionService:
                 practice.attempt_id = attempt.id
                 practice.lifecycle_state = PracticeLifecycleState.SUBMITTED.value
                 practice.claim_token = None
+                practice.submission_claimed_at = None
                 self._session.flush()
                 return SubmissionResult(
                     status="submitted",

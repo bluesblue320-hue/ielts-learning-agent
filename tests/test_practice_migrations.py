@@ -44,14 +44,15 @@ def _ensure_head(database_url: str) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_phase4_revision_is_the_single_linear_head() -> None:
+def test_practice_revision_is_the_single_linear_head() -> None:
     script = ScriptDirectory.from_config(alembic_config())
 
-    assert script.get_heads() == ["0005_planner_context_snapshot"]
+    assert script.get_heads() == ["0006_recoverable_practice_submission_claims"]
     walk = {
         revision.revision: revision.down_revision
         for revision in script.walk_revisions()
     }
+    assert walk["0006_recoverable_practice_submission_claims"] == "0005_planner_context_snapshot"
     assert walk["0005_planner_context_snapshot"] == "0004_writing_practice"
     assert walk["0004_writing_practice"] == "0003_learning"
     assert walk["0003_learning"] == "0002_writing"
@@ -89,7 +90,7 @@ def test_practice_migration_upgrades_downgrades_and_reupgrades(
 
         # 0003_learning -> 0004_writing_practice.
         command.upgrade(config, "head")
-        assert _version(engine) == "0005_planner_context_snapshot"
+        assert _version(engine) == "0006_recoverable_practice_submission_claims"
         with engine.connect() as connection:
             inspector = inspect(connection)
             tables = set(inspector.get_table_names())
@@ -111,6 +112,16 @@ def test_practice_migration_upgrades_downgrades_and_reupgrades(
             }
             assert "uq_writing_practice_recommendation_id" in practice_uniques
             assert "uq_writing_practice_attempt_id" in practice_uniques
+            practice_columns = {
+                column["name"]
+                for column in inspector.get_columns("writing_practices")
+            }
+            assert "submission_claimed_at" in practice_columns
+            practice_checks = {
+                check["name"]
+                for check in inspector.get_check_constraints("writing_practices")
+            }
+            assert "ck_writing_practice_submission_state_matrix" in practice_checks
             # Composite ownership FK.
             fks = {
                 (
@@ -145,7 +156,7 @@ def test_practice_migration_upgrades_downgrades_and_reupgrades(
 
         # 0003_learning -> 0004_writing_practice again (reproducibility).
         command.upgrade(config, "head")
-        assert _version(engine) == "0005_planner_context_snapshot"
+        assert _version(engine) == "0006_recoverable_practice_submission_claims"
         with engine.connect() as connection:
             tables = set(inspect(connection).get_table_names())
             assert "writing_practices" in tables

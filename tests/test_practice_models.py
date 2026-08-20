@@ -102,6 +102,18 @@ def test_attempt_nullability_check_constraint() -> None:
     assert "attempt_id IS NULL" in str(checks["ck_writing_practice_attempt_nullability"])
 
 
+def test_submission_state_matrix_check_constraint() -> None:
+    checks = _checks(WritingPractice.__table__)
+    matrix = str(checks["ck_writing_practice_submission_state_matrix"])
+    for column in (
+        "submission_fingerprint",
+        "claim_token",
+        "submission_claimed_at",
+        "attempt_id",
+    ):
+        assert column in matrix
+
+
 def test_generation_content_constraints_present() -> None:
     checks = _checks(WritingPractice.__table__)
     assert "ck_writing_practice_question_length" in checks
@@ -134,6 +146,7 @@ def test_model_has_provenance_and_claim_columns() -> None:
         "lifecycle_state",
         "submission_fingerprint",
         "claim_token",
+        "submission_claimed_at",
         "attempt_id",
         "created_at",
         "updated_at",
