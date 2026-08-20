@@ -140,9 +140,10 @@ not authorize P8-03 or later work during this design run.
   ownership/lifecycle, 502/503/504 provider, and 503 persistence error
   boundaries; the exact initial_observation, ordered steps[{tool,outcome}],
   final_observation, stop_reason, current_recommendation, current_practice
-  trace shape; one Outcome per tool step; submission_reclaimed is the sole
-  successful outcome of a reclaimed-and-finalized submit invocation; no unsafe
-  trace fields.
+  trace shape; one Outcome per tool step; submit_practice maps only to the
+  existing durable result semantics submission_submitted, submission_reused,
+  submission_in_progress, or submission_conflict. Internal claim-acquisition
+  details are not a public outcome; no unsafe trace fields.
 - **Migration permission:** no.
 - **Route-back/stop:** return contract ambiguity to P8-02; stop before
   persistence.
@@ -248,10 +249,10 @@ not authorize P8-03 or later work during this design run.
   next-practice persistence. Replay reuses evaluation, never repeats
   evaluation-provider work for submitted match, skips already-applied
   completion, and continues from current authoritative observation. Tests also
-  prove one Outcome per step: an expired matching claim emits only
-  submission_reclaimed after reclaim, provider evaluation, and successful
-  finalization; provider/finalization failure produces the existing HTTP error
-  and no successful outcome.
+  prove one Outcome per step: an expired matching claim is reclaimed internally,
+  successful provider evaluation/finalization emits submission_submitted, and
+  provider/finalization failure produces the existing HTTP error with no
+  successful AgentTurnResponse or duplicate durable effect.
 - **Migration permission:** no beyond P8-04.
 - **Route-back/stop:** return failure to owner; stop before HTTP API.
 
@@ -293,9 +294,11 @@ not authorize P8-03 or later work during this design run.
   crash after completion before generation; crash after generation persistence;
   exact same practice_submission replay after each; pre-migration legacy NULL
   claim upgrades to expired/non-NULL then reclaims; live claim versus expired
-  claim; different-fingerprint conflict; stale generated practice;
-  submission_reclaimed is one successful finalized outcome and is absent on
-  provider/finalization error; every exact Planner-valid no_practice sequence;
+  claim; different-fingerprint conflict; stale generated practice; expired
+  matching reclaim is proven internally, successful finalization emits
+  submission_submitted, failure emits no successful Agent response, and no
+  duplicate durable effect occurs; every exact Planner-valid no_practice
+  sequence;
   specifically [target_achieved, insufficient_evidence] validates, preserves
   both public reason codes, and stops target_achieved; no duplicate durable
   effects and no stale practice persistence.

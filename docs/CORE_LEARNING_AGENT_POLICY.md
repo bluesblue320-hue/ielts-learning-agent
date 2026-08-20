@@ -196,10 +196,12 @@ current authoritative observation is read, and selection continues. This makes
 an exact HTTP retry safe after a crash after submission, after completion, or
 after completion plus next-practice persistence.
 
-Submitted, reused, or reclaimed then follows the replay rule. A live claim produces
-await_submission; a different fingerprint produces submission_conflict. The
-Agent never submits without an essay, never generates after no_practice, and
-does no work after a terminal, human, wait, API-error, or bound boundary.
+A submitted or reused durable result then follows the replay rule. Successful
+internal reclaim is reported as submitted and follows the same rule. A live
+claim produces await_submission; a different fingerprint produces
+submission_conflict. The Agent never submits without an essay, never generates
+after no_practice, and does no work after a terminal, human, wait, API-error, or
+bound boundary.
 
 The normal first-submission flow is:
 
@@ -285,7 +287,6 @@ exactly one of:
     submission_submitted
     submission_reused
     submission_in_progress
-    submission_reclaimed
     submission_conflict
     completion_applied
     completion_reused
@@ -298,13 +299,13 @@ Each tool step emits exactly one Outcome. The submit_practice mapping is exact:
 - a matching live claim emits submission_in_progress;
 - an expired matching claim that is atomically reclaimed, evaluated through the
   provider, and successfully finalized as submitted in that same tool invocation
-  emits submission_reclaimed; and
+  emits submission_submitted; and
 - a different fingerprint emits submission_conflict.
 
-A reclaimed invocation never also emits submission_submitted. If reclaim occurs
-but provider evaluation or finalization fails, no successful AgentTurnResponse
-and no successful submission_reclaimed outcome is produced; the existing safe
-HTTP provider or persistence error applies.
+The public Agent trace records the durable submit result, not the internal claim
+acquisition path. If reclaim occurs but provider evaluation or finalization
+fails, no successful AgentTurnResponse is produced; the existing safe HTTP
+provider or persistence error applies.
 
 The trace contains no chain-of-thought, reasoning prose, provider reasoning, raw
 prompts/payloads, raw planner context snapshot, selection trace, Memory
@@ -403,12 +404,13 @@ The identical practice_submission request is replay-safe:
    re-observe current generated practice, stop needs_practice_submission, and
    do not generate another practice.
 
-For an expired matching claim, submission_reclaimed is the one successful
-submit_practice outcome only when that invocation reclaims, performs provider
-evaluation, and finalizes submitted. If provider work or finalization fails,
-existing owned-claim release and safe HTTP mapping apply; no successful Agent
-response is emitted, and a later explicit retry may call the provider. These
-cases never create duplicate durable attempts, evaluations, LearningUpdates, or
+For an expired matching claim, reclaim remains an internal deterministic
+PracticeSubmissionService mechanism. When that invocation performs provider
+evaluation and finalizes submitted, the public submit_practice outcome is
+submission_submitted. If provider work or finalization fails, existing
+owned-claim release and safe HTTP mapping apply; no successful Agent response is
+emitted, and a later explicit retry may call the provider. These cases never
+create duplicate durable attempts, evaluations, LearningUpdates, or
 recommendations.
 
 ## 9. Concurrency
