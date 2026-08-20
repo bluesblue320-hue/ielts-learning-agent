@@ -72,11 +72,23 @@ The observation kind is exactly one of:
 - needs_completion: current practice is submitted and its evaluation has no
   applied LearningUpdate.
 
-The no_practice reason-code enum is target_achieved, cold_start,
-incomplete_state, or target_unset. The Agent preserves the persisted ordered
-list. It stops target_achieved only when the list is exactly
-[target_achieved]; every other valid list stops no_practice. It must never
-present cold_start, incomplete_state, or target_unset as target achievement.
+The Agent-safe no_practice reason-code enum is exactly target_achieved,
+insufficient_evidence, cold_start, incomplete_state, or target_unset. The only
+accepted ordered sequences are the Planner-valid sequences:
+
+- [target_achieved]
+- [target_achieved, insufficient_evidence]
+- [cold_start]
+- [incomplete_state]
+- [target_unset]
+
+The Agent preserves the full persisted sequence in its public response. Stop
+mapping uses the primary reason at reason_codes[0]: target_achieved maps to the
+target_achieved stop, while cold_start, incomplete_state, and target_unset map
+to no_practice. Therefore [target_achieved, insufficient_evidence] also stops
+target_achieved; insufficient_evidence is a qualifier, not another terminal
+state. The Agent must neither invent a sequence nor present the other primary
+reasons as target achievement.
 
 An impossible persisted shape is an API/service error, never a guessed
 continuation or successful Agent stop. Observation makes no provider call and
@@ -168,8 +180,8 @@ The normal selector table is:
 | Observation | Valid input | Action order | Successful stop |
 | --- | --- | --- | --- |
 | needs_initial_writing | continue | none | needs_initial_writing |
-| no_practice with exactly [target_achieved] | continue | none | target_achieved |
-| no_practice with any other valid reason list | continue | none | no_practice |
+| no_practice with primary reason target_achieved, for either Planner-valid sequence | continue | none | target_achieved |
+| no_practice with primary reason cold_start, incomplete_state, or target_unset | continue | none | no_practice |
 | needs_generation | continue | generate_practice, observe | practice_ready, target_achieved, or no_practice |
 | needs_practice_submission | continue | none | needs_practice_submission |
 | await_submission | continue | none | await_submission |
@@ -184,7 +196,7 @@ current authoritative observation is read, and selection continues. This makes
 an exact HTTP retry safe after a crash after submission, after completion, or
 after completion plus next-practice persistence.
 
-Submitted/reused then follows the replay rule. A live claim produces
+Submitted, reused, or reclaimed then follows the replay rule. A live claim produces
 await_submission; a different fingerprint produces submission_conflict. The
 Agent never submits without an essay, never generates after no_practice, and
 does no work after a terminal, human, wait, API-error, or bound boundary.
@@ -261,7 +273,8 @@ trace:
     }
 
 ObservationKind is exactly Section 2.3. NoPracticeReason is exactly
-target_achieved, cold_start, incomplete_state, or target_unset. Tool is exactly
+target_achieved, insufficient_evidence, cold_start, incomplete_state, or
+target_unset. Tool is exactly
 observe, generate_practice, submit_practice, or complete_practice. Outcome is
 exactly one of:
 
@@ -276,6 +289,22 @@ exactly one of:
     submission_conflict
     completion_applied
     completion_reused
+
+Each tool step emits exactly one Outcome. The submit_practice mapping is exact:
+
+- a new generated submission that finalizes successfully emits
+  submission_submitted;
+- an already submitted matching replay emits submission_reused;
+- a matching live claim emits submission_in_progress;
+- an expired matching claim that is atomically reclaimed, evaluated through the
+  provider, and successfully finalized as submitted in that same tool invocation
+  emits submission_reclaimed; and
+- a different fingerprint emits submission_conflict.
+
+A reclaimed invocation never also emits submission_submitted. If reclaim occurs
+but provider evaluation or finalization fails, no successful AgentTurnResponse
+and no successful submission_reclaimed outcome is produced; the existing safe
+HTTP provider or persistence error applies.
 
 The trace contains no chain-of-thought, reasoning prose, provider reasoning, raw
 prompts/payloads, raw planner context snapshot, selection trace, Memory
@@ -300,14 +329,22 @@ evidence, state, and recommendation effects. It cannot promise physical
 exactly-once provider work after process crash because providers have no durable
 idempotency receipt. That is a provider-cost limitation only.
 
-### 8.2 P8-04 metadata, authority, and legacy rule
+### 8.2 P8-04 migration, strict metadata invariant, and lease authority
 
-Before Agent Turn accepts practice_submission, P8-04 adds one nullable
-submission_claimed_at TIMESTAMPTZ column to writing_practices with model,
-migration, lifecycle validation, and focused tests. No generic Agent storage is
-allowed.
+Before Agent Turn accepts practice_submission, P8-04 performs this exact
+migration sequence:
 
-SUBMISSION_CLAIM_LEASE_SECONDS is exactly 300.
+1. add nullable submission_claimed_at TIMESTAMPTZ to writing_practices;
+2. detect every pre-existing submission_in_progress row whose
+   submission_claimed_at is NULL;
+3. backfill each such row with an explicitly expired PostgreSQL timestamp,
+   CURRENT_TIMESTAMP - INTERVAL '301 seconds', so the next explicit matching
+   retry can reclaim it; and
+4. only after that backfill, enforce the strict lifecycle metadata invariant
+   below through model validation and a database check constraint.
+
+SUBMISSION_CLAIM_LEASE_SECONDS is exactly 300. After upgrade there is no
+permanent legacy NULL exception state. No generic Agent storage is allowed.
 
 | Lifecycle | submission_fingerprint | claim_token | submission_claimed_at | attempt_id |
 | --- | --- | --- | --- | --- |
@@ -316,9 +353,9 @@ SUBMISSION_CLAIM_LEASE_SECONDS is exactly 300.
 | submitted | NOT NULL | NULL | NULL | NOT NULL |
 
 PracticeSubmissionService owns lease checking and reclamation under the locked
-WritingPractice row. It uses authoritative database/server time inside that
-claim transaction; the selector and application wall clock have no expiry
-authority.
+WritingPractice row. PostgreSQL database time inside that claim transaction is
+the sole lease-expiration authority. Python datetime.now(), browser time,
+selector wall clock, and other application clocks have no expiry authority.
 
 For an explicit matching submission against submission_in_progress:
 
@@ -329,11 +366,16 @@ For an explicit matching submission against submission_in_progress:
 - a different fingerprint returns submission_conflict at every lease age; and
 - no timer, worker, or background reclamation exists.
 
-For a legacy pre-P8 row with submission_in_progress and a NULL
-submission_claimed_at, only an explicit matching retry treats it as
-legacy-expired and reclaims it under the row lock. Continue remains
-await_submission. A different fingerprint remains submission_conflict. P8-04
-may not invent another legacy rule.
+P8-04 migration tests must seed a pre-migration submission_in_progress row,
+prove upgrade succeeds, prove its timestamp is expired and non-NULL, prove the
+strict final invariant holds, prove a matching explicit retry can reclaim, and
+prove a different fingerprint still conflicts.
+
+Downgrade removes the lifecycle check constraint before dropping
+submission_claimed_at. It does not rewrite lifecycle_state,
+submission_fingerprint, claim_token, or attempt_id; an in-progress row therefore
+returns to the pre-P8 schema's indefinite in_progress behavior after the
+timestamp column is removed.
 
 ### 8.3 Granular compatibility: Option A
 
@@ -342,10 +384,11 @@ PracticeSubmissionService improvement shared with existing granular
 POST /learners/{learner_id}/writing/practices/{practice_id}/submit.
 
 Granular submit request/response schemas do not change. Its behavior is
-explicitly improved for an expired matching claim, including legacy NULL
-claimed_at: it can reclaim and continue instead of indefinitely in_progress.
-Live matching claims still return in_progress and differing fingerprints still
-conflict. P8-04 must document and regression-test this behavior.
+explicitly improved for an expired matching claim, including a pre-P8 claim
+made expired by migration backfill: it can reclaim and continue instead of
+remaining indefinitely in_progress. Live matching claims still return
+in_progress and differing fingerprints still conflict. P8-04 must document and
+regression-test this behavior.
 
 ### 8.4 Replay after every partial durable boundary
 
@@ -360,9 +403,12 @@ The identical practice_submission request is replay-safe:
    re-observe current generated practice, stop needs_practice_submission, and
    do not generate another practice.
 
-If provider work fails before finalization, existing owned-claim release and
-HTTP mapping apply; a later explicit retry may call the provider. These cases
-never create duplicate durable attempts, evaluations, LearningUpdates, or
+For an expired matching claim, submission_reclaimed is the one successful
+submit_practice outcome only when that invocation reclaims, performs provider
+evaluation, and finalizes submitted. If provider work or finalization fails,
+existing owned-claim release and safe HTTP mapping apply; no successful Agent
+response is emitted, and a later explicit retry may call the provider. These
+cases never create duplicate durable attempts, evaluations, LearningUpdates, or
 recommendations.
 
 ## 9. Concurrency
@@ -412,10 +458,10 @@ controls. PostgreSQL remains authoritative.
 | Generated practice | continue; current practice generated | needs_practice_submission, no provider. |
 | Submitted practice | continue; current submitted evaluation unapplied | complete, re-observe, maybe generate; practice_ready, target_achieved, or no_practice. |
 | First essay | matching current generated practice_submission | submit/evaluate, complete/replan, maybe generate, then next essay boundary. |
-| no_practice truth | continue; latest no_practice | exactly [target_achieved] gives target_achieved; every other valid list gives no_practice with safe codes. |
+| no_practice truth | continue; latest no_practice | Preserve exactly one of the five Planner-valid sequences; primary target_achieved, including [target_achieved, insufficient_evidence], stops target_achieved; other primary reasons stop no_practice. |
 | Provider/persistence failure | service/provider fails | preserve 502/503/504 or 503, never an HTTP 200 failure stop. |
 | Exact retry | identical practice_submission after submission, completion, or next-practice persistence | reuse evaluation, apply at most once, re-observe current state, no duplicate durable effect. |
-| Claim recovery | matching live, expired, or legacy-NULL claim | live awaits/no provider; expired or legacy matching retry reclaims; differing essay conflicts; old token cannot finalize. |
+| Claim recovery | matching live or expired claim, including a pre-P8 row backfilled expired during upgrade | live awaits/no provider; expired matching retry reclaims; differing essay conflicts; old token cannot finalize; final in-progress timestamps are non-NULL. |
 | Stale generated practice | old generated practice_submission | safe HTTP 409, no mutation/provider. |
 
 ## 12. Future implementation inventory

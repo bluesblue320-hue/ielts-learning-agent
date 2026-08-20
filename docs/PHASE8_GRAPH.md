@@ -40,8 +40,9 @@ After external design approval only:
 P8-04 remains conditional in the graph: P8-01 found the recovery condition met,
 but this design run does not authorize it. It is a narrow extension of existing
 practice-claim storage, not a generic Agent database. Its 300-second lease,
-database-time authority, legacy-NULL rule, and shared granular Option A
-compatibility are frozen in the policy.
+PostgreSQL-time authority, migration backfill of legacy NULL timestamps, strict
+post-upgrade invariant, and shared granular Option A compatibility are frozen
+in the policy.
 
 ## P8-01 — Baseline & Core Agent Capability Audit — COMPLETE
 
@@ -134,11 +135,14 @@ not authorize P8-03 or later work during this design run.
 - **Forbidden scope:** execution, provider behavior, persistence, web, or
   Planner/Memory policy changes.
 - **Acceptance/tests:** exact closed request union; exact successful response
-  union; 422 request-invalid, 404 learner-not-found, 404/409 safe
+  union; exact no-practice reason union and five Planner-valid sequences;
+  422 request-invalid, 404 learner-not-found, 404/409 safe
   ownership/lifecycle, 502/503/504 provider, and 503 persistence error
   boundaries; the exact initial_observation, ordered steps[{tool,outcome}],
   final_observation, stop_reason, current_recommendation, current_practice
-  trace shape; no unsafe trace fields.
+  trace shape; one Outcome per tool step; submission_reclaimed is the sole
+  successful outcome of a reclaimed-and-finalized submit invocation; no unsafe
+  trace fields.
 - **Migration permission:** no.
 - **Route-back/stop:** return contract ambiguity to P8-02; stop before
   persistence.
@@ -152,17 +156,21 @@ not authorize P8-03 or later work during this design run.
   PracticeSubmissionService, focused schemas/tests, docs.
 - **Forbidden scope:** generic Agent table, event sourcing, worker,
   initial-evaluation rewrite, provider API change.
-- **Acceptance/tests:** additive submission_claimed_at only; exact lifecycle
-  matrix for generated, submission_in_progress, and submitted; lease constant
-  SUBMISSION_CLAIM_LEASE_SECONDS = 300; database/server time and practice-row
-  lock are the sole expiration/reclaim authority; expired matching claim gets
-  new token/timestamp; old token cannot finalize; differing fingerprint
-  conflicts at every lease age; legacy in-progress NULL timestamp reclaims only
-  on an explicit matching retry.
+- **Acceptance/tests:** add nullable submission_claimed_at; backfill every
+  pre-existing in-progress NULL timestamp to explicitly expired PostgreSQL time;
+  then enforce the exact generated, submission_in_progress, and submitted
+  lifecycle metadata matrix with no post-upgrade legacy NULL exception. Lease
+  constant is SUBMISSION_CLAIM_LEASE_SECONDS = 300; PostgreSQL time inside the
+  locked claim transaction is the sole expiration/reclaim authority; expired
+  matching claim gets a new token/timestamp; old token cannot finalize;
+  differing fingerprint conflicts at every lease age. Upgrade tests prove
+  legacy-row backfill, strict invariant, matching reclaim, and mismatch
+  conflict. Downgrade removes the check before the timestamp column and retains
+  all other lifecycle/claim fields.
 - **Granular compatibility:** Option A is mandatory: shared
   PracticeSubmissionService lease recovery improves the existing granular
-  submit endpoint after expired matching/legacy claim, while its request and
-  response schemas remain unchanged and are regression-tested.
+  submit endpoint after an expired matching or backfilled pre-P8 claim, while its
+  request and response schemas remain unchanged and are regression-tested.
 - **Migration permission:** yes -- one additive submission_claimed_at column.
 - **Route-back/stop:** return another persistence need to P8-02; stop before
   observation.
@@ -177,10 +185,12 @@ not authorize P8-03 or later work during this design run.
 - **Forbidden scope:** mutation, writing-context-v1 ordering change, Planner
   recomputation, or web.
 - **Acceptance/tests:** deterministic branches, accepted-id concurrency,
-  v1/v2 reconstruction, zero provider calls, and truthful no_practice with
-  safe reason codes. The selector may receive only necessary internal
-  lifecycle/application fields. Public response/trace never exposes claim
-  token, claim timestamp, raw planner context, or Memory provenance.
+  v1/v2 reconstruction, and zero provider calls. no_practice accepts exactly
+  [target_achieved], [target_achieved, insufficient_evidence], [cold_start],
+  [incomplete_state], or [target_unset], preserves the full sequence publicly,
+  and rejects no invented sequence. The selector may receive only necessary
+  internal lifecycle/application fields. Public response/trace never exposes
+  claim token, claim timestamp, raw planner context, or Memory provenance.
 - **Migration permission:** no.
 - **Route-back/stop:** return ordering/public-data ambiguity to P8-02; stop
   before tools.
@@ -216,8 +226,11 @@ not authorize P8-03 or later work during this design run.
   in-progress claim delegates to the claim service; matching submitted practice
   reuses persisted evaluation and completes only if unapplied; differing
   fingerprint yields submission_conflict; old generated non-current practice
-  is rejected without evaluation. no_practice mapping is truthful, lease time
-  is never selected here, and only valid non-exceptional stops are returned.
+  is rejected without evaluation. no_practice maps by reason_codes[0]:
+  target_achieved, including its insufficient_evidence-qualified sequence,
+  stops target_achieved; cold_start, incomplete_state, and target_unset stop
+  no_practice. Lease time is never selected here, and only valid
+  non-exceptional stops are returned.
 - **Migration permission:** no.
 - **Route-back/stop:** return a missing state to P8-02; stop before executor.
 
@@ -234,7 +247,11 @@ not authorize P8-03 or later work during this design run.
   submission before completion, after completion before generation, and after
   next-practice persistence. Replay reuses evaluation, never repeats
   evaluation-provider work for submitted match, skips already-applied
-  completion, and continues from current authoritative observation.
+  completion, and continues from current authoritative observation. Tests also
+  prove one Outcome per step: an expired matching claim emits only
+  submission_reclaimed after reclaim, provider evaluation, and successful
+  finalization; provider/finalization failure produces the existing HTTP error
+  and no successful outcome.
 - **Migration permission:** no beyond P8-04.
 - **Route-back/stop:** return failure to owner; stop before HTTP API.
 
@@ -274,10 +291,14 @@ not authorize P8-03 or later work during this design run.
   historical rewrite.
 - **Mandatory acceptance/tests:** crash after submission before completion;
   crash after completion before generation; crash after generation persistence;
-  exact same practice_submission replay after each; expired legacy claim; live
-  claim versus expired claim; different-fingerprint conflict; stale generated
-  practice; no_practice reason truthfulness; no duplicate durable effects and
-  no stale practice persistence.
+  exact same practice_submission replay after each; pre-migration legacy NULL
+  claim upgrades to expired/non-NULL then reclaims; live claim versus expired
+  claim; different-fingerprint conflict; stale generated practice;
+  submission_reclaimed is one successful finalized outcome and is absent on
+  provider/finalization error; every exact Planner-valid no_practice sequence;
+  specifically [target_achieved, insufficient_evidence] validates, preserves
+  both public reason codes, and stops target_achieved; no duplicate durable
+  effects and no stale practice persistence.
 - **Migration permission:** corrective P8-04-only.
 - **Route-back/stop:** return defects to owner; stop before compatibility
   validation.
