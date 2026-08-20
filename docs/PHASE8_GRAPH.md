@@ -37,10 +37,11 @@ After external design approval only:
   -> STOP -> External Implementation Review
 ```
 
-P8-04 remains conditional in the graph: P8-01 found that the condition is met
-for Agent-owned practice-submission recovery, but it is not authorized to be
-implemented in this run. It is a narrow extension of existing practice-claim
-storage, not a generic Agent runtime database.
+P8-04 remains conditional in the graph: P8-01 found the recovery condition met,
+but this design run does not authorize it. It is a narrow extension of existing
+practice-claim storage, not a generic Agent database. Its 300-second lease,
+database-time authority, legacy-NULL rule, and shared granular Option A
+compatibility are frozen in the policy.
 
 ## P8-01 — Baseline & Core Agent Capability Audit — COMPLETE
 
@@ -123,115 +124,191 @@ conditional minimal migration.
 The following definitions preserve the post-review execution boundary. They do
 not authorize P8-03 or later work during this design run.
 
-### P8-03 — Versioned Agent Turn Schemas
+### P8-03 -- Versioned Agent Turn Schemas
 
-- **Purpose:** Add strict versioned request, observation, trace, stop-reason, and response schemas.
+- **Purpose:** Add strict versioned request, observation, response, trace, and
+  stop-reason schemas.
 - **Dependencies:** P8-02 and external design approval.
-- **Allowed files:** focused `app/schemas/`, imports, schema tests, policy/graph status.
-- **Forbidden scope:** execution, provider behavior, persistence, web, or Planner/Memory policy changes.
-- **Acceptance/tests:** closed union; no free-form routing; public trace excludes provenance and exception text.
+- **Allowed files:** focused app/schemas/ imports, schema tests, and
+  policy/graph status.
+- **Forbidden scope:** execution, provider behavior, persistence, web, or
+  Planner/Memory policy changes.
+- **Acceptance/tests:** exact closed request union; exact successful response
+  union; 422 request-invalid, 404 learner-not-found, 404/409 safe
+  ownership/lifecycle, 502/503/504 provider, and 503 persistence error
+  boundaries; the exact initial_observation, ordered steps[{tool,outcome}],
+  final_observation, stop_reason, current_recommendation, current_practice
+  trace shape; no unsafe trace fields.
 - **Migration permission:** no.
-- **Route-back/stop:** return contract ambiguity to P8-02; stop before persistence.
+- **Route-back/stop:** return contract ambiguity to P8-02; stop before
+  persistence.
 
-### P8-04 — Submission-Claim Recovery Metadata (conditional; condition met)
+### P8-04 -- Submission-Claim Recovery Metadata (conditional; condition met)
 
-- **Purpose:** Add only the durable metadata needed to recover an expired Agent-owned submission claim.
+- **Purpose:** Add only durable metadata needed to recover an expired
+  practice-submission claim.
 - **Dependencies:** P8-03 and external design approval.
-- **Allowed files:** `WritingPractice`, one Alembic revision, claim service, focused schemas/tests, docs.
-- **Forbidden scope:** generic Agent table, event sourcing, worker, initial-evaluation rewrite, provider API changes.
-- **Acceptance/tests:** active claim blocks duplicate evaluation; expired same-fingerprint claim reclaims safely; old token cannot finalize; durable effects remain unique.
-- **Migration permission:** yes—additive `submission_claimed_at` only.
-- **Route-back/stop:** return another persistence need to P8-02; stop before observation.
+- **Allowed files:** WritingPractice, one Alembic revision,
+  PracticeSubmissionService, focused schemas/tests, docs.
+- **Forbidden scope:** generic Agent table, event sourcing, worker,
+  initial-evaluation rewrite, provider API change.
+- **Acceptance/tests:** additive submission_claimed_at only; exact lifecycle
+  matrix for generated, submission_in_progress, and submitted; lease constant
+  SUBMISSION_CLAIM_LEASE_SECONDS = 300; database/server time and practice-row
+  lock are the sole expiration/reclaim authority; expired matching claim gets
+  new token/timestamp; old token cannot finalize; differing fingerprint
+  conflicts at every lease age; legacy in-progress NULL timestamp reclaims only
+  on an explicit matching retry.
+- **Granular compatibility:** Option A is mandatory: shared
+  PracticeSubmissionService lease recovery improves the existing granular
+  submit endpoint after expired matching/legacy claim, while its request and
+  response schemas remain unchanged and are regression-tested.
+- **Migration permission:** yes -- one additive submission_claimed_at column.
+- **Route-back/stop:** return another persistence need to P8-02; stop before
+  observation.
 
-### P8-05 — Authoritative Agent Observation
+### P8-05 -- Authoritative Agent Observation
 
-- **Purpose:** Build provider-free `writing-agent-observation-v1` using latest `LearningUpdate.id DESC`.
+- **Purpose:** Build provider-free writing-agent-observation-v1 using latest
+  LearningUpdate.id DESC.
 - **Dependencies:** P8-03 and P8-04 when required.
-- **Allowed files:** focused Agent observation service/schema/query tests and imports.
-- **Forbidden scope:** mutation, `writing-context-v1` ordering change, planner recomputation, or web.
-- **Acceptance/tests:** deterministic branches, id-order concurrency, v1/v2 reconstruction, zero provider calls.
+- **Allowed files:** focused Agent observation service/schema/query tests and
+  imports.
+- **Forbidden scope:** mutation, writing-context-v1 ordering change, Planner
+  recomputation, or web.
+- **Acceptance/tests:** deterministic branches, accepted-id concurrency,
+  v1/v2 reconstruction, zero provider calls, and truthful no_practice with
+  safe reason codes. The selector may receive only necessary internal
+  lifecycle/application fields. Public response/trace never exposes claim
+  token, claim timestamp, raw planner context, or Memory provenance.
 - **Migration permission:** no.
-- **Route-back/stop:** return ordering/public-data ambiguity to P8-02; stop before tools.
+- **Route-back/stop:** return ordering/public-data ambiguity to P8-02; stop
+  before tools.
 
-### P8-06 — Existing-Service Tool Boundary
+### P8-06 -- Existing-Service Tool Boundary
 
-- **Purpose:** Adapt direct service tools, including an Agent-only expected-current-update generation fence.
+- **Purpose:** Adapt direct service tools and add the Agent-only two-point
+  current-update generation fence.
 - **Dependencies:** P8-05.
-- **Allowed files:** focused Agent/tool/service modules, imports, targeted tests.
-- **Forbidden scope:** HTTP loopback, generic tool registry, duplicated Planner/Memory/Evaluator/Generator logic, granular-route changes.
-- **Acceptance/tests:** preserve service ownership, release DB work before network calls, and refuse stale-current practice persistence.
+- **Allowed files:** focused Agent/tool/service modules, imports, targeted
+  tests.
+- **Forbidden scope:** HTTP loopback, generic tool registry, duplicated
+  Planner/Memory/Evaluator/Generator logic, or granular-route changes.
+- **Acceptance/tests:** preserve service ownership and no transaction across
+  network work. Given observed U/R, preflight immediately before provider
+  confirms U is latest and R belongs to U; stale means no provider and
+  re-observation. Before persistence, the short transaction rechecks U/R;
+  stale candidate is discarded with no persisted practice and re-observation.
+  Granular generation semantics remain frozen.
 - **Migration permission:** no.
 - **Route-back/stop:** return fence ambiguity to P8-02; stop before selector.
 
-### P8-07 — Deterministic Action Selector
+### P8-07 -- Deterministic Action Selector
 
-- **Purpose:** Implement the frozen observation/input action table as pure selection.
+- **Purpose:** Implement the frozen observation/input action table as pure
+  selection.
 - **Dependencies:** P8-03, P8-05, P8-06.
 - **Allowed files:** focused Agent policy/selector/schema tests.
-- **Forbidden scope:** LLM routing, free-form text, direct ORM writes, providers, or web.
-- **Acceptance/tests:** one outcome per valid state; human, wait, terminal, safe failure, and max-bound outcomes explicit.
+- **Forbidden scope:** LLM routing, free-form text, direct ORM writes,
+  providers, or web.
+- **Acceptance/tests:** exactly one result for each valid observation/input:
+  current generated practice permits first submission; matching live
+  in-progress claim delegates to the claim service; matching submitted practice
+  reuses persisted evaluation and completes only if unapplied; differing
+  fingerprint yields submission_conflict; old generated non-current practice
+  is rejected without evaluation. no_practice mapping is truthful, lease time
+  is never selected here, and only valid non-exceptional stops are returned.
 - **Migration permission:** no.
-- **Route-back/stop:** return missing state to P8-02; stop before executor.
+- **Route-back/stop:** return a missing state to P8-02; stop before executor.
 
-### P8-08 — Bounded Agent Turn Executor
+### P8-08 -- Bounded Agent Turn Executor
 
-- **Purpose:** Execute selected direct-service tools, re-observe after durable progress, and stop within bounds.
+- **Purpose:** Execute selected direct-service tools, re-observe after durable
+  progress, and stop within bounds.
 - **Dependencies:** P8-06, P8-07.
-- **Allowed files:** focused `app/agent/`, service/schema tests.
-- **Forbidden scope:** background autonomy, provider-spanning transaction, hidden reasoning storage, generic framework, or new skill.
-- **Acceptance/tests:** action/observation/provider bounds and partial-success recovery hold.
+- **Allowed files:** focused app/agent/ and service/schema tests.
+- **Forbidden scope:** background autonomy, provider-spanning transaction,
+  hidden reasoning storage, generic framework, or new skill.
+- **Acceptance/tests:** action/observation/provider bounds; exact
+  practice_submission replay after each partial durable boundary: after
+  submission before completion, after completion before generation, and after
+  next-practice persistence. Replay reuses evaluation, never repeats
+  evaluation-provider work for submitted match, skips already-applied
+  completion, and continues from current authoritative observation.
 - **Migration permission:** no beyond P8-04.
 - **Route-back/stop:** return failure to owner; stop before HTTP API.
 
-### P8-09 — Core Agent API
+### P8-09 -- Core Agent API
 
 - **Purpose:** Add one thin, versioned Writing Agent Turn endpoint.
 - **Dependencies:** P8-08.
 - **Allowed files:** route, dependency wiring, schemas, API tests, docs.
-- **Forbidden scope:** granular endpoint changes, route-to-route calls, auth, streaming chat, browser work.
-- **Acceptance/tests:** direct executor delegation and safe public errors/trace.
+- **Forbidden scope:** granular endpoint removal, route-to-route calls, auth,
+  streaming chat, browser work.
+- **Acceptance/tests:** direct executor delegation; exact HTTP error boundary;
+  successful responses use only public-safe trace fields.
 - **Migration permission:** no.
 - **Route-back/stop:** return ambiguity to P8-02; stop before UX.
 
-### P8-10 — Chinese-First Agent UX
+### P8-10 -- Chinese-First Agent UX
 
 - **Purpose:** Render structured Agent responses and human boundaries.
 - **Dependencies:** P8-09.
 - **Allowed files:** typed client, focused web components/pages/tests, docs.
-- **Forbidden scope:** browser authority, free-form chat, hidden reasoning display, granular-flow removal.
-- **Acceptance/tests:** Chinese-first boundaries, accessible failures, safe trace, presentation-only cache.
+- **Forbidden scope:** browser authority, free-form chat, hidden reasoning
+  display, or granular-flow removal.
+- **Acceptance/tests:** Chinese-first boundaries, accessible API failures,
+  safe trace rendering, presentation-only cache.
 - **Migration permission:** no.
-- **Route-back/stop:** return unsafe/public gap to P8-02; stop before hardening.
+- **Route-back/stop:** return unsafe/public gap to P8-02; stop before
+  hardening.
 
-### P8-11 — Concurrency / Retry / Crash-Recovery Hardening
+### P8-11 -- Concurrency / Retry / Crash-Recovery Hardening
 
-- **Purpose:** Prove same-learner races, stale fencing, claim recovery, retries, and partial success.
+- **Purpose:** Prove same-learner races, stale fencing, claim recovery, retries,
+  and partial success.
 - **Dependencies:** P8-04, P8-08, P8-09.
-- **Allowed files:** focused Agent/service/migration/API tests and owning repairs.
-- **Forbidden scope:** broad locks, workers/queues, Planner semantic changes, historical rewrite.
-- **Acceptance/tests:** no duplicate durable effects or stale practice; safe explicit retry after generation failure.
+- **Allowed files:** focused Agent/service/migration/API tests and owning
+  repairs.
+- **Forbidden scope:** broad locks, workers/queues, Planner semantic changes,
+  historical rewrite.
+- **Mandatory acceptance/tests:** crash after submission before completion;
+  crash after completion before generation; crash after generation persistence;
+  exact same practice_submission replay after each; expired legacy claim; live
+  claim versus expired claim; different-fingerprint conflict; stale generated
+  practice; no_practice reason truthfulness; no duplicate durable effects and
+  no stale practice persistence.
 - **Migration permission:** corrective P8-04-only.
-- **Route-back/stop:** return defects to owner; stop before compatibility validation.
+- **Route-back/stop:** return defects to owner; stop before compatibility
+  validation.
 
-### P8-12 — Lifecycle Compatibility + E2E / CI
+### P8-12 -- Lifecycle Compatibility + E2E / CI
 
-- **Purpose:** Preserve granular lifecycle behavior and validate the bounded Agent path.
+- **Purpose:** Preserve granular lifecycle behavior and validate bounded Agent
+  path.
 - **Dependencies:** P8-10, P8-11.
-- **Allowed files:** focused tests/E2E/CI only for demonstrated issues, owning repairs, docs.
-- **Forbidden scope:** feature expansion, policy changes to satisfy tests, or new IELTS skills.
-- **Acceptance/tests:** granular APIs, v1/v2 recommendations, Agent branches, retries, and Chromium pass.
+- **Allowed files:** focused tests/E2E/CI only for demonstrated issues, owning
+  repairs, docs.
+- **Forbidden scope:** feature expansion, policy changes to satisfy tests, new
+  IELTS skills.
+- **Acceptance/tests:** granular APIs including Option A lease recovery, v1/v2
+  recommendations, Agent branches/retries, and Chromium pass.
 - **Migration permission:** no.
 - **Route-back/stop:** return defects to owner; stop after clean evidence.
 
-### P8-13 — Internal Final Audit
+### P8-13 -- Internal Final Audit
 
-- **Purpose:** Reconcile code, migration, policy, graph, API, UX, tests, and phase boundaries.
+- **Purpose:** Reconcile code, migration, policy, graph, API, UX, tests, and
+  phase boundaries.
 - **Dependencies:** P8-12.
 - **Allowed files:** audit/status docs and minimal documentation fixes.
-- **Forbidden scope:** new features, Phase 9, or unreviewed scope.
-- **Acceptance/tests:** fresh evidence, exact inventory, recovery/concurrency proof, compatibility, exclusions.
+- **Forbidden scope:** new features, Phase 9, unreviewed scope.
+- **Acceptance/tests:** fresh evidence, exact inventory, crash/retry/lease
+  proof, compatibility, exclusions.
 - **Migration permission:** no.
-- **Route-back/stop:** route defects to owner; otherwise stop for external implementation review.
+- **Route-back/stop:** route defects to owner; otherwise stop for external
+  implementation review.
+
 
 ## Current Phase 8 status
 
