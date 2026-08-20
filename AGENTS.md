@@ -78,7 +78,7 @@ P6-15 = COMPLETE
 P6-16 = INTERNAL_AUDIT_COMPLETE
 External Review = APPROVED
 PR #10 = MERGED
-Phase 7 = INTERNAL_AUDIT_COMPLETE
+Phase 7 = COMPLETE
 P7-01 = COMPLETE
 P7-02 = COMPLETE
 P7-03 = COMPLETE
@@ -93,7 +93,11 @@ P7-11 = COMPLETE
 P7-12 = COMPLETE
 P7-13 = COMPLETE
 P7-14 = INTERNAL_AUDIT_COMPLETE
-External Implementation Review = PENDING
+External Design Review = APPROVED
+External Implementation Review = APPROVED
+PR #11 = MERGED
+PR CI = SUCCESS
+Master merge CI = SUCCESS
 Phase 8 = NOT_STARTED
 ```
 
@@ -108,14 +112,20 @@ deterministically with exact `Decimal` arithmetic, and the four frozen read
 APIs (`/writing/history`, `/writing/history/{episode_id}`, `/writing/progress`,
 `/writing/context`) expose them with full provenance. The web product adds
 `/history`, `/progress`, and a server-authoritative dashboard resume. No new
-database table, no migration, and no provider abstraction were introduced; the
-current planner (`writing-practice-gap-v1`) is unchanged. External review is
-APPROVED and Phase 6 was merged to master through PR #10 (merge commit
+database table, no migration, and no provider abstraction were introduced.
+Phase 6 was merged to master through PR #10 (merge commit
 `b8e419d8c146c921539f4654b5aeb0b56ed6f425`); see
-[docs/PHASE6_AUDIT.md](docs/PHASE6_AUDIT.md) for the internal audit and fresh
-validation results. External Design Review has authorized continuous implementation from P7-03 through P7-14, with every node retaining its mandatory quality gate. P7-03 through P7-14 are complete; external implementation review is pending. The current planner (`writing-practice-gap-v1`) remains frozen. Do not start Phase 8, merge to master, or create a PR before external implementation review. See
-[docs/PHASE7_GRAPH.md](docs/PHASE7_GRAPH.md) for the Phase 7 execution graph.
+[docs/PHASE6_AUDIT.md](docs/PHASE6_AUDIT.md) for its audit evidence.
 
+Phase 7 is COMPLETE and merged to master through PR #11 (PR head
+`f6990ab94f590f1a37122ea0bf12bf7e5218c727`, merge commit
+`cbf1ebabc87ec490f74957d1327037dae4242381`). It activates the deterministic
+`writing-practice-gap-memory-v2` planner for new Writing evaluations while the
+historical `writing-practice-gap-v1` remains supported and frozen. Memory is
+consulted only for exact maximum-gap ties in the fixed persistent-gap, trend,
+planning-recency, and canonical-priority order. Phase 8 remains NOT_STARTED and
+requires separate explicit authority. See [docs/PHASE7_GRAPH.md](docs/PHASE7_GRAPH.md)
+and [docs/PHASE7_AUDIT.md](docs/PHASE7_AUDIT.md) for the finalized record.
 The graph defines WHAT should be implemented.
 
 The development loop defines HOW each graph node should be executed.

@@ -185,8 +185,10 @@ implemented and merged; Phase 6 is COMPLETE and merged to `master` through PR
 #10 (merge commit `b8e419d8c146c921539f4654b5aeb0b56ed6f425`): hierarchical
 Learning Memory read models over the existing Writing history, four frozen
 read APIs, `/history` and `/progress` UX, and dashboard resume; no new table,
-no migration, no provider abstraction. External Review is APPROVED. Phase 7
-remains NOT_STARTED.
+no migration, no provider abstraction. External Review is APPROVED. Phase 7 is COMPLETE and merged to
+`master` through PR #11 (merge commit `cbf1ebabc87ec490f74957d1327037dae4242381`): new Writing evaluations use
+deterministic memory-aware Planner v2, which consults longitudinal Memory only
+for exact maximum-gap ties while frozen v1 history remains supported. Phase 8 remains NOT_STARTED.
 Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
 
 ## Phase 5 presentation layer
@@ -194,4 +196,6 @@ Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
 `web/` is a Chinese-first Next.js presentation layer. It calls FastAPI over JSON, caches only learner navigation/recommendation presentation fields in browser storage, and leaves evaluation, learner state, planning, lifecycle validation, and persistence authoritative in FastAPI/PostgreSQL.
 ## Phase 5 status
 
-Next.js presentation, FastAPI application/domain authority, and PostgreSQL source of truth are implemented. Phase 6 is COMPLETE and merged to `master` through PR #10: the hierarchical learning memory subsystem (L0-L3 read models, history/progress/context APIs, `/history` and `/progress` UX, dashboard resume) is implemented, internally audited, externally approved, and merged. RAG, wider multi-skill work, and Phase 7 remain future and are NOT_STARTED.
+Next.js presentation, FastAPI application/domain authority, and PostgreSQL source of truth are implemented. Phase 6 is COMPLETE and merged to `master` through PR #10: the hierarchical learning memory subsystem (L0-L3 read models, history/progress/context APIs, `/history` and `/progress` UX, dashboard resume) is implemented, internally audited, externally approved, and merged. RAG and wider multi-skill work remain future. Phase 7 is COMPLETE and merged: current learner state plus
+longitudinal Writing Memory determine Planner v2 only at exact maximum-gap ties, while v1 recommendations
+remain reconstructable. Phase 8 remains NOT_STARTED.

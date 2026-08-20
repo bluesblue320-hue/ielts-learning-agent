@@ -1,6 +1,6 @@
 # Phase 7 Internal Final Audit
 
-**Status:** P7-14 = INTERNAL_AUDIT_COMPLETE. The external-review repair is complete locally; external implementation review remains pending. Phase 7 is `INTERNAL_AUDIT_COMPLETE`; no pull request, merge to `master`, or Phase 8 work is authorized.
+**Status:** Phase 7 is `COMPLETE`: P7-14 remains `INTERNAL_AUDIT_COMPLETE`, External Design Review and External Implementation Review are APPROVED, PR #11 is MERGED, and the master merge CI is SUCCESS. Phase 8 remains NOT_STARTED.
 
 ## Baseline and scope
 
@@ -57,8 +57,7 @@ provider contract.
 - Phase 6 `progress_policy.py` and `pattern_engine.py` are unchanged.
 - No dependency manifest changed. No vector store, RAG, LangGraph, Redis,
   worker, provider abstraction, or new agent was introduced.
-- No Phase 8 code, production credentials, Docker/configuration change,
-  pull request, or `master` merge was made.
+- No Phase 8 code, production credentials, Docker/configuration change, or unrelated runtime change was made. Phase 7 was merged only through PR #11 and its verified master CI.
 
 ## External implementation-review repair
 
@@ -112,6 +111,22 @@ d84e4ea  test: verify Phase 7 practice lifecycle compatibility
 449c597  test: validate Phase 7 browser and CI paths
 ```
 
+## Post-merge finalization
+
+- **External Design Review:** APPROVED
+- **External Implementation Review:** APPROVED
+- **PR:** [#11](https://github.com/bluesblue320-hue/ielts-learning-agent/pull/11) — MERGED
+- **PR head:** `f6990ab94f590f1a37122ea0bf12bf7e5218c727`
+- **PR CI exact-head:** [run `32319812437`](https://github.com/bluesblue320-hue/ielts-learning-agent/actions/runs/32319812437), `pull_request`, `phase/7-memory-aware-planning-v2`, SUCCESS
+- **Merge commit:** `cbf1ebabc87ec490f74957d1327037dae4242381`
+- **Master merge CI:** [run `32320096843`](https://github.com/bluesblue320-hue/ielts-learning-agent/actions/runs/32320096843), workflow `CI`, event `push`, branch `master`, head `cbf1ebabc87ec490f74957d1327037dae4242381`, status `completed`, conclusion `success`.
+
+The master merge CI ran the normal deterministic gates: backend pytest, frontend
+lint/typecheck/unit tests/production build, and Chromium Playwright E2E. The
+repaired application validation remains `914 passed, 1 warning`, frontend unit
+tests remain `13 passed`, and Chromium E2E remains `4 passed`; the local,
+branch-CI, PR-CI, and master-merge-CI evidence above are intentionally distinct.
+
 ## Known, frozen limitations
 
 - An initial evaluation that has not been applied is not learner-owned, so
@@ -127,10 +142,13 @@ d84e4ea  test: verify Phase 7 practice lifecycle compatibility
 ```text
 P7-01..P7-13 = COMPLETE
 P7-14 = INTERNAL_AUDIT_COMPLETE
-External Implementation Review = PENDING
-Phase 7 = INTERNAL_AUDIT_COMPLETE
+External Design Review = APPROVED
+External Implementation Review = APPROVED
+PR #11 = MERGED
+PR CI = SUCCESS
+Master merge CI = SUCCESS
+Phase 7 = COMPLETE
 Phase 8 = NOT_STARTED
 ```
 
-STOP — await external implementation review before creating a PR, merging to
-`master`, or beginning Phase 8.
+STOP — Phase 7 is complete. Do not begin Phase 8 without separate explicit authority.

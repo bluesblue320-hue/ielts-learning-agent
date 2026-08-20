@@ -2,11 +2,11 @@
 
 ## Document status
 
-**INTERNAL_AUDIT_COMPLETE — External Design Review is APPROVED. P7-01 through P7-13 are COMPLETE; P7-14 is INTERNAL_AUDIT_COMPLETE. External implementation review is pending.**
+**COMPLETE AND MERGED — External Design Review and External Implementation Review are APPROVED. P7-01 through P7-13 are COMPLETE; P7-14 is INTERNAL_AUDIT_COMPLETE; PR #11 is MERGED and master merge CI is SUCCESS.**
 
 This graph was created on `phase/7-memory-aware-planning-v2` from verified
 `master` commit `fa34dc3499ab85e286340582353482c4b7388198` (`docs: finalize
-Phase 6 merged status`). External Design Review has approved continuous execution from P7-03 through P7-14, with each node remaining a mandatory quality gate. No Phase 8 work, master merge, or pull request is authorized before external implementation review.
+Phase 6 merged status`). Phase 7 completed its authorized execution, external reviews, PR #11 merge, and successful master CI. Phase 8 remains NOT_STARTED and requires separate explicit authority.
 
 Phase 7 evolves only the deterministic Writing planner. It is not a Core Agent
 runtime, LLM planner, RAG/semantic-memory feature, vector database, TencentDB
@@ -44,7 +44,10 @@ START
   -> P7-12 Concurrency / Idempotency / Migration Hardening [COMPLETE]
   -> P7-13 Backend + Frontend + Browser E2E / CI [COMPLETE]
   -> P7-14 Internal Final Audit [INTERNAL_AUDIT_COMPLETE]
-  -> STOP -> External Review
+  -> External Implementation Review [APPROVED]
+  -> PR #11 [MERGED]
+  -> Master CI [SUCCESS]
+  -> STOP
 ```
 
 Nodes activate only after every dependency is complete. External Design Review has authorized continuous implementation through P7-14; each node is still a mandatory commit, test, and push checkpoint.
@@ -282,7 +285,7 @@ Phase 3 = COMPLETE
 Phase 4 = COMPLETE
 Phase 5 = COMPLETE
 Phase 6 = COMPLETE
-Phase 7 = INTERNAL_AUDIT_COMPLETE
+Phase 7 = COMPLETE
 P7-01 = COMPLETE
 P7-02 = COMPLETE
 P7-03 = COMPLETE
@@ -297,6 +300,10 @@ P7-11 = COMPLETE
 P7-12 = COMPLETE
 P7-13 = COMPLETE
 P7-14 = INTERNAL_AUDIT_COMPLETE
-External Implementation Review = PENDING
+External Design Review = APPROVED
+External Implementation Review = APPROVED
+PR #11 = MERGED
+PR CI = SUCCESS
+Master merge CI = SUCCESS
 Phase 8 = NOT_STARTED
 ```
