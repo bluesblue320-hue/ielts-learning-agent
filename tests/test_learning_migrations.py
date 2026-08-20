@@ -59,8 +59,9 @@ def test_phase3_revision_is_the_single_linear_head() -> None:
 
     # Phase 4 legitimately extended the linear history; Phase 3's migration
     # chain must remain present and linear under the new head.
-    assert script.get_heads() == ["0004_writing_practice"]
+    assert script.get_heads() == ["0005_planner_context_snapshot"]
     walk = {revision.revision: revision.down_revision for revision in script.walk_revisions()}
+    assert walk["0005_planner_context_snapshot"] == "0004_writing_practice"
     assert walk["0004_writing_practice"] == "0003_learning"
     assert walk["0003_learning"] == "0002_writing"
     assert walk["0002_writing"] == "0001_phase1"
@@ -88,7 +89,7 @@ def test_learning_migration_upgrades_downgrades_and_reupgrades(
             assert PHASE2_TABLES <= set(inspect(connection).get_table_names())
 
         # 0002_writing -> 0003_learning (explicit Phase 3 target; the current
-        # repo head is the Phase 4 migration).
+        # repo head includes later additive Phase 4 and Phase 7 migrations).
         command.upgrade(config, "0003_learning")
         assert _version(engine) == "0003_learning"
         with engine.connect() as connection:
@@ -108,7 +109,12 @@ def test_learning_migration_upgrades_downgrades_and_reupgrades(
                     column["name"]
                     for column in inspector.get_columns(model.__tablename__)
                 }
-                assert columns == set(model.__table__.columns.keys())
+                expected_columns = set(model.__table__.columns.keys())
+                if model is PracticeRecommendation:
+                    # P7 adds this column only in revision 0005. This assertion
+                    # intentionally inspects the historical 0003 schema.
+                    expected_columns.remove("planner_context_snapshot")
+                assert columns == expected_columns
 
             learners_types = {
                 column["name"]: column["type"]

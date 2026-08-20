@@ -16,12 +16,15 @@ one ``WritingPractice`` references the episode's evaluation attempt
 from __future__ import annotations
 
 from datetime import datetime
-from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.learner.planning_reconstruction import (
+    PersistedPlanningReconstructionError,
+    reconstruct_persisted_decision,
+)
 from app.learner.writing_policy import WRITING_SKILLS
 from app.memory.errors import (
     EpisodeNotFoundError,
@@ -37,7 +40,6 @@ from app.models.practice import WritingPractice
 from app.models.writing import WritingAttempt, WritingEvaluation
 from app.schemas.common import BandScore
 from app.schemas.learner import (
-    LearnerSkillStateSet,
     LearningEvidence as LearningEvidenceSchema,
     LearningUpdate as LearningUpdateSchema,
 )
@@ -48,11 +50,7 @@ from app.schemas.memory import (
     LearningEpisodeSummary,
     WritingAttemptView,
 )
-from app.schemas.planning import (
-    DecisionType,
-    PlannerReasonCode,
-    PracticeRecommendationDecision,
-)
+from app.schemas.planning import PublicPracticeRecommendationDecision
 from app.schemas.practice import (
     PracticeLifecycleState,
     PracticeResponse,
@@ -66,21 +64,17 @@ from app.schemas.writing import (
 )
 
 
-def reconstruct_decision(row: PracticeRecommendation) -> PracticeRecommendationDecision:
-    """Rebuild the full persisted planner decision from its row."""
-    return PracticeRecommendationDecision(
-        decision_type=DecisionType(row.decision_type),
-        target_skill=row.target_skill,
-        learner_target_band=(
-            BandScore(value=Decimal(row.learner_target_band))
-            if row.learner_target_band is not None
-            else None
-        ),
-        current_estimate=row.current_estimate,
-        reason_codes=[PlannerReasonCode(code) for code in row.reason_codes],
-        planner_version=row.planner_version,
-        state_snapshot=LearnerSkillStateSet.model_validate(row.state_snapshot),
-    )
+def reconstruct_decision(
+    row: PracticeRecommendation,
+) -> PublicPracticeRecommendationDecision:
+    """Return a safe public v1/v2 decision after internal record validation."""
+
+    try:
+        return reconstruct_persisted_decision(row)
+    except PersistedPlanningReconstructionError as error:
+        raise MemoryInvariantError(
+            "persisted recommendation violates planner contract"
+        ) from error
 
 
 def practice_response(row: WritingPractice) -> PracticeResponse:

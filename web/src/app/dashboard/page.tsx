@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { type LearnerStateResponse, type WritingSkill, apiClient, type WritingContextResponse } from "@/lib/api/client";
 import { useLearnerContext } from "@/components/learner-context";
-import { presentApiError, presentNoPracticeReasons, presentPracticeReasons, skillLabels } from "@/lib/presentation";
+import { presentApiError, presentNoPracticeReasons, presentPlanningExplanation, presentPracticeReasons, skillLabels } from "@/lib/presentation";
 import { resumeActionExplanations, resumeActionLabels } from "@/lib/memory-presentation";
 
 export default function DashboardPage() {
@@ -18,6 +18,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const learnerId = cache?.currentLearnerId ?? null;
+  const planningExplanation = presentPlanningExplanation(context?.current_recommendation);
 
   useEffect(() => {
     if (!isReady || learnerId === null) return;
@@ -154,6 +155,11 @@ export default function DashboardPage() {
         )}
         {context?.current_recommendation?.decision_type === "practice" && (
           <p className="supporting-copy">{presentPracticeReasons(context.current_recommendation.reason_codes)}</p>
+        )}
+        {planningExplanation !== null && (
+          <p className="supporting-copy" role="status">
+            推荐依据：{planningExplanation}
+          </p>
         )}
       </section>
       <p className="supporting-copy nav-hint">

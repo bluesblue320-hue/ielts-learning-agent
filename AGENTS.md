@@ -40,18 +40,18 @@ Always inspect the current phase documentation before implementing features.
 Current phase:
 
 ```text
-Phase 6 — Hierarchical Learning Memory & Longitudinal Progress
+Phase 7 — Memory-Aware Adaptive Planning v2
 ```
 
 Read:
 
 ```text
-docs/PHASE6_GRAPH.md
-docs/WRITING_MEMORY_POLICY.md
+docs/PHASE7_GRAPH.md
+docs/MEMORY_AWARE_PLANNING_POLICY.md
 docs/DEVELOPMENT_LOOP.md
 ```
 
-Phase 6 status:
+Phase 7 status:
 
 ```text
 Phase 1 = COMPLETE
@@ -78,7 +78,23 @@ P6-15 = COMPLETE
 P6-16 = INTERNAL_AUDIT_COMPLETE
 External Review = APPROVED
 PR #10 = MERGED
-Phase 7 = NOT_STARTED
+Phase 7 = INTERNAL_AUDIT_COMPLETE
+P7-01 = COMPLETE
+P7-02 = COMPLETE
+P7-03 = COMPLETE
+P7-04 = COMPLETE
+P7-05 = COMPLETE
+P7-06 = COMPLETE
+P7-07 = COMPLETE
+P7-08 = COMPLETE
+P7-09 = COMPLETE
+P7-10 = COMPLETE
+P7-11 = COMPLETE
+P7-12 = COMPLETE
+P7-13 = COMPLETE
+P7-14 = INTERNAL_AUDIT_COMPLETE
+External Implementation Review = PENDING
+Phase 8 = NOT_STARTED
 ```
 
 Phase 6 design (P6-01 audit, P6-02 contract freeze, versions
@@ -97,8 +113,8 @@ current planner (`writing-practice-gap-v1`) is unchanged. External review is
 APPROVED and Phase 6 was merged to master through PR #10 (merge commit
 `b8e419d8c146c921539f4654b5aeb0b56ed6f425`); see
 [docs/PHASE6_AUDIT.md](docs/PHASE6_AUDIT.md) for the internal audit and fresh
-validation results. Phase 7 is NOT_STARTED and must not begin without separate
-explicit authority.
+validation results. External Design Review has authorized continuous implementation from P7-03 through P7-14, with every node retaining its mandatory quality gate. P7-03 through P7-14 are complete; external implementation review is pending. The current planner (`writing-practice-gap-v1`) remains frozen. Do not start Phase 8, merge to master, or create a PR before external implementation review. See
+[docs/PHASE7_GRAPH.md](docs/PHASE7_GRAPH.md) for the Phase 7 execution graph.
 
 The graph defines WHAT should be implemented.
 

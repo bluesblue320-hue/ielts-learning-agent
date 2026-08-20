@@ -77,15 +77,38 @@ export type WritingEvaluationResponse = {
   evaluation: WritingEvaluation;
 };
 
-export type PracticeRecommendation = {
+export type PlanningExplanationFactor =
+  | "equal_maximum_target_gap"
+  | "persistent_gap_tiebreak"
+  | "trend_tiebreak"
+  | "lower_recent_practice_count"
+  | "canonical_priority_tiebreak";
+
+export type PlanningExplanation = {
+  factors: PlanningExplanationFactor[];
+};
+
+type PracticeRecommendationBase = {
   decision_type: "practice" | "no_practice";
   target_skill: WritingSkill | null;
   learner_target_band: BandScore | null;
   current_estimate: string | null;
   reason_codes: string[];
-  planner_version: string;
   state_snapshot: Record<WritingSkill, LearnerSkillState>;
 };
+
+export type PracticeRecommendationV1 = PracticeRecommendationBase & {
+  planner_version: "writing-practice-gap-v1";
+};
+
+export type PracticeRecommendationV2 = PracticeRecommendationBase & {
+  planner_version: "writing-practice-gap-memory-v2";
+  planning_explanation: PlanningExplanation | null;
+};
+
+export type PracticeRecommendation =
+  | PracticeRecommendationV1
+  | PracticeRecommendationV2;
 
 export type LearningApplyResponse = {
   learning_update_id: number;

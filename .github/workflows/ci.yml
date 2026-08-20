@@ -6,6 +6,7 @@ on:
     branches:
       - master
       - phase/5-web-product-mvp
+      - phase/7-memory-aware-planning-v2
 
 permissions:
   contents: read

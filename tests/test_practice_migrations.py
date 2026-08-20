@@ -47,11 +47,12 @@ def _ensure_head(database_url: str) -> None:
 def test_phase4_revision_is_the_single_linear_head() -> None:
     script = ScriptDirectory.from_config(alembic_config())
 
-    assert script.get_heads() == ["0004_writing_practice"]
+    assert script.get_heads() == ["0005_planner_context_snapshot"]
     walk = {
         revision.revision: revision.down_revision
         for revision in script.walk_revisions()
     }
+    assert walk["0005_planner_context_snapshot"] == "0004_writing_practice"
     assert walk["0004_writing_practice"] == "0003_learning"
     assert walk["0003_learning"] == "0002_writing"
     assert walk["0002_writing"] == "0001_phase1"
@@ -88,7 +89,7 @@ def test_practice_migration_upgrades_downgrades_and_reupgrades(
 
         # 0003_learning -> 0004_writing_practice.
         command.upgrade(config, "head")
-        assert _version(engine) == "0004_writing_practice"
+        assert _version(engine) == "0005_planner_context_snapshot"
         with engine.connect() as connection:
             inspector = inspect(connection)
             tables = set(inspector.get_table_names())
@@ -144,7 +145,7 @@ def test_practice_migration_upgrades_downgrades_and_reupgrades(
 
         # 0003_learning -> 0004_writing_practice again (reproducibility).
         command.upgrade(config, "head")
-        assert _version(engine) == "0004_writing_practice"
+        assert _version(engine) == "0005_planner_context_snapshot"
         with engine.connect() as connection:
             tables = set(inspect(connection).get_table_names())
             assert "writing_practices" in tables

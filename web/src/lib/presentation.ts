@@ -1,4 +1,4 @@
-import { ApiRequestError, type WritingSkill } from "./api/client.ts";
+import { ApiRequestError, type PlanningExplanationFactor, type PracticeRecommendation, type WritingSkill } from "./api/client.ts";
 
 export const skillLabels: Record<WritingSkill, string> = {
   task_response: "任务回应（Task Response）",
@@ -48,6 +48,32 @@ export function presentPracticeReasons(reasonCodes: string[]): string {
   };
   return reasonCodes.filter((code) => copy[code]).map((code) => copy[code]).join(" ");
 }
+const planningExplanationCopy: Record<PlanningExplanationFactor, string> = {
+  equal_maximum_target_gap: "当前多个能力与目标分差距相同。",
+  persistent_gap_tiebreak: "该能力近期持续低于目标，因此优先练习。",
+  trend_tiebreak: "同等薄弱项中，系统根据近期表现趋势优先选择了这一项。",
+  lower_recent_practice_count: "同等薄弱项中，该能力最近练习次数更少。",
+  canonical_priority_tiebreak: "同等薄弱项仍无法区分，系统按固定优先级选择了这一项。",
+};
+
+export function presentPlanningExplanation(
+  recommendation: PracticeRecommendation | null | undefined,
+): string | null {
+  if (
+    recommendation?.planner_version !== "writing-practice-gap-memory-v2" ||
+    recommendation.planning_explanation === null
+  ) {
+    return null;
+  }
+
+  const copy = recommendation.planning_explanation.factors
+    .map((factor) => planningExplanationCopy[factor])
+    .filter((message): message is string => message !== undefined);
+  return copy.length > 0
+    ? copy.join("")
+    : "系统已根据当前学习状态生成下一步建议。";
+}
+
 export function isSubmissionConflictLocked(status: string | null): boolean {
   return status === "conflict";
 }

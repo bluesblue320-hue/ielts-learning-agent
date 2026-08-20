@@ -21,7 +21,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from app.schemas.learner import WritingSkillKey
-from app.schemas.planning import PracticeRecommendationDecision
+from app.schemas.planning import PublicPracticeRecommendationDecision
 from app.schemas.writing import WritingEssayText
 
 # Frozen generation-policy maximum sizes (writing-practice-generation-v1).
@@ -169,4 +169,4 @@ class ClosedLoopResult(PracticeSchema):
     evaluation_id: int = Field(gt=0)
     learning_update_id: int = Field(gt=0)
     next_recommendation_id: int = Field(gt=0)
-    next_recommendation: PracticeRecommendationDecision
+    next_recommendation: PublicPracticeRecommendationDecision
