@@ -20,4 +20,17 @@ test("Agent continue generates once and stops at the human essay boundary", asyn
 
   await page.getByRole("link", { name: "开始本次练习" }).click();
   await expect(page).toHaveURL(/\/practice\/\d+$/);
+  const firstPracticeUrl = page.url();
+  await page.getByLabel("你的英文作文").fill(
+    "This targeted practice response develops a clear position, explains each supporting point, uses specific examples, and concludes directly against the authoritative question.",
+  );
+  await page.getByRole("button", { name: "提交作文并由学习助手继续" }).click();
+  await expect(page).toHaveURL(/\/(dashboard|practice\/\d+)$/);
+  if (/\/practice\/\d+$/.test(page.url())) {
+    await expect(page).not.toHaveURL(firstPracticeUrl);
+  } else {
+    await expect(page.getByText("学习概览")).toBeVisible();
+  }
+  await page.reload();
+  await expect(page.locator("body")).toContainText("学习");
 });
