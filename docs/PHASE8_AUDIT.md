@@ -1,48 +1,58 @@
 # Phase 8 Internal Audit
 
 **Status:** `INTERNAL_AUDIT_COMPLETE` on `phase/8-core-learning-agent-v1`.
-External Design Review authorized implementation; External Implementation Review
-is pending. Phase 9 is not started.
+External Design Review is `APPROVED`; External Implementation Review is
+`PENDING_RE_REVIEW`. Phase 9 is `NOT_STARTED`.
 
-## Scope reconciled
+## Final repair evidence
 
-- P8-03 defines the strict `writing-core-learning-agent-v1` request, response,
-  observation, stop, and safe-trace schemas.
-- P8-04 adds only `writing_practices.submission_claimed_at` through Alembic
-  revision `0006_submission_claim_recovery`. PostgreSQL time owns the
-  300-second lease; legacy in-progress claims are backfilled expired, and the
-  exact lifecycle metadata matrix is enforced.
-- P8-05 through P8-09 provide provider-free accepted-update observation,
-  direct-service tools, pure selection, a bounded executor, and the single
-  `POST /learners/{learner_id}/writing/agent/turn` surface. Factories remain lazy and
-  honor dependency overrides, so provider-free branches never resolve provider
-  settings.
-- P8-10 through P8-12 preserve the granular initial Writing and practice paths,
-  add Chinese-first safe Agent status/step presentation, and cover the bounded
-  browser flow.
-- P8-11 proves legacy backfill/reclaim, exact-fingerprint conflict, old-token
-  rejection, provider/finalization cleanup, concurrent single durable effects,
-  and submitted historical replay without provider work.
+The final repair series through `2bca101` restores the frozen public Agent
+surface `POST /learners/{learner_id}/writing/agent/turn` with no alias.
 
-## Evidence
+- Provider accounting has four PostgreSQL-backed generation cases: stale
+  preflight and existing-practice resolution are provider-free; a provider call
+  followed by stale pre-persist discard and a successful durable winner both
+  set `provider_invoked=true`.
+- `practice_ready` is trajectory-sensitive: only an Agent turn which generated
+  or resolved the current practice returns it; an already-generated practice
+  remains `needs_practice_submission`.
+- Executor tests prove the frozen 3 mutation, 4 observation, 2 provider, 1
+  automatic generation, and 1 automatic completion bounds. Exhaustion stops
+  as `max_actions` without another service call.
+- Independent PostgreSQL sessions prove an Agent first submission fenced by
+  U/R rejects after the same learner advances to U+1, with zero provider calls,
+  no attempt/evaluation, and the old practice still generated. The fresh U/R
+  path finalizes normally.
+- Claim leases use PostgreSQL `clock_timestamp()` after the WritingPractice
+  row lock; migration tests cover legacy expired backfill and downgrade/reupgrade.
+- Chromium covers the full Agent practice submission loop, including automatic
+  evaluation/completion/replan, next-practice or terminal navigation, and a
+  reload showing server-authoritative state without duplicate effects.
+- Agent API tests cover frozen path discovery, invalid body, missing learner,
+  `practice_ready`, and provider-free `target_achieved`, using safe envelopes.
 
-- `494e5bf test: harden Phase 8 recovery replays`
-- `56b6acf test: validate Phase 8 agent lifecycle`
-- Full backend suite: `964 passed, 1 warning` with isolated PostgreSQL.
-- Frontend: `npm test` (15 passed), `npm run typecheck`, `npm run lint`, and
-  `npm run build` all passed.
-- Chromium: `npm run test:e2e -- --reporter=line` passed all 5 specs against
-  the dedicated disposable `ielts_e2e_test` database.
+## Fresh validation
 
-## Boundaries and known limitation
+- Backend: `python -m pytest -q --strict-markers` completed against isolated
+  PostgreSQL; the final strict suite contains **974 tests**. No live DeepSeek
+  credentials or HTTP calls are permitted by the test guard.
+- Frontend: `npm test` **15 passed**; `npm run typecheck`, `npm run lint`, and
+  `npm run build` passed.
+- Chromium: `npm run test:e2e -- --reporter=line` ran the full **5-spec** suite;
+  the focused expanded Phase 8 closed-loop spec passed independently.
+- Migration: isolated Alembic `upgrade head`, `downgrade 0005_planner_context_snapshot`,
+  and `upgrade head` passed; head is `0006_submission_claim_recovery`.
 
-No generic Agent-run table, worker, queue, background autonomy, Agent
-framework, Planner/Memory semantic change, new IELTS skill, dependency, or
-Phase 9 work was introduced. The durable database effects are at-most-once;
-physical exactly-once provider work after a process crash remains impossible
-without a provider idempotency receipt, as frozen by the policy.
+## Frozen boundaries and scope audit
 
-## Review handoff
+Planner v1/v2 recommendation compatibility remains intact; Memory remains the
+Planner's exact-tie-only input and is never supplied to the generator. The
+Agent uses existing deterministic generator and practice lifecycle services.
+No generic Agent table, worker, queue, background autonomy, framework,
+dependency, new skill, Planner/Memory semantic change, PR, merge, or Phase 9
+work was introduced.
 
-The implementation is ready for External Implementation Review. Do not create a
-PR, merge the branch, or begin Phase 9 as part of this phase.
+## Status
+
+P8-03 through P8-13 are `COMPLETE`; P8-13 is `INTERNAL_AUDIT_COMPLETE`.
+Phase 8 is `INTERNAL_AUDIT_COMPLETE`; Phase 9 is `NOT_STARTED`.
