@@ -295,7 +295,7 @@ retrieve_knowledge(
 )
 ```
 
-### 6.1 Retrieval purpose semantics
+### 7.1 Retrieval purpose semantics
 
 `purpose` belongs to the retrieval query, not to `KnowledgeUnit` metadata.
 Knowledge remains learner-independent and application-purpose-independent.
@@ -333,7 +333,7 @@ rubric_compatibility
 -> provenance units needed for comparison
 ```
 
-### 6.2 Allowed query dimensions
+### 7.2 Allowed query dimensions
 
 - task;
 - purpose;
@@ -342,7 +342,7 @@ rubric_compatibility
 - target band;
 - task type where modeled.
 
-### 6.3 Forbidden query dimensions
+### 7.3 Forbidden query dimensions
 
 - arbitrary free-form query;
 - raw essay text;
@@ -352,7 +352,7 @@ rubric_compatibility
 - URLs to fetch;
 - hidden prompt instructions.
 
-### 6.4 Deterministic selection
+### 7.4 Deterministic selection
 
 For the same Knowledge version and normalized query, return the same ordered
 Knowledge IDs.
@@ -363,7 +363,7 @@ the selected strategy then ranks exact Knowledge metadata matches.
 
 The exact ranking must be encoded and tested.
 
-### 6.5 Bounded retrieval
+### 7.5 Bounded retrieval
 
 Each purpose has an explicit small result bound. Do not send the whole corpus to
 a provider by default.
@@ -455,7 +455,7 @@ Typical output may include:
 
 Guidance is explanatory only and does not mutate learner state.
 
-### 9.1 Language
+### 10.1 Language
 
 UI remains Chinese-first while IELTS criterion names remain recognizable:
 
@@ -464,7 +464,7 @@ UI remains Chinese-first while IELTS criterion names remain recognizable:
 - 词汇资源（Lexical Resource）
 - 语法多样性与准确性（Grammatical Range and Accuracy）
 
-### 9.2 LLM use
+### 10.2 LLM use
 
 Prefer deterministic templates in v1.
 
