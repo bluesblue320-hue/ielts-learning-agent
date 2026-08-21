@@ -9,7 +9,7 @@ External Design Review is `APPROVED`; External Implementation Review is
 The final repair series through `2bca101` restores the frozen public Agent
 surface `POST /learners/{learner_id}/writing/agent/turn` with no alias.
 
-- Provider accounting has four PostgreSQL-backed generation cases: stale
+- Provider accounting has four PostgreSQL-backed generation cases, plus an independent executor test that prevents a third provider-backed invocation once the frozen budget of two is reached: stale
   preflight and existing-practice resolution are provider-free; a provider call
   followed by stale pre-persist discard and a successful durable winner both
   set `provider_invoked=true`.

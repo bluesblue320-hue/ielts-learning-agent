@@ -27,7 +27,6 @@ test("Agent continue generates once and stops at the human essay boundary", asyn
   await page.getByRole("button", { name: "提交作文并由学习助手继续" }).click();
   await expect(page).toHaveURL(/\/(dashboard|practice\/\d+)$/);
   if (/\/practice\/\d+$/.test(page.url())) {
-    const nextPracticeUrl = page.url();
     await expect(page).not.toHaveURL(firstPracticeUrl);
     await page.reload();
     await expect(page).toHaveURL(/\/dashboard$/);
