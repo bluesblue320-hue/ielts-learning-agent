@@ -166,3 +166,56 @@ def test_historical_submitted_replay_skips_applied_completion_and_continues() ->
         AgentOutcome.OBSERVATION_CLASSIFIED,
     ]
     assert response.stop_reason == AgentStopReason.PRACTICE_READY
+
+def test_stale_generation_consumes_the_single_automatic_generation_budget() -> None:
+    tools = Tools()
+    tools.generate_practice = lambda **_kwargs: _record_generation(tools, "stale_discarded", False)
+    response = asyncio.run(
+        _executor(
+            [_state(ObservationKind.NEEDS_GENERATION), _state(ObservationKind.NEEDS_GENERATION)], tools
+        ).execute(learner_id=1, turn=ContinueAgentTurn(turn_type="continue"))
+    )
+    assert response.stop_reason == AgentStopReason.MAX_ACTIONS
+    assert tools.calls == ["generate"]
+    assert len([step for step in response.steps if step.tool.value == "observe"]) == 2
+
+
+def test_completion_budget_stops_before_a_second_automatic_completion() -> None:
+    tools = Tools()
+    response = asyncio.run(
+        _executor(
+            [_state(ObservationKind.NEEDS_COMPLETION), _state(ObservationKind.NEEDS_COMPLETION)], tools
+        ).execute(learner_id=1, turn=ContinueAgentTurn(turn_type="continue"))
+    )
+    assert response.stop_reason == AgentStopReason.MAX_ACTIONS
+    assert tools.calls == ["complete"]
+
+
+def test_turn_never_exceeds_frozen_mutation_provider_or_observation_bounds() -> None:
+    tools = Tools()
+    response = asyncio.run(
+        _executor(
+            [
+                _state(ObservationKind.NEEDS_PRACTICE_SUBMISSION),
+                _state(ObservationKind.NEEDS_COMPLETION),
+                _state(ObservationKind.NEEDS_GENERATION),
+                _state(ObservationKind.NEEDS_PRACTICE_SUBMISSION),
+            ], tools
+        ).execute(
+            learner_id=1,
+            turn=PracticeSubmissionAgentTurn(
+                turn_type="practice_submission", practice_id=9, essay="Essay."
+            ),
+        )
+    )
+    assert response.stop_reason == AgentStopReason.MAX_ACTIONS
+    assert tools.calls == ["submit", "complete", "generate"]
+    assert len(tools.calls) <= 3
+    assert len([step for step in response.steps if step.tool.value == "observe"]) <= 4
+
+
+async def _generation(status: str, provider_invoked: bool):
+    return SimpleNamespace(status=status, provider_invoked=provider_invoked)
+async def _record_generation(tools: Tools, status: str, provider_invoked: bool):
+    tools.calls.append("generate")
+    return await _generation(status, provider_invoked)
