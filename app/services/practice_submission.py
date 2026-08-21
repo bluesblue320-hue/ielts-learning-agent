@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import secrets
+from collections.abc import Callable
 from datetime import timedelta
 
 from sqlalchemy import func, select
@@ -52,9 +53,19 @@ def submission_fingerprint(*, practice_id: int, question: str, essay: str) -> st
 class PracticeSubmissionService:
     """Claim a generated practice, evaluate outside the DB, then finalize once."""
 
-    def __init__(self, session: Session, evaluator: WritingEvaluationService) -> None:
+    def __init__(
+        self,
+        session: Session,
+        evaluator: WritingEvaluationService
+        | Callable[[], WritingEvaluationService],
+    ) -> None:
         self._session = session
         self._evaluator = evaluator
+
+    def _evaluation_service(self) -> WritingEvaluationService:
+        if callable(self._evaluator):
+            self._evaluator = self._evaluator()
+        return self._evaluator
 
     async def submit(
         self,
@@ -73,7 +84,7 @@ class PracticeSubmissionService:
             return claim
         token, writing_submission = claim
         try:
-            evaluation = await self._evaluator.evaluate(writing_submission)
+            evaluation = await self._evaluation_service().evaluate(writing_submission)
         except Exception:
             self._reset_claim_if_owned(practice_id=practice_id, claim_token=token)
             raise
@@ -200,6 +211,10 @@ class PracticeSubmissionService:
             ) from error
 
     def _finalize(self, *, practice_id: int, claim_token: str, submission: WritingSubmission, evaluation) -> SubmissionResult:
+        # A caller may have inspected the practice after the provider returned.
+        # Finalization owns its own short transaction, just as claiming does.
+        if self._session.in_transaction():
+            self._session.rollback()
         attempt, evaluation_record = WritingEvaluationPersistenceService.build_records(
             submission,
             evaluation,

@@ -12,10 +12,11 @@ from app.schemas.agent import (
     AgentOutcome,
     AgentStep,
     AgentStopReason,
-    ContinueAgentTurn,
     AgentTool,
     AgentTurn,
     AgentTurnResponse,
+    ContinueAgentTurn,
+    PracticeSubmissionAgentTurn,
 )
 
 MAX_MUTATING_TOOL_EXECUTIONS = 3
@@ -43,6 +44,84 @@ class AgentTurnExecutor:
         active_turn = turn
 
         while mutations < MAX_MUTATING_TOOL_EXECUTIONS:
+            if (
+                isinstance(active_turn, PracticeSubmissionAgentTurn)
+                and observed.practice_id != active_turn.practice_id
+            ):
+                replay = self._tools.resolve_submitted_replay(
+                    learner_id=learner_id,
+                    practice_id=active_turn.practice_id,
+                    essay=active_turn.essay,
+                )
+                if replay is not None:
+                    if not replay.matches:
+                        steps.append(
+                            AgentStep(
+                                tool=AgentTool.SUBMIT_PRACTICE,
+                                outcome=AgentOutcome.SUBMISSION_CONFLICT,
+                            )
+                        )
+                        return self._response(
+                            initial,
+                            steps,
+                            observed,
+                            AgentStopReason.SUBMISSION_CONFLICT,
+                        )
+                    result = await self._tools.submit_practice(
+                        learner_id=learner_id,
+                        practice_id=active_turn.practice_id,
+                        essay=active_turn.essay,
+                    )
+                    outcome = {
+                        "submitted": AgentOutcome.SUBMISSION_SUBMITTED,
+                        "reused": AgentOutcome.SUBMISSION_REUSED,
+                        "in_progress": AgentOutcome.SUBMISSION_IN_PROGRESS,
+                        "conflict": AgentOutcome.SUBMISSION_CONFLICT,
+                    }[result.status]
+                    steps.append(AgentStep(tool=AgentTool.SUBMIT_PRACTICE, outcome=outcome))
+                    mutations += 1
+                    if result.status == "in_progress":
+                        return self._response(
+                            initial, steps, observed, AgentStopReason.AWAIT_SUBMISSION
+                        )
+                    if result.status == "conflict":
+                        return self._response(
+                            initial,
+                            steps,
+                            observed,
+                            AgentStopReason.SUBMISSION_CONFLICT,
+                        )
+                    if not replay.completion_applied:
+                        completed = self._tools.complete_practice(
+                            learner_id=learner_id,
+                            practice_id=active_turn.practice_id,
+                        )
+                        steps.append(
+                            AgentStep(
+                                tool=AgentTool.COMPLETE_PRACTICE,
+                                outcome=(
+                                    AgentOutcome.COMPLETION_REUSED
+                                    if completed.reused
+                                    else AgentOutcome.COMPLETION_APPLIED
+                                ),
+                            )
+                        )
+                        mutations += 1
+                    if observations >= MAX_OBSERVATIONS:
+                        return self._response(
+                            initial, steps, observed, AgentStopReason.MAX_ACTIONS
+                        )
+                    observed = self._observe(learner_id)
+                    steps.append(
+                        AgentStep(
+                            tool=AgentTool.OBSERVE,
+                            outcome=AgentOutcome.OBSERVATION_CLASSIFIED,
+                        )
+                    )
+                    observations += 1
+                    active_turn = ContinueAgentTurn(turn_type="continue")
+                    continue
+
             selected = select_agent_action(observed=observed, turn=active_turn)
             if selected.action == AgentAction.STOP:
                 assert selected.stop_reason is not None
@@ -111,7 +190,7 @@ class AgentTurnExecutor:
                         tool=AgentTool.COMPLETE_PRACTICE,
                         outcome=(
                             AgentOutcome.COMPLETION_REUSED
-                            if getattr(completed, "reused", False)
+                            if completed.reused
                             else AgentOutcome.COMPLETION_APPLIED
                         ),
                     )

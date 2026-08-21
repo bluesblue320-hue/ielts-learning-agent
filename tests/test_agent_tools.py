@@ -18,7 +18,7 @@ class Submission:
 
 
 class Completion:
-    def complete(self, **kwargs):
+    def complete_with_outcome(self, **kwargs):
         self.kwargs = kwargs
         return "completion"
 

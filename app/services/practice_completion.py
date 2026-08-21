@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -35,6 +37,13 @@ class PracticeCompletionPersistenceError(PracticeCompletionError):
     """The submitted practice trace is unexpectedly incomplete."""
 
 
+@dataclass(frozen=True)
+class PracticeCompletionOutcome:
+    """Agent-only metadata while preserving the frozen granular response."""
+
+    result: ClosedLoopResult
+    reused: bool
+
 class PracticeCompletionService:
     """Reuse Phase 3 apply idempotency; never generate another practice."""
 
@@ -42,6 +51,15 @@ class PracticeCompletionService:
         self._session = session
 
     def complete(self, *, learner_id: int, practice_id: int) -> ClosedLoopResult:
+        """Complete through the frozen granular result shape."""
+
+        return self.complete_with_outcome(
+            learner_id=learner_id, practice_id=practice_id
+        ).result
+
+    def complete_with_outcome(
+        self, *, learner_id: int, practice_id: int
+    ) -> PracticeCompletionOutcome:
         try:
             practice = self._session.scalar(
                 select(WritingPractice).where(WritingPractice.id == practice_id)
@@ -84,11 +102,14 @@ class PracticeCompletionService:
             learner_id=learner_id,
             writing_evaluation_id=evaluation_id,
         )
-        return ClosedLoopResult(
-            practice_id=practice_id,
-            attempt_id=attempt_id,
-            evaluation_id=evaluation_id,
-            learning_update_id=applied.learning_update_id,
-            next_recommendation_id=applied.recommendation_id,
-            next_recommendation=applied.recommendation,
+        return PracticeCompletionOutcome(
+            result=ClosedLoopResult(
+                practice_id=practice_id,
+                attempt_id=attempt_id,
+                evaluation_id=evaluation_id,
+                learning_update_id=applied.learning_update_id,
+                next_recommendation_id=applied.recommendation_id,
+                next_recommendation=applied.recommendation,
+            ),
+            reused=applied.reused,
         )

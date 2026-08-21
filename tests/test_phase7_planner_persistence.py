@@ -17,7 +17,7 @@ from app.models import PracticeRecommendation
 
 
 REVISION = "0005_planner_context_snapshot"
-HEAD_REVISION = "0006_recoverable_practice_submission_claims"
+HEAD_REVISION = "0006_submission_claim_recovery"
 PREVIOUS_REVISION = "0004_writing_practice"
 COLUMN = "planner_context_snapshot"
 CHECK = "ck_practice_recommendation_planner_context_snapshot_object"

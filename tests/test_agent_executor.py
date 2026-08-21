@@ -55,6 +55,8 @@ def _state(kind: ObservationKind) -> AgentObservedState:
 class Tools:
     def __init__(self) -> None:
         self.calls: list[str] = []
+        self.replay = None
+        self.submission_status = "submitted"
 
     async def generate_practice(self, **_kwargs):
         self.calls.append("generate")
@@ -62,7 +64,11 @@ class Tools:
 
     async def submit_practice(self, **_kwargs):
         self.calls.append("submit")
-        return SimpleNamespace(status="submitted")
+        return SimpleNamespace(status=self.submission_status)
+
+    def resolve_submitted_replay(self, **_kwargs):
+        self.calls.append("resolve")
+        return self.replay
 
     def complete_practice(self, **_kwargs):
         self.calls.append("complete")
@@ -130,3 +136,33 @@ def test_live_submission_claim_stops_without_a_second_action() -> None:
 
 async def _async_result(status: str):
     return SimpleNamespace(status=status)
+
+
+def test_historical_submitted_replay_skips_applied_completion_and_continues() -> None:
+    tools = Tools()
+    tools.replay = SimpleNamespace(matches=True, completion_applied=True)
+    tools.submission_status = "reused"
+    response = asyncio.run(
+        _executor(
+            [
+                _state(ObservationKind.NEEDS_GENERATION),
+                _state(ObservationKind.NEEDS_GENERATION),
+                _state(ObservationKind.NEEDS_PRACTICE_SUBMISSION),
+            ],
+            tools,
+        ).execute(
+            learner_id=1,
+            turn=PracticeSubmissionAgentTurn(
+                turn_type="practice_submission", practice_id=7, essay="Essay."
+            ),
+        )
+    )
+    assert tools.calls == ["resolve", "submit", "generate"]
+    assert [step.outcome for step in response.steps] == [
+        AgentOutcome.OBSERVATION_CLASSIFIED,
+        AgentOutcome.SUBMISSION_REUSED,
+        AgentOutcome.OBSERVATION_CLASSIFIED,
+        AgentOutcome.PRACTICE_GENERATED,
+        AgentOutcome.OBSERVATION_CLASSIFIED,
+    ]
+    assert response.stop_reason == AgentStopReason.NEEDS_PRACTICE_SUBMISSION

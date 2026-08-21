@@ -87,7 +87,7 @@ def test_concurrent_submission_has_one_claim_one_provider_and_one_pair(factory) 
             PracticeSubmissionService(session, WritingEvaluationService(provider)).submit(
                 learner_id=1,
                 practice_id=practice_id,
-                submission={"essay": "Follower essay."},
+                submission={"essay": "First concurrent essay."},
             )
         )
     assert follower.status == "in_progress"

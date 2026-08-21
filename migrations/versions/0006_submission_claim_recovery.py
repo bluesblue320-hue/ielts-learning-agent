@@ -1,6 +1,6 @@
 """Add durable recovery timestamps to Writing practice submission claims.
 
-Revision ID: 0006_recoverable_practice_submission_claims
+Revision ID: 0006_submission_claim_recovery
 Revises: 0005_planner_context_snapshot
 """
 
@@ -10,7 +10,7 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision: str = "0006_recoverable_practice_submission_claims"
+revision: str = "0006_submission_claim_recovery"
 down_revision: str | None = "0005_planner_context_snapshot"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
