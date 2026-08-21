@@ -118,8 +118,8 @@ class KnowledgeRetrievalQuery(KnowledgeSchema):
         if self.purpose is KnowledgeRetrievalPurpose.RUBRIC_COMPATIBILITY:
             if self.current_band is None:
                 raise ValueError("rubric compatibility requires current_band")
-        elif self.target_band is None:
-            raise ValueError("guidance and generation require target_band")
+        elif self.target_band is None or (self.purpose is KnowledgeRetrievalPurpose.LEARNER_GUIDANCE and self.current_band is None):
+            raise ValueError("guidance requires current_band and target_band; generation requires target_band")
         return self
 
 
