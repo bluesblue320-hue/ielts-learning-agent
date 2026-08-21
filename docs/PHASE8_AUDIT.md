@@ -6,7 +6,7 @@ External Design Review is `APPROVED`; External Implementation Review is
 
 ## Final repair evidence
 
-The final repair series through `2bca101` restores the frozen public Agent
+The final verification series through `1e7e355` restores the frozen public Agent
 surface `POST /learners/{learner_id}/writing/agent/turn` with no alias.
 
 - Provider accounting has four PostgreSQL-backed generation cases, plus an independent executor test that prevents a third provider-backed invocation once the frozen budget of two is reached: stale
@@ -34,7 +34,7 @@ surface `POST /learners/{learner_id}/writing/agent/turn` with no alias.
 ## Fresh validation
 
 - Backend: `python -m pytest -q --strict-markers` completed against isolated
-  PostgreSQL; the final strict suite contains **974 tests**. No live DeepSeek
+  PostgreSQL; the final strict suite contains **981 tests**. No live DeepSeek
   credentials or HTTP calls are permitted by the test guard.
 - Frontend: `npm test` **15 passed**; `npm run typecheck`, `npm run lint`, and
   `npm run build` passed.
