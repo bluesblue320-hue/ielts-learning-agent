@@ -153,3 +153,29 @@ def test_agent_generation_persistence_failure_is_safe_503(client: TestClient, en
     assert response.status_code == 503
     assert response.json()["error"]["code"] == "persistence_unavailable"
     assert "private persistence failure" not in str(response.json())
+
+from app.services.learning_application import apply_writing_evaluation
+from tests.test_practice_generation import _evaluation
+
+
+def test_agent_stale_generated_first_submission_is_safe_conflict(client: TestClient, engine) -> None:
+    practice_id, _question = _agent_generated_practice(client, engine)
+    provider = FakeProvider([])
+    client.app.dependency_overrides[get_writing_provider] = lambda: provider
+    try:
+        with create_session_factory(engine)() as session:
+            attempt, evaluation = _evaluation(identifier=901, attempt_id=902, band="6.0")
+            session.add_all([attempt, evaluation])
+            session.commit()
+            apply_writing_evaluation(session, learner_id=1, writing_evaluation_id=evaluation.id)
+        response = client.post(_agent_url(), json={"turn_type": "practice_submission", "practice_id": practice_id, "essay": "Stale Agent API essay."})
+        assert response.status_code == 409
+        assert response.json()["error"]["code"] == "practice_conflict"
+        assert "AgentStalePracticeError" not in str(response.json())
+        assert provider.requests == []
+        with create_session_factory(engine)() as session:
+            practice = session.get(WritingPractice, practice_id)
+            assert practice is not None and practice.lifecycle_state == "generated"
+            assert practice.attempt_id is None
+    finally:
+        client.app.dependency_overrides.clear()
