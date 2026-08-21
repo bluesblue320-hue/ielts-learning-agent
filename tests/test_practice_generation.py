@@ -331,3 +331,78 @@ def test_concurrent_first_generation_returns_one_durable_winner(factory) -> None
     assert ids[0] == ids[1]
     with factory() as session:
         assert session.scalar(select(func.count()).select_from(WritingPractice)) == 1
+
+
+def test_agent_generation_provider_accounting_four_branches(factory, monkeypatch) -> None:
+    """The Agent charges provider budget only when its generator actually ran."""
+
+    # A: stale preflight makes no provider call.
+    stale_generator = FakePracticeGenerator()
+    with factory() as session:
+        recommendation = _recommendation(session, learner_id=1, evaluation_id=100, attempt_id=10)
+        stale = asyncio.run(
+            PracticeGenerationService(session, stale_generator).generate_or_resolve_current(
+                learner_id=1,
+                recommendation_id=recommendation.id,
+                expected_learning_update_id=recommendation.learning_update_id + 1,
+            )
+        )
+    assert stale.status == "stale_discarded"
+    assert stale.provider_invoked is False
+    assert stale_generator.requests == []
+
+    # B: an existing durable practice resolves without the generator.
+    resolved_generator = FakePracticeGenerator()
+    with factory() as session:
+        recommendation = _recommendation(session, learner_id=2, evaluation_id=200, attempt_id=20)
+        first = asyncio.run(
+            PracticeGenerationService(session, resolved_generator).generate_or_resolve_current(
+                    learner_id=2,
+                recommendation_id=recommendation.id,
+                expected_learning_update_id=recommendation.learning_update_id,
+            )
+        )
+        assert first.status == "generated"
+        resolved = asyncio.run(
+            PracticeGenerationService(session, resolved_generator).generate_or_resolve_current(
+                    learner_id=2,
+                recommendation_id=recommendation.id,
+                expected_learning_update_id=recommendation.learning_update_id,
+            )
+        )
+    assert resolved.status == "resolved"
+    assert resolved.provider_invoked is False
+    assert len(resolved_generator.requests) == 1
+
+    # C: provider runs, then the pre-persist fence discards the stale candidate.
+    stale_after_provider = FakePracticeGenerator()
+    with factory() as session:
+        recommendation = _recommendation(session, learner_id=3, evaluation_id=300, attempt_id=30)
+        service = PracticeGenerationService(session, stale_after_provider)
+        monkeypatch.setattr(service, "_persist_if_agent_current", lambda **_kwargs: None)
+        discarded = asyncio.run(
+            service.generate_or_resolve_current(
+                learner_id=3,
+                recommendation_id=recommendation.id,
+                expected_learning_update_id=recommendation.learning_update_id,
+            )
+        )
+        assert session.scalar(select(func.count()).select_from(WritingPractice).where(WritingPractice.recommendation_id == recommendation.id)) == 0
+    assert discarded.status == "stale_discarded"
+    assert discarded.provider_invoked is True
+    assert len(stale_after_provider.requests) == 1
+
+    # D: provider runs and a current fenced persistence succeeds.
+    fresh_generator = FakePracticeGenerator()
+    with factory() as session:
+        recommendation = _recommendation(session, learner_id=4, evaluation_id=400, attempt_id=40)
+        fresh = asyncio.run(
+            PracticeGenerationService(session, fresh_generator).generate_or_resolve_current(
+                learner_id=4,
+                recommendation_id=recommendation.id,
+                expected_learning_update_id=recommendation.learning_update_id,
+            )
+        )
+    assert fresh.status == "generated"
+    assert fresh.provider_invoked is True
+    assert len(fresh_generator.requests) == 1
