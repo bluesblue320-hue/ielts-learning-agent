@@ -100,7 +100,7 @@ test("the client sends the published Agent turn request", async () => {
 
   await client.agentTurn(3, { turn_type: "continue" });
 
-  assert.equal(requestedUrl, "http://api.example.test/learners/3/agent/turn");
+  assert.equal(requestedUrl, "http://api.example.test/learners/3/writing/agent/turn");
   assert.equal(requestedInit?.method, "POST");
   assert.equal(requestedInit?.body, JSON.stringify({ turn_type: "continue" }));
 });

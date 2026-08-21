@@ -32,6 +32,7 @@ class AgentGenerationOutcome:
 
     status: Literal["generated", "resolved", "stale_discarded"]
     practice: PracticeResponse | None = None
+    provider_invoked: bool = False
 
 
 class PracticeGenerationError(Exception):
@@ -215,6 +216,7 @@ class PracticeGenerationService:
         return AgentGenerationOutcome(
             status="resolved" if resolved else "generated",
             practice=_practice_response(practice),
+            provider_invoked=True,
         )
 
     def _agent_recommendation_is_current(

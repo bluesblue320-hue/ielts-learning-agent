@@ -18,7 +18,7 @@ from app.api.dependencies.agent import (
 from app.db.session import get_db_session
 from app.schemas.agent import AgentTurn, AgentTurnResponse
 
-router = APIRouter(prefix="/learners/{learner_id}/agent", tags=["agent"])
+router = APIRouter(prefix="/learners/{learner_id}/writing/agent", tags=["agent"])
 
 
 @router.post("/turn", response_model=AgentTurnResponse)

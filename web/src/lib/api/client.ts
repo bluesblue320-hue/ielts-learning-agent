@@ -427,7 +427,7 @@ export function createApiClient(options: ApiClientOptions = {}) {
     getWritingContext: (learnerId: number) =>
       request<WritingContextResponse>(`/learners/${learnerId}/writing/context`),
     agentTurn: (learnerId: number, input: AgentTurnRequest) =>
-      request<AgentTurnResponse>(`/learners/${learnerId}/agent/turn`, { method: "POST", body: input }),
+      request<AgentTurnResponse>(`/learners/${learnerId}/writing/agent/turn`, { method: "POST", body: input }),
   };
 }
 

@@ -80,7 +80,7 @@ def _executor(states: list[AgentObservedState], tools: Tools) -> AgentTurnExecut
     return AgentTurnExecutor(tools=tools, observe=lambda _learner_id: next(iterator))
 
 
-def test_continue_generates_once_then_stops_at_human_essay_boundary() -> None:
+def test_continue_generates_once_then_reports_new_practice_ready() -> None:
     tools = Tools()
     response = asyncio.run(
         _executor(
@@ -94,7 +94,7 @@ def test_continue_generates_once_then_stops_at_human_essay_boundary() -> None:
         AgentOutcome.PRACTICE_GENERATED,
         AgentOutcome.OBSERVATION_CLASSIFIED,
     ]
-    assert response.stop_reason == AgentStopReason.NEEDS_PRACTICE_SUBMISSION
+    assert response.stop_reason == AgentStopReason.PRACTICE_READY
 
 
 def test_submission_reobserves_completes_and_stops_truthfully() -> None:
@@ -165,4 +165,4 @@ def test_historical_submitted_replay_skips_applied_completion_and_continues() ->
         AgentOutcome.PRACTICE_GENERATED,
         AgentOutcome.OBSERVATION_CLASSIFIED,
     ]
-    assert response.stop_reason == AgentStopReason.NEEDS_PRACTICE_SUBMISSION
+    assert response.stop_reason == AgentStopReason.PRACTICE_READY

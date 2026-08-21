@@ -19,6 +19,7 @@ from app.services.practice_completion import (
 )
 from app.services.practice_generation import AgentGenerationOutcome, PracticeGenerationService
 from app.services.practice_submission import (
+    AgentSubmissionExpectation,
     PracticeNotFoundError,
     PracticeOwnershipError,
     PracticeSubmissionPersistenceError,
@@ -152,13 +153,29 @@ class AgentTools:
             expected_learning_update_id=expected_learning_update_id,
         )
 
-    async def submit_practice(self, *, learner_id: int, practice_id: int, essay: str):
+    async def submit_practice(
+        self,
+        *,
+        learner_id: int,
+        practice_id: int,
+        essay: str,
+        expected_learning_update_id: int | None = None,
+        expected_recommendation_id: int | None = None,
+    ):
+        expectation = None
+        if expected_learning_update_id is not None or expected_recommendation_id is not None:
+            assert expected_learning_update_id is not None
+            assert expected_recommendation_id is not None
+            expectation = AgentSubmissionExpectation(
+                expected_learning_update_id=expected_learning_update_id,
+                expected_recommendation_id=expected_recommendation_id,
+            )
         return await self._submission_service().submit(
             learner_id=learner_id,
             practice_id=practice_id,
             submission=PracticeSubmission(essay=essay),
+            agent_expectation=expectation,
         )
-
     def complete_practice(self, *, learner_id: int, practice_id: int):
         return self._completion_service().complete_with_outcome(
             learner_id=learner_id,

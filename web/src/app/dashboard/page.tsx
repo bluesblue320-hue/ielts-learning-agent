@@ -165,7 +165,12 @@ export default function DashboardPage() {
                   {presentAgentStep(step.tool, step.outcome)}
                 </li>
               ))}
-            </ol>
+                        </ol>
+            {agentTurn.current_practice !== null && (
+              <Link className="primary-action" href={`/practice/${agentTurn.current_practice.id}`}>
+                开始本次练习
+              </Link>
+            )}
           </div>
         )}
         {context === null ? (

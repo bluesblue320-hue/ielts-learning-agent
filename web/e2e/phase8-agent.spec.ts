@@ -14,10 +14,10 @@ test("Agent continue generates once and stops at the human essay boundary", asyn
   await expect(page).toHaveURL(/\/dashboard$/);
 
   await page.getByRole("button", { name: "使用学习助手继续" }).click();
-  await expect(page.getByText("学习助手状态：请提交本次练习作文。")).toBeVisible();
+  await expect(page.getByText("学习助手状态：下一份针对性练习已准备好。")).toBeVisible();
   await expect(page.getByText("生成针对性练习：已生成练习", { exact: true })).toBeVisible();
   await expect(page).toHaveURL(/\/dashboard$/);
 
-  await page.getByRole("button", { name: "生成针对性练习" }).click();
+  await page.getByRole("link", { name: "开始本次练习" }).click();
   await expect(page).toHaveURL(/\/practice\/\d+$/);
 });

@@ -14,7 +14,7 @@ is pending. Phase 9 is not started.
   exact lifecycle metadata matrix is enforced.
 - P8-05 through P8-09 provide provider-free accepted-update observation,
   direct-service tools, pure selection, a bounded executor, and the single
-  `POST /learners/{learner_id}/agent/turn` surface. Factories remain lazy and
+  `POST /learners/{learner_id}/writing/agent/turn` surface. Factories remain lazy and
   honor dependency overrides, so provider-free branches never resolve provider
   settings.
 - P8-10 through P8-12 preserve the granular initial Writing and practice paths,
