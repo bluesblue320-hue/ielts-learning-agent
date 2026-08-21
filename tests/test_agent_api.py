@@ -112,3 +112,44 @@ def test_agent_submission_conflict_is_safe_and_provider_free(client: TestClient,
         assert provider.requests == []
     finally:
         client.app.dependency_overrides.clear()
+import pytest
+
+from app.llm import ProviderError, ProviderErrorCategory, ProviderErrorContext
+from app.services.practice_generation import PracticeGenerationPersistenceError, PracticeGenerationService
+
+
+@pytest.mark.parametrize(
+    ("category", "status", "code"),
+    [
+        (ProviderErrorCategory.TIMEOUT, 504, "provider_timeout"),
+        (ProviderErrorCategory.TRANSIENT, 503, "provider_unavailable"),
+        (ProviderErrorCategory.INVALID_RESPONSE, 502, "provider_invalid_response"),
+    ],
+)
+def test_agent_generation_provider_errors_keep_central_safe_contract(client: TestClient, engine, category, status, code) -> None:
+    _seed_evaluation(engine)
+    failure = ProviderError(category, "private provider failure", context=ProviderErrorContext(provider="fake", operation="generate_practice"))
+    client.app.dependency_overrides[get_practice_generator] = lambda: FakePracticeGenerator([failure])
+    try:
+        assert client.post("/learners/1/writing/evaluations/200/apply").status_code == 200
+        response = client.post(_agent_url(), json={"turn_type": "continue"})
+        assert response.status_code == status
+        assert response.json()["error"]["code"] == code
+        assert "private provider failure" not in str(response.json())
+    finally:
+        client.app.dependency_overrides.clear()
+
+
+def test_agent_generation_persistence_failure_is_safe_503(client: TestClient, engine, monkeypatch) -> None:
+    _seed_evaluation(engine)
+
+    async def fail_generation(*_args, **_kwargs):
+        raise PracticeGenerationPersistenceError("private persistence failure")
+
+    client.app.dependency_overrides[get_practice_generator] = lambda: FakePracticeGenerator()
+    monkeypatch.setattr(PracticeGenerationService, "generate_or_resolve_current", fail_generation)
+    assert client.post("/learners/1/writing/evaluations/200/apply").status_code == 200
+    response = client.post(_agent_url(), json={"turn_type": "continue"})
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "persistence_unavailable"
+    assert "private persistence failure" not in str(response.json())
