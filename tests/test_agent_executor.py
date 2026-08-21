@@ -219,3 +219,26 @@ async def _generation(status: str, provider_invoked: bool):
 async def _record_generation(tools: Tools, status: str, provider_invoked: bool):
     tools.calls.append("generate")
     return await _generation(status, provider_invoked)
+
+
+def test_provider_budget_independently_blocks_third_provider_call(monkeypatch) -> None:
+    """Provider limit is a gate even when other per-turn limits are relaxed."""
+    import app.agent.executor as executor_module
+
+    monkeypatch.setattr(executor_module, "MAX_MUTATING_TOOL_EXECUTIONS", 10)
+    monkeypatch.setattr(executor_module, "MAX_AUTOMATIC_GENERATIONS", 10)
+    monkeypatch.setattr(executor_module, "MAX_OBSERVATIONS", 10)
+    tools = Tools()
+    tools.generate_practice = lambda **_kwargs: _record_generation(tools, "stale_discarded", True)
+    response = asyncio.run(
+        _executor(
+            [
+                _state(ObservationKind.NEEDS_GENERATION),
+                _state(ObservationKind.NEEDS_GENERATION),
+                _state(ObservationKind.NEEDS_GENERATION),
+            ],
+            tools,
+        ).execute(learner_id=1, turn=ContinueAgentTurn(turn_type="continue"))
+    )
+    assert response.stop_reason == AgentStopReason.MAX_ACTIONS
+    assert tools.calls == ["generate", "generate"]

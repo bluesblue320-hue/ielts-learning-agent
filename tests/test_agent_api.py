@@ -51,3 +51,64 @@ def test_agent_continue_target_achieved_is_provider_free(client: TestClient, eng
     assert response.status_code == 200
     assert response.json()["stop_reason"] == "target_achieved"
     assert response.json()["steps"] == [{"tool": "observe", "outcome": "observation_classified"}]
+from sqlalchemy import func, select
+from app.db.session import create_session_factory
+from app.models.practice import WritingPractice
+from app.services.practice_submission import submission_fingerprint
+
+
+def _agent_generated_practice(client: TestClient, engine) -> tuple[int, str]:
+    _seed_evaluation(engine)
+    client.app.dependency_overrides[get_practice_generator] = lambda: FakePracticeGenerator()
+    ready = client.post("/learners/1/writing/evaluations/200/apply")
+    assert ready.status_code == 200
+    turn = client.post(_agent_url(), json={"turn_type": "continue"})
+    assert turn.status_code == 200
+    practice = turn.json()["current_practice"]
+    assert practice is not None
+    return practice["id"], practice["question"]
+
+
+def test_agent_live_claim_stops_await_without_provider(client: TestClient, engine) -> None:
+    practice_id, question = _agent_generated_practice(client, engine)
+    essay = "Matching live Agent essay."
+    provider = FakeProvider([])
+    client.app.dependency_overrides[get_writing_provider] = lambda: provider
+    try:
+        with create_session_factory(engine)() as session:
+            practice = session.get(WritingPractice, practice_id)
+            assert practice is not None
+            practice.lifecycle_state = "submission_in_progress"
+            practice.submission_fingerprint = submission_fingerprint(practice_id=practice_id, question=question, essay=essay)
+            practice.claim_token = "live-claim"
+            practice.submission_claimed_at = session.scalar(select(func.clock_timestamp()))
+            session.commit()
+        response = client.post(_agent_url(), json={"turn_type": "practice_submission", "practice_id": practice_id, "essay": essay})
+        assert response.status_code == 200
+        assert response.json()["stop_reason"] == "await_submission"
+        assert provider.requests == []
+    finally:
+        client.app.dependency_overrides.clear()
+
+
+def test_agent_submission_conflict_is_safe_and_provider_free(client: TestClient, engine) -> None:
+    practice_id, question = _agent_generated_practice(client, engine)
+    provider = FakeProvider([])
+    client.app.dependency_overrides[get_writing_provider] = lambda: provider
+    try:
+        with create_session_factory(engine)() as session:
+            practice = session.get(WritingPractice, practice_id)
+            assert practice is not None
+            practice.lifecycle_state = "submission_in_progress"
+            practice.submission_fingerprint = submission_fingerprint(practice_id=practice_id, question=question, essay="Original essay.")
+            practice.claim_token = "live-claim"
+            practice.submission_claimed_at = session.scalar(select(func.clock_timestamp()))
+            session.commit()
+        response = client.post(_agent_url(), json={"turn_type": "practice_submission", "practice_id": practice_id, "essay": "Different essay."})
+        assert response.status_code == 200
+        assert response.json()["stop_reason"] == "submission_conflict"
+        assert response.json()["steps"][-1] == {"tool": "submit_practice", "outcome": "submission_conflict"}
+        assert "claim_token" not in str(response.json())
+        assert provider.requests == []
+    finally:
+        client.app.dependency_overrides.clear()
