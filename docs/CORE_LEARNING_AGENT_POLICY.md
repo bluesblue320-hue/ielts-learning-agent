@@ -2,11 +2,11 @@
 
 ## Contract status
 
-**Frozen Phase 8 P8-02 design contract, repaired after external design review.**
-This document defines the intended writing-core-learning-agent-v1 behavior. It
-does not authorize implementation: P8-03 and later require external design
-approval, and no Agent runtime, API, migration, test, or web behavior exists
-because of this document.
+**Frozen Phase 8 P8-02 contract, implemented and internally audited.** This
+policy remains the authoritative behavior of
+`writing-core-learning-agent-v1`; P8-03 through P8-13 implemented it without
+changing its frozen decisions. External Implementation Review is pending and
+Phase 9 is not started.
 
 - Repository: bluesblue320-hue/ielts-learning-agent
 - Branch: phase/8-core-learning-agent-v1
@@ -466,18 +466,18 @@ controls. PostgreSQL remains authoritative.
 | Claim recovery | matching live or expired claim, including a pre-P8 row backfilled expired during upgrade | live awaits/no provider; expired matching retry reclaims; differing essay conflicts; old token cannot finalize; final in-progress timestamps are non-NULL. |
 | Stale generated practice | old generated practice_submission | safe HTTP 409, no mutation/provider. |
 
-## 12. Future implementation inventory
+## 12. Completed implementation inventory
 
 P8-03 and later may touch focused owning files only: app/schemas/agent.py,
 app/agent observation/selector/executor modules, practice claim model and
 P8-04 Alembic revision, generation/submission services, Agent route/dependency
 composition, typed web client/UI, and focused backend/API/concurrency/E2E tests.
-This is planning only; none is changed or authorized by this design run.
+This inventory is now implemented within the frozen Phase 8 scope.
 
 ## 13. Frozen exclusions
 
 No LangChain, LangGraph, generic Agent framework, multi-agent runtime, LLM
 router/planner, RAG, vector store, Redis, queue, worker, background task,
 authentication, payment, new IELTS skill, Reading, Listening, Speaking, or
-Phase 9 work belongs to Agent v1. External design review must approve this
-contract before P8-03 starts.
+Phase 9 work belongs to Agent v1. External Design Review approved this contract;
+Phase 8 now stops for External Implementation Review.

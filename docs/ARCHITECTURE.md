@@ -102,7 +102,7 @@ The core agent coordinates the learning loop. Planner, Memory, Evaluator, and IE
 
 | Component | Responsibility | Current status |
 | --- | --- | --- |
-| Core Learning Agent | Coordinate state, planning, tools, evaluation, and replanning | Phase 8 v1 contract frozen; P8-03 implementation and external design review pending |
+| Core Learning Agent | Coordinate state, planning, tools, evaluation, and replanning | Phase 8 deterministic Writing-only Agent v1 implemented; P8-13 internally audited |
 | Learner Model | Represent goals, current level, skill mastery, weaknesses, and history as structured persistent data | Implemented Phase 3 learner state and persistence |
 | Planner | Select the next learning objective using deterministic priorities, with constrained generation where useful | Phase 3 deterministic planner v1 is historically supported; Phase 7 deterministic memory-aware planner v2 is implemented |
 | Memory | Separate stable profile data, learning events, and derived patterns | Implemented Phase 6 read models (`writing-memory-v1` / `writing-progress-v1`); no new tables |
@@ -188,7 +188,7 @@ read APIs, `/history` and `/progress` UX, and dashboard resume; no new table,
 no migration, no provider abstraction. External Review is APPROVED. Phase 7 is COMPLETE and merged to
 `master` through PR #11 (merge commit `cbf1ebabc87ec490f74957d1327037dae4242381`): new Writing evaluations use
 deterministic memory-aware Planner v2, which consults longitudinal Memory only
-for exact maximum-gap ties while frozen v1 history remains supported. Phase 8 P8-01/P8-02 are a docs-only Core Learning Agent design run; implementation begins no earlier than P8-03 after External Design Review.
+for exact maximum-gap ties while frozen v1 history remains supported. Phase 8 implements the deterministic, bounded, Writing-only Core Learning Agent v1 while preserving the granular initial-Writing and practice lifecycle APIs; P8-13 is internally audited and External Implementation Review is pending.
 Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
 
 ## Phase 5 presentation layer
@@ -198,4 +198,4 @@ Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
 
 Next.js presentation, FastAPI application/domain authority, and PostgreSQL source of truth are implemented. Phase 6 is COMPLETE and merged to `master` through PR #10: the hierarchical learning memory subsystem (L0-L3 read models, history/progress/context APIs, `/history` and `/progress` UX, dashboard resume) is implemented, internally audited, externally approved, and merged. RAG and wider multi-skill work remain future. Phase 7 is COMPLETE and merged: current learner state plus
 longitudinal Writing Memory determine Planner v2 only at exact maximum-gap ties, while v1 recommendations
-remain reconstructable. Phase 8 P8-01/P8-02 are design-complete only; P8-03 implementation is NOT_STARTED pending External Design Review. Phase 9 remains NOT_STARTED.
+remain reconstructable. Phase 8 is implemented and internally audited; P8-13 is complete, External Implementation Review is pending, and Phase 9 remains NOT_STARTED.

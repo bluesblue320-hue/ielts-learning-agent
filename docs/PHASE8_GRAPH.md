@@ -2,11 +2,11 @@
 
 ## Document status
 
-**DESIGN REVIEW PENDING.** P8-01 (baseline and capability audit) and P8-02
-(contract freeze) are complete on `phase/8-core-learning-agent-v1`, based on
-`master` `495022ecb806c35e53c9e3cdfc09c5dfcf024e72`. P8-03 and later are not
-started. This graph authorizes no runtime implementation: external design review
-is required before any implementation node may begin.
+**IMPLEMENTATION COMPLETE — External Implementation Review pending.** P8-01 and
+P8-02 froze the contract; External Design Review authorized the implementation.
+P8-03 through P8-12 are complete and P8-13 is internally audited on
+`phase/8-core-learning-agent-v1`. The implementation remains a bounded,
+Writing-only Core Learning Agent v1; Phase 9 is not started.
 
 Phase 8 introduces one deterministic, Writing-only Core Learning Agent. It
 coordinates existing application services during one explicitly invoked, bounded
@@ -20,31 +20,32 @@ calls FastAPI routes.
 START
   -> P8-01 Baseline & Core Agent Capability Audit [COMPLETE]
   -> P8-02 Core Learning Agent v1 Contract Freeze [COMPLETE]
-  -> STOP -> External Design Review [PENDING]
-
-After external design approval only:
-  -> P8-03 Versioned Agent Turn Schemas [NOT_STARTED]
-  -> P8-04 Submission-Claim Recovery Metadata [NOT_STARTED; condition met]
-  -> P8-05 Authoritative Agent Observation [NOT_STARTED]
-  -> P8-06 Existing-Service Tool Boundary [NOT_STARTED]
-  -> P8-07 Deterministic Action Selector [NOT_STARTED]
-  -> P8-08 Bounded Agent Turn Executor [NOT_STARTED]
-  -> P8-09 Core Agent API [NOT_STARTED]
-  -> P8-10 Chinese-First Agent UX [NOT_STARTED]
-  -> P8-11 Concurrency / Retry / Crash-Recovery Hardening [NOT_STARTED]
-  -> P8-12 Lifecycle Compatibility + E2E / CI [NOT_STARTED]
-  -> P8-13 Internal Final Audit [NOT_STARTED]
-  -> STOP -> External Implementation Review
+  -> External Design Review [APPROVED]
+  -> P8-03 Versioned Agent Turn Schemas [COMPLETE]
+  -> P8-04 Submission-Claim Recovery Metadata [COMPLETE]
+  -> P8-05 Authoritative Agent Observation [COMPLETE]
+  -> P8-06 Existing-Service Tool Boundary [COMPLETE]
+  -> P8-07 Deterministic Action Selector [COMPLETE]
+  -> P8-08 Bounded Agent Turn Executor [COMPLETE]
+  -> P8-09 Core Agent API [COMPLETE]
+  -> P8-10 Chinese-First Agent UX [COMPLETE]
+  -> P8-11 Concurrency / Retry / Crash-Recovery Hardening [COMPLETE]
+  -> P8-12 Lifecycle Compatibility + E2E / CI [COMPLETE]
+  -> P8-13 Internal Final Audit [INTERNAL_AUDIT_COMPLETE]
+  -> STOP -> External Implementation Review [PENDING]
 ```
 
-P8-04 remains conditional in the graph: P8-01 found the recovery condition met,
-but this design run does not authorize it. It is a narrow extension of existing
-practice-claim storage, not a generic Agent database. Its 300-second lease,
+P8-04 was conditionally required and is now complete. It remains a narrow
+extension of existing practice-claim storage, not a generic Agent database. Its
+300-second lease,
 PostgreSQL-time authority, migration backfill of legacy NULL timestamps, strict
 post-upgrade invariant, and shared granular Option A compatibility are frozen
 in the policy.
 
 ## P8-01 — Baseline & Core Agent Capability Audit — COMPLETE
+
+The following P8-01 findings are historical baseline evidence from before the
+implemented Agent runtime; they are retained to preserve the design decision trail.
 
 ### Audit method and scope
 
@@ -120,10 +121,10 @@ Writing-only version, observation order, input union, deterministic selector,
 human boundaries, bounds, retry/crash semantics, public-safe trace, and the
 conditional minimal migration.
 
-## Future implementation node definitions — NOT AUTHORIZED IN THIS RUN
+## Historical implementation node definitions
 
-The following definitions preserve the post-review execution boundary. They do
-not authorize P8-03 or later work during this design run.
+The definitions below are preserved as the pre-implementation execution contract;
+P8-03 through P8-13 have since been completed.
 
 ### P8-03 -- Versioned Agent Turn Schemas
 
@@ -347,18 +348,28 @@ Phase 7 = COMPLETE
 
 P8-01 = COMPLETE
 P8-02 = COMPLETE
-P8-03 = NOT_STARTED
-P8-04 = NOT_STARTED (conditional; condition met)
-P8-05..P8-13 = NOT_STARTED
-Phase 8 = DESIGN_REVIEW_PENDING
-External Design Review = PENDING
+P8-03 = COMPLETE
+P8-04 = COMPLETE
+P8-05 = COMPLETE
+P8-06 = COMPLETE
+P8-07 = COMPLETE
+P8-08 = COMPLETE
+P8-09 = COMPLETE
+P8-10 = COMPLETE
+P8-11 = COMPLETE
+P8-12 = COMPLETE
+P8-13 = INTERNAL_AUDIT_COMPLETE
+Phase 8 = INTERNAL_AUDIT_COMPLETE
+External Design Review = APPROVED
+External Implementation Review = PENDING
 Phase 9 = NOT_STARTED
 ```
 
-## Design-run exclusions
+## Historical design-run exclusions
 
-This run changes documentation only. It introduces no `app/`, `web/`, test,
-migration, CI, dependency, Docker, or configuration change; no LangChain,
+Historical design-run exclusions: the completed implementation remains limited to
+the authorized Phase 8 scope and introduces no additional dependency, Docker, or
+configuration change; no LangChain,
 LangGraph, multi-agent runtime, LLM router/planner, RAG/vector database,
 background execution, authentication, payments, or Reading/Listening/Speaking
-capability is authorized. Do not begin P8-03 without external design review.
+capability was authorized. Phase 8 now stops for External Implementation Review.

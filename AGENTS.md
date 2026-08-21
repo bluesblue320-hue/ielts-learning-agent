@@ -100,9 +100,20 @@ PR CI = SUCCESS
 Master merge CI = SUCCESS
 P8-01 = COMPLETE
 P8-02 = COMPLETE
-P8-03 = NOT_STARTED
-Phase 8 = DESIGN_REVIEW_PENDING
-External Design Review = PENDING
+P8-03 = COMPLETE
+P8-04 = COMPLETE
+P8-05 = COMPLETE
+P8-06 = COMPLETE
+P8-07 = COMPLETE
+P8-08 = COMPLETE
+P8-09 = COMPLETE
+P8-10 = COMPLETE
+P8-11 = COMPLETE
+P8-12 = COMPLETE
+P8-13 = INTERNAL_AUDIT_COMPLETE
+Phase 8 = INTERNAL_AUDIT_COMPLETE
+External Design Review = APPROVED
+External Implementation Review = PENDING
 Phase 9 = NOT_STARTED
 ```
 
@@ -128,10 +139,10 @@ Phase 7 is COMPLETE and merged to master through PR #11 (PR head
 `writing-practice-gap-memory-v2` planner for new Writing evaluations while the
 historical `writing-practice-gap-v1` remains supported and frozen. Memory is
 consulted only for exact maximum-gap ties in the fixed persistent-gap, trend,
-planning-recency, and canonical-priority order. Phase 8 P8-01 (baseline audit)
-and P8-02 (Core Learning Agent v1 contract freeze) are COMPLETE as a docs-only
-design run. P8-03 and all implementation remain NOT_STARTED pending External
-Design Review. See [docs/PHASE8_GRAPH.md](docs/PHASE8_GRAPH.md) and
+planning-recency, and canonical-priority order. Phase 8 is implemented and internally audited: P8-03 through P8-12 are COMPLETE
+and P8-13 is INTERNAL_AUDIT_COMPLETE. The bounded Writing-only Agent v1 and its
+shared granular lifecycle compatibility are defined by
+[docs/PHASE8_GRAPH.md](docs/PHASE8_GRAPH.md) and
 [docs/CORE_LEARNING_AGENT_POLICY.md](docs/CORE_LEARNING_AGENT_POLICY.md).
 The graph defines WHAT should be implemented.
 

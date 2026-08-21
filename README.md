@@ -9,7 +9,7 @@ it is not intended to be only a chatbot or a thin LLM wrapper.
 
 **Phase 1 = COMPLETE. Phase 2 = COMPLETE. Phase 3 = COMPLETE. Phase 4 = COMPLETE. Phase 5 = COMPLETE and MERGED through PR #9 (`feat: deliver Phase 5 Chinese-first web MVP`), merge commit `56498c3d59aad4ae645c5b78c6b6dc41bec62bcf`. Phase 6 = COMPLETE and MERGED through PR #10 (`feat: deliver Phase 6 hierarchical learning memory & longitudinal progress`), merge commit `b8e419d8c146c921539f4654b5aeb0b56ed6f425`.**
 
-**Phase 7 = COMPLETE and MERGED through PR #11 (`fix: repair Phase 7 snapshot audit replay`), PR head `f6990ab94f590f1a37122ea0bf12bf7e5218c727`, merge commit `cbf1ebabc87ec490f74957d1327037dae4242381`. External Design Review and External Implementation Review are APPROVED; PR CI and master merge CI are SUCCESS. Phase 8 P8-01/P8-02 are COMPLETE as a docs-only design run; P8-03 implementation is NOT_STARTED pending External Design Review. Phase 9 = NOT_STARTED.**
+**Phase 7 = COMPLETE and MERGED through PR #11 (`fix: repair Phase 7 snapshot audit replay`), PR head `f6990ab94f590f1a37122ea0bf12bf7e5218c727`, merge commit `cbf1ebabc87ec490f74957d1327037dae4242381`. External Design Review and External Implementation Review are APPROVED; PR CI and master merge CI are SUCCESS. Phase 8 is IMPLEMENTED and internally audited on `phase/8-core-learning-agent-v1`: the bounded, Writing-only Core Learning Agent v1 is available through `POST /learners/{learner_id}/agent/turn`; initial Writing remains on the granular flow, and the existing granular practice APIs remain supported. P8-13 is `INTERNAL_AUDIT_COMPLETE`; External Implementation Review is PENDING and Phase 9 = NOT_STARTED.**
 
 Phase 7 connects authoritative current learner state and longitudinal Writing
 Memory to deterministic Planner v2. Memory is consulted only for exact
@@ -174,9 +174,7 @@ Phase 7 is COMPLETE and merged through PR #11. `writing-practice-gap-memory-v2`
 is active for new Writing applies, while historical
 `writing-practice-gap-v1` remains supported. Memory is consulted only for exact
 maximum-gap ties. The frozen execution record is
-[docs/PHASE7_GRAPH.md](docs/PHASE7_GRAPH.md). Phase 8 P8-01/P8-02 are COMPLETE
-as a docs-only Core Learning Agent design run; P8-03 implementation awaits
-External Design Review. Phase 9 = NOT_STARTED.
+[docs/PHASE7_GRAPH.md](docs/PHASE7_GRAPH.md). Phase 8 is IMPLEMENTED and internally audited on `phase/8-core-learning-agent-v1`: the bounded, Writing-only Core Learning Agent v1 is available through `POST /learners/{learner_id}/agent/turn`; initial Writing remains on the granular flow, and the existing granular practice APIs remain supported. P8-13 is `INTERNAL_AUDIT_COMPLETE`; External Implementation Review is PENDING and Phase 9 = NOT_STARTED.
 
 ## Phase 5 Web MVP
 
