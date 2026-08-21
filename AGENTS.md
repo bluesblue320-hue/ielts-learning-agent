@@ -111,9 +111,9 @@ P8-10 = COMPLETE
 P8-11 = COMPLETE
 P8-12 = COMPLETE
 P8-13 = INTERNAL_AUDIT_COMPLETE
-Phase 8 = INTERNAL_AUDIT_COMPLETE
+Phase 8 = COMPLETE
 External Design Review = APPROVED
-External Implementation Review = PENDING
+External Implementation Review = APPROVED
 Phase 9 = NOT_STARTED
 ```
 
@@ -139,7 +139,7 @@ Phase 7 is COMPLETE and merged to master through PR #11 (PR head
 `writing-practice-gap-memory-v2` planner for new Writing evaluations while the
 historical `writing-practice-gap-v1` remains supported and frozen. Memory is
 consulted only for exact maximum-gap ties in the fixed persistent-gap, trend,
-planning-recency, and canonical-priority order. Phase 8 is implemented and internally audited: P8-03 through P8-12 are COMPLETE
+planning-recency, and canonical-priority order. Phase 8 is COMPLETE after External Implementation Review approval: P8-03 through P8-12 are COMPLETE
 and P8-13 is INTERNAL_AUDIT_COMPLETE. The bounded Writing-only Agent v1 and its
 shared granular lifecycle compatibility are defined by
 [docs/PHASE8_GRAPH.md](docs/PHASE8_GRAPH.md) and

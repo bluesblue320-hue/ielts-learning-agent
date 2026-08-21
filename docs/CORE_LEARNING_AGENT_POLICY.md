@@ -5,7 +5,7 @@
 **Frozen Phase 8 P8-02 contract, implemented and internally audited.** This
 policy remains the authoritative behavior of
 `writing-core-learning-agent-v1`; P8-03 through P8-13 implemented it without
-changing its frozen decisions. External Implementation Review is pending and
+changing its frozen decisions. External Design Review and External Implementation Review are approved; Phase 8 is complete and
 Phase 9 is not started.
 
 - Repository: bluesblue320-hue/ielts-learning-agent
@@ -479,5 +479,5 @@ This inventory is now implemented within the frozen Phase 8 scope.
 No LangChain, LangGraph, generic Agent framework, multi-agent runtime, LLM
 router/planner, RAG, vector store, Redis, queue, worker, background task,
 authentication, payment, new IELTS skill, Reading, Listening, Speaking, or
-Phase 9 work belongs to Agent v1. External Design Review approved this contract;
-Phase 8 now stops for External Implementation Review.
+Phase 9 work belongs to Agent v1. External Design Review and External Implementation Review approved this contract;
+Phase 8 is complete; Phase 9 remains not started.

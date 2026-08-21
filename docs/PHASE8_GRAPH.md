@@ -2,7 +2,7 @@
 
 ## Document status
 
-**IMPLEMENTATION COMPLETE — External Implementation Review pending.** P8-01 and
+**COMPLETE — External Design Review and External Implementation Review are APPROVED.** P8-01 and
 P8-02 froze the contract; External Design Review authorized the implementation.
 P8-03 through P8-12 are complete and P8-13 is internally audited on
 `phase/8-core-learning-agent-v1`. The implementation remains a bounded,
@@ -32,7 +32,7 @@ START
   -> P8-11 Concurrency / Retry / Crash-Recovery Hardening [COMPLETE]
   -> P8-12 Lifecycle Compatibility + E2E / CI [COMPLETE]
   -> P8-13 Internal Final Audit [INTERNAL_AUDIT_COMPLETE]
-  -> STOP -> External Implementation Review [PENDING]
+  -> External Implementation Review [APPROVED] -> Phase 8 [COMPLETE] -> STOP
 ```
 
 P8-04 was conditionally required and is now complete. It remains a narrow
@@ -359,9 +359,9 @@ P8-10 = COMPLETE
 P8-11 = COMPLETE
 P8-12 = COMPLETE
 P8-13 = INTERNAL_AUDIT_COMPLETE
-Phase 8 = INTERNAL_AUDIT_COMPLETE
+Phase 8 = COMPLETE
 External Design Review = APPROVED
-External Implementation Review = PENDING
+External Implementation Review = APPROVED
 Phase 9 = NOT_STARTED
 ```
 
@@ -372,4 +372,4 @@ the authorized Phase 8 scope and introduces no additional dependency, Docker, or
 configuration change; no LangChain,
 LangGraph, multi-agent runtime, LLM router/planner, RAG/vector database,
 background execution, authentication, payments, or Reading/Listening/Speaking
-capability was authorized. Phase 8 now stops for External Implementation Review.
+capability was authorized. Phase 8 is complete; Phase 9 remains not started.

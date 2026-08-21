@@ -1,8 +1,8 @@
 # Phase 8 Internal Audit
 
-**Status:** `INTERNAL_AUDIT_COMPLETE` on `phase/8-core-learning-agent-v1`.
-External Design Review is `APPROVED`; External Implementation Review is
-`PENDING_RE_REVIEW`. Phase 9 is `NOT_STARTED`.
+**Status:** Phase 8 is `COMPLETE` on `phase/8-core-learning-agent-v1`.
+External Design Review and External Implementation Review are
+`APPROVED`. Phase 9 is `NOT_STARTED`.
 
 ## Final validation identity
 
@@ -107,6 +107,6 @@ was made.
 ## Status
 
 P8-03 through P8-13 are `COMPLETE`; P8-13 is
-`INTERNAL_AUDIT_COMPLETE`. Phase 8 is `INTERNAL_AUDIT_COMPLETE`.
-External Design Review is `APPROVED`; External Implementation Review is
-`PENDING_RE_REVIEW`. Phase 9 is `NOT_STARTED`.
+`INTERNAL_AUDIT_COMPLETE`. Phase 8 is `COMPLETE`.
+External Design Review and External Implementation Review are
+`APPROVED`. Phase 9 is `NOT_STARTED`.
