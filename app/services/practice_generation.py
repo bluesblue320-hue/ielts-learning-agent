@@ -211,7 +211,7 @@ class PracticeGenerationService:
             generated=generated,
         )
         if persisted is None:
-            return AgentGenerationOutcome(status="stale_discarded")
+            return AgentGenerationOutcome(status="stale_discarded", provider_invoked=True)
         practice, resolved = persisted
         return AgentGenerationOutcome(
             status="resolved" if resolved else "generated",
