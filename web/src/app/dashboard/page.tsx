@@ -8,6 +8,7 @@ import { type AgentTurnResponse, type LearnerStateResponse, type WritingSkill, a
 import { useLearnerContext } from "@/components/learner-context";
 import { presentApiError, presentNoPracticeReasons, presentPlanningExplanation, presentPracticeReasons, skillLabels } from "@/lib/presentation";
 import { resumeActionExplanations, resumeActionLabels } from "@/lib/memory-presentation";
+import { presentAgentStep, presentAgentStopReason } from "@/lib/agent-presentation";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -155,7 +156,18 @@ export default function DashboardPage() {
       <section className="content-card next-step">
         <h2>继续学习</h2>
         <button className="secondary-action" disabled={isAgentBusy} onClick={continueWithAgent} type="button">{isAgentBusy ? "正在继续学习…" : "使用学习助手继续"}</button>
-        {agentTurn !== null && <p className="supporting-copy" aria-live="polite">学习助手状态：{agentTurn.stop_reason}；已执行 {agentTurn.steps.length} 个安全步骤。</p>}
+        {agentTurn !== null && (
+          <div className="supporting-copy" aria-live="polite" role="status">
+            <p>学习助手状态：{presentAgentStopReason(agentTurn.stop_reason)}</p>
+            <ol>
+              {agentTurn.steps.map((step, index) => (
+                <li key={`${index}-${step.tool}-${step.outcome}`}>
+                  {presentAgentStep(step.tool, step.outcome)}
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
         {context === null ? (
           <><p className="supporting-copy">正在读取下一步建议…</p><Link className="primary-action" href="/writing">进行首次写作</Link></>
         ) : (
