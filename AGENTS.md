@@ -40,18 +40,18 @@ Always inspect the current phase documentation before implementing features.
 Current phase:
 
 ```text
-Phase 7 — Memory-Aware Adaptive Planning v2
+Phase 8 — Core Learning Agent Orchestration v1
 ```
 
 Read:
 
 ```text
-docs/PHASE7_GRAPH.md
-docs/MEMORY_AWARE_PLANNING_POLICY.md
+docs/PHASE8_GRAPH.md
+docs/CORE_LEARNING_AGENT_POLICY.md
 docs/DEVELOPMENT_LOOP.md
 ```
 
-Phase 7 status:
+Phase 8 status:
 
 ```text
 Phase 1 = COMPLETE
@@ -93,12 +93,28 @@ P7-11 = COMPLETE
 P7-12 = COMPLETE
 P7-13 = COMPLETE
 P7-14 = INTERNAL_AUDIT_COMPLETE
-External Design Review = APPROVED
-External Implementation Review = APPROVED
+Phase 7 External Design Review = APPROVED
+Phase 7 External Implementation Review = APPROVED
 PR #11 = MERGED
 PR CI = SUCCESS
 Master merge CI = SUCCESS
-Phase 8 = NOT_STARTED
+P8-01 = COMPLETE
+P8-02 = COMPLETE
+P8-03 = COMPLETE
+P8-04 = COMPLETE
+P8-05 = COMPLETE
+P8-06 = COMPLETE
+P8-07 = COMPLETE
+P8-08 = COMPLETE
+P8-09 = COMPLETE
+P8-10 = COMPLETE
+P8-11 = COMPLETE
+P8-12 = COMPLETE
+P8-13 = INTERNAL_AUDIT_COMPLETE
+Phase 8 = COMPLETE
+External Design Review = APPROVED
+External Implementation Review = APPROVED
+Phase 9 = NOT_STARTED
 ```
 
 Phase 6 design (P6-01 audit, P6-02 contract freeze, versions
@@ -123,9 +139,11 @@ Phase 7 is COMPLETE and merged to master through PR #11 (PR head
 `writing-practice-gap-memory-v2` planner for new Writing evaluations while the
 historical `writing-practice-gap-v1` remains supported and frozen. Memory is
 consulted only for exact maximum-gap ties in the fixed persistent-gap, trend,
-planning-recency, and canonical-priority order. Phase 8 remains NOT_STARTED and
-requires separate explicit authority. See [docs/PHASE7_GRAPH.md](docs/PHASE7_GRAPH.md)
-and [docs/PHASE7_AUDIT.md](docs/PHASE7_AUDIT.md) for the finalized record.
+planning-recency, and canonical-priority order. Phase 8 is COMPLETE after External Implementation Review approval: P8-03 through P8-12 are COMPLETE
+and P8-13 is INTERNAL_AUDIT_COMPLETE. The bounded Writing-only Agent v1 and its
+shared granular lifecycle compatibility are defined by
+[docs/PHASE8_GRAPH.md](docs/PHASE8_GRAPH.md) and
+[docs/CORE_LEARNING_AGENT_POLICY.md](docs/CORE_LEARNING_AGENT_POLICY.md).
 The graph defines WHAT should be implemented.
 
 The development loop defines HOW each graph node should be executed.

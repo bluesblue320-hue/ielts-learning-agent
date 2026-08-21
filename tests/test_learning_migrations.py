@@ -59,8 +59,9 @@ def test_phase3_revision_is_the_single_linear_head() -> None:
 
     # Phase 4 legitimately extended the linear history; Phase 3's migration
     # chain must remain present and linear under the new head.
-    assert script.get_heads() == ["0005_planner_context_snapshot"]
+    assert script.get_heads() == ["0006_submission_claim_recovery"]
     walk = {revision.revision: revision.down_revision for revision in script.walk_revisions()}
+    assert walk["0006_submission_claim_recovery"] == "0005_planner_context_snapshot"
     assert walk["0005_planner_context_snapshot"] == "0004_writing_practice"
     assert walk["0004_writing_practice"] == "0003_learning"
     assert walk["0003_learning"] == "0002_writing"

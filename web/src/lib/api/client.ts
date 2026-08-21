@@ -300,6 +300,14 @@ export type WritingContextResponse = {
   current_state: LearnerStateResponse["states"];
 };
 
+export type AgentTurnRequest =
+  | { turn_type: "continue" }
+  | { turn_type: "practice_submission"; practice_id: number; essay: string };
+export type AgentObservationKind = "needs_initial_writing" | "no_practice" | "needs_generation" | "needs_practice_submission" | "await_submission" | "needs_completion";
+export type AgentObservation = { kind: AgentObservationKind; no_practice_reason_codes: string[] | null };
+export type AgentTool = "observe" | "generate_practice" | "submit_practice" | "complete_practice";
+export type AgentOutcome = "observation_classified" | "practice_generated" | "practice_resolved" | "generation_stale_discarded" | "submission_submitted" | "submission_reused" | "submission_in_progress" | "submission_conflict" | "completion_applied" | "completion_reused";
+export type AgentTurnResponse = { agent_version: "writing-core-learning-agent-v1"; initial_observation: AgentObservation; steps: { tool: AgentTool; outcome: AgentOutcome }[]; final_observation: AgentObservation; stop_reason: "needs_initial_writing" | "needs_practice_submission" | "practice_ready" | "await_submission" | "target_achieved" | "no_practice" | "submission_conflict" | "max_actions"; current_recommendation: PracticeRecommendation | null; current_practice: PracticeResponse | null };
 type FetchLike = typeof fetch;
 type RequestOptions = Omit<RequestInit, "body" | "method"> & {
   body?: unknown;
@@ -418,6 +426,8 @@ export function createApiClient(options: ApiClientOptions = {}) {
       request<WritingProgressResponse>(`/learners/${learnerId}/writing/progress`),
     getWritingContext: (learnerId: number) =>
       request<WritingContextResponse>(`/learners/${learnerId}/writing/context`),
+    agentTurn: (learnerId: number, input: AgentTurnRequest) =>
+      request<AgentTurnResponse>(`/learners/${learnerId}/writing/agent/turn`, { method: "POST", body: input }),
   };
 }
 

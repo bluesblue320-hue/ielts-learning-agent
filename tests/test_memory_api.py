@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.api.dependencies.practice import get_practice_generator
 from app.api.dependencies.writing import get_writing_provider
@@ -179,7 +179,9 @@ def test_context_await_submission_when_claim_in_progress(client: TestClient, eng
         practice = session.get(WritingPractice, practice_id)
         assert practice is not None
         practice.lifecycle_state = "submission_in_progress"
+        practice.submission_fingerprint = "f" * 64
         practice.claim_token = "claim-token"
+        practice.submission_claimed_at = session.scalar(select(func.current_timestamp()))
         session.commit()
     context = client.get("/learners/1/writing/context")
     assert context.json()["resume_action"] == "await_submission"

@@ -1,4 +1,18 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+async function openCurrentPractice(page: Page): Promise<void> {
+  const resumePractice = page.getByRole("link", { name: "继续完成练习" });
+  const generatePractice = page.getByRole("button", { name: "生成针对性练习" });
+  await expect.poll(async () => (
+    await resumePractice.count() + await generatePractice.count()
+  )).toBeGreaterThan(0);
+  if (await resumePractice.count() > 0) {
+    await resumePractice.click();
+  } else {
+    await generatePractice.click();
+  }
+  await expect(page).toHaveURL(/\/practice\/\d+$/);
+}
 
 test("learner sees longitudinal history, progress, and server-authoritative resume", async ({ page }) => {
   // 1. Create learner + initial writing (evaluation 1).
@@ -13,23 +27,21 @@ test("learner sees longitudinal history, progress, and server-authoritative resu
   await expect(page.getByText("已采纳证据：1").first()).toBeVisible();
 
   // 2. First targeted practice cycle (evaluation 2).
-  await page.getByRole("button", { name: "生成针对性练习" }).click();
-  await expect(page).toHaveURL(/\/practice\/\d+$/);
+  await openCurrentPractice(page);
+  const firstPracticeUrl = page.url();
   await page.getByLabel("你的英文作文").fill("First targeted practice essay with specific supporting examples and coherent paragraphs throughout.");
-  await page.getByRole("button", { name: "提交作文并获取评估" }).click();
-  await expect(page.getByRole("heading", { name: /综合分数/ })).toBeVisible();
-  await page.getByRole("button", { name: "完成练习并获取下一步建议" }).click();
-  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.getByRole("button", { name: "提交作文并由学习助手继续" }).click();
+  await expect.poll(() => page.url()).not.toBe(firstPracticeUrl);
+  await page.goto("/dashboard");
   await expect(page.getByText("已采纳证据：2").first()).toBeVisible();
 
   // 3. Second targeted practice cycle (evaluation 3) -> three observations.
-  await page.getByRole("button", { name: "生成针对性练习" }).click();
-  await expect(page).toHaveURL(/\/practice\/\d+$/);
+  await openCurrentPractice(page);
+  const secondPracticeUrl = page.url();
   await page.getByLabel("你的英文作文").fill("Second targeted practice essay with precise examples and accurate grammar throughout the response.");
-  await page.getByRole("button", { name: "提交作文并获取评估" }).click();
-  await expect(page.getByRole("heading", { name: /综合分数/ })).toBeVisible();
-  await page.getByRole("button", { name: "完成练习并获取下一步建议" }).click();
-  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.getByRole("button", { name: "提交作文并由学习助手继续" }).click();
+  await expect.poll(() => page.url()).not.toBe(secondPracticeUrl);
+  await page.goto("/dashboard");
   await expect(page.getByText("已采纳证据：3").first()).toBeVisible();
 
   // 4. History: deterministic ordering and episode types (latest first).
@@ -57,5 +69,9 @@ test("learner sees longitudinal history, progress, and server-authoritative resu
   // 7. Dashboard resume: server-authoritative context (new practice decision).
   await page.getByRole("link", { name: "学习概览", exact: true }).click();
   await expect(page.getByText("继续学习")).toBeVisible();
-  await expect(page.getByRole("button", { name: "生成针对性练习" })).toBeVisible();
+  const resumePractice = page.getByRole("link", { name: "继续完成练习" });
+  const generatePractice = page.getByRole("button", { name: "生成针对性练习" });
+  await expect.poll(async () => (
+    await resumePractice.count() + await generatePractice.count()
+  )).toBeGreaterThan(0);
 });

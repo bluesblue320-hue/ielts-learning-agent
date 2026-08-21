@@ -1,5 +1,7 @@
 """Integration coverage for the reversible Phase 4 writing practice migration."""
 
+import asyncio
+
 import pytest
 from alembic import command
 from alembic.autogenerate import compare_metadata
@@ -7,6 +9,14 @@ from alembic.config import Config
 from alembic.migration import MigrationContext
 from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.orm import Session
+
+from app.schemas.practice import PracticeSubmission
+from app.services.practice_generation import PracticeGenerationService
+from app.services.practice_submission import PracticeSubmissionService, submission_fingerprint
+from app.services.writing_evaluation import WritingEvaluationService
+from tests.fakes import FakePracticeGenerator, FakeProvider
+from tests.test_practice_generation import _recommendation
 
 import app.models  # noqa: F401  (registers every model on Base.metadata)
 from app.db.base import Base
@@ -44,14 +54,15 @@ def _ensure_head(database_url: str) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_phase4_revision_is_the_single_linear_head() -> None:
+def test_practice_revision_is_the_single_linear_head() -> None:
     script = ScriptDirectory.from_config(alembic_config())
 
-    assert script.get_heads() == ["0005_planner_context_snapshot"]
+    assert script.get_heads() == ["0006_submission_claim_recovery"]
     walk = {
         revision.revision: revision.down_revision
         for revision in script.walk_revisions()
     }
+    assert walk["0006_submission_claim_recovery"] == "0005_planner_context_snapshot"
     assert walk["0005_planner_context_snapshot"] == "0004_writing_practice"
     assert walk["0004_writing_practice"] == "0003_learning"
     assert walk["0003_learning"] == "0002_writing"
@@ -89,7 +100,7 @@ def test_practice_migration_upgrades_downgrades_and_reupgrades(
 
         # 0003_learning -> 0004_writing_practice.
         command.upgrade(config, "head")
-        assert _version(engine) == "0005_planner_context_snapshot"
+        assert _version(engine) == "0006_submission_claim_recovery"
         with engine.connect() as connection:
             inspector = inspect(connection)
             tables = set(inspector.get_table_names())
@@ -111,6 +122,16 @@ def test_practice_migration_upgrades_downgrades_and_reupgrades(
             }
             assert "uq_writing_practice_recommendation_id" in practice_uniques
             assert "uq_writing_practice_attempt_id" in practice_uniques
+            practice_columns = {
+                column["name"]
+                for column in inspector.get_columns("writing_practices")
+            }
+            assert "submission_claimed_at" in practice_columns
+            practice_checks = {
+                check["name"]
+                for check in inspector.get_check_constraints("writing_practices")
+            }
+            assert "ck_writing_practice_submission_state_matrix" in practice_checks
             # Composite ownership FK.
             fks = {
                 (
@@ -145,7 +166,7 @@ def test_practice_migration_upgrades_downgrades_and_reupgrades(
 
         # 0003_learning -> 0004_writing_practice again (reproducibility).
         command.upgrade(config, "head")
-        assert _version(engine) == "0005_planner_context_snapshot"
+        assert _version(engine) == "0006_submission_claim_recovery"
         with engine.connect() as connection:
             tables = set(inspect(connection).get_table_names())
             assert "writing_practices" in tables
@@ -164,3 +185,96 @@ def test_no_model_migration_drift_after_upgrade(database_url: str) -> None:
         assert diffs == []
     finally:
         engine.dispose()
+
+
+def test_phase8_upgrade_backfills_legacy_claim_and_matching_retry_reclaims(
+    database_url: str,
+) -> None:
+    """A pre-P8 in-progress row becomes an expired, recoverable lease."""
+
+    config = alembic_config(database_url)
+    engine = create_engine(database_url)
+    try:
+        command.downgrade(config, "base")
+        command.upgrade(config, "head")
+        with Session(engine, expire_on_commit=False) as session:
+            recommendation = _recommendation(session)
+            generated = asyncio.run(
+                PracticeGenerationService(
+                    session, FakePracticeGenerator()
+                ).generate_or_resolve(
+                    learner_id=1,
+                    recommendation_id=recommendation.id,
+                )
+            )
+            assert generated.practice is not None
+            practice_id = generated.practice.id
+            question = generated.practice.question
+
+        essay = "Legacy matching retry essay."
+        fingerprint = submission_fingerprint(
+            practice_id=practice_id,
+            question=question,
+            essay=essay,
+        )
+        command.downgrade(config, "0005_planner_context_snapshot")
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "UPDATE writing_practices "
+                    "SET lifecycle_state = 'submission_in_progress', "
+                    "submission_fingerprint = :fingerprint, "
+                    "claim_token = 'legacy-owner-token', attempt_id = NULL "
+                    "WHERE id = :practice_id"
+                ),
+                {"fingerprint": fingerprint, "practice_id": practice_id},
+            )
+
+        command.upgrade(config, "head")
+        with engine.connect() as connection:
+            assert connection.scalar(
+                text(
+                    "SELECT submission_claimed_at <= "
+                    "CURRENT_TIMESTAMP - INTERVAL '300 seconds' "
+                    "FROM writing_practices WHERE id = :practice_id"
+                ),
+                {"practice_id": practice_id},
+            ) is True
+
+        provider = FakeProvider([_evaluation_payload()])
+        with Session(engine, expire_on_commit=False) as session:
+            result = asyncio.run(
+                PracticeSubmissionService(
+                    session, WritingEvaluationService(provider)
+                ).submit(
+                    learner_id=1,
+                    practice_id=practice_id,
+                    submission=PracticeSubmission(essay=essay),
+                )
+            )
+        assert result.status == "submitted"
+        assert len(provider.requests) == 1
+    finally:
+        command.upgrade(config, "head")
+        engine.dispose()
+
+
+def _evaluation_payload() -> dict[str, object]:
+    criterion = {
+        "band": {"value": "6.5"},
+        "evidence": ["Evidence."],
+        "feedback": "Feedback.",
+    }
+    return {
+        "criteria": {
+            "task_response": criterion,
+            "coherence_and_cohesion": criterion,
+            "lexical_resource": criterion,
+            "grammatical_range_and_accuracy": criterion,
+        },
+        "strengths": ["Strength."],
+        "weaknesses": ["Weakness."],
+        "error_tags": [],
+        "recommended_skills": [],
+        "feedback": "Overall feedback.",
+    }

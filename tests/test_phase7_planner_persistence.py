@@ -17,6 +17,7 @@ from app.models import PracticeRecommendation
 
 
 REVISION = "0005_planner_context_snapshot"
+HEAD_REVISION = "0006_submission_claim_recovery"
 PREVIOUS_REVISION = "0004_writing_practice"
 COLUMN = "planner_context_snapshot"
 CHECK = "ck_practice_recommendation_planner_context_snapshot_object"
@@ -38,7 +39,7 @@ def test_phase7_revision_is_single_linear_head() -> None:
     script = ScriptDirectory.from_config(_config())
     walk = {revision.revision: revision.down_revision for revision in script.walk_revisions()}
 
-    assert script.get_heads() == [REVISION]
+    assert script.get_heads() == [HEAD_REVISION]
     assert walk[REVISION] == PREVIOUS_REVISION
 
 

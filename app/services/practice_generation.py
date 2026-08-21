@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from decimal import Decimal
+from typing import Literal
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.llm.practice_generator import PracticeGenerationRequest, PracticeGenerator
-from app.models.learning import PracticeRecommendation
+from app.models.learning import Learner, LearningUpdate, PracticeRecommendation
 from app.models.practice import WritingPractice
 from app.schemas.practice import (
     GeneratedWritingPractice,
@@ -22,6 +24,15 @@ from app.schemas.practice import (
 GENERATION_POLICY_VERSION = "writing-practice-generation-v1"
 PRACTICE_PROMPT_VERSION = "practice-generation-v1"
 PRACTICE_IDEMPOTENCY_CONSTRAINT = "uq_writing_practice_recommendation_id"
+
+
+@dataclass(frozen=True)
+class AgentGenerationOutcome:
+    """Private result for an Agent-only current-update generation fence."""
+
+    status: Literal["generated", "resolved", "stale_discarded"]
+    practice: PracticeResponse | None = None
+    provider_invoked: bool = False
 
 
 class PracticeGenerationError(Exception):
@@ -64,6 +75,31 @@ def _practice_response(practice: WritingPractice) -> PracticeResponse:
         attempt_id=practice.attempt_id,
         created_at=practice.created_at,
         updated_at=practice.updated_at,
+    )
+
+
+def _new_practice(
+    *,
+    learner_id: int,
+    recommendation_id: int,
+    target_skill: str,
+    generated: GeneratedWritingPractice,
+) -> WritingPractice:
+    return WritingPractice(
+        learner_id=learner_id,
+        recommendation_id=recommendation_id,
+        target_skill=target_skill,
+        practice_type=generated.practice_type,
+        question=generated.question,
+        focus_objective=generated.focus_objective,
+        instructions=list(generated.instructions),
+        checkpoints=list(generated.checkpoints),
+        generator_policy_version=generated.generator_policy_version,
+        provider=generated.provider,
+        model=generated.model,
+        prompt_version=generated.prompt_version,
+        thinking_mode=generated.thinking_mode,
+        lifecycle_state=PracticeLifecycleState.GENERATED.value,
     )
 
 
@@ -133,6 +169,146 @@ class PracticeGenerationService:
             generated=generated,
         )
         return GenerationOutcome(decision="practice", practice=_practice_response(practice))
+
+    async def generate_or_resolve_current(
+        self,
+        *,
+        learner_id: int,
+        recommendation_id: int,
+        expected_learning_update_id: int,
+    ) -> AgentGenerationOutcome:
+        """Generate only while the observed update/recommendation remains current."""
+
+        recommendation = self._load_recommendation(
+            learner_id=learner_id, recommendation_id=recommendation_id
+        )
+        if not self._agent_recommendation_is_current(
+            learner_id=learner_id,
+            recommendation_id=recommendation.id,
+            expected_learning_update_id=expected_learning_update_id,
+        ):
+            return AgentGenerationOutcome(status="stale_discarded")
+        existing = self._resolve_existing(recommendation.id)
+        if existing is not None:
+            return AgentGenerationOutcome(
+                status="resolved", practice=_practice_response(existing)
+            )
+        if recommendation.decision_type == "no_practice":
+            return AgentGenerationOutcome(status="stale_discarded")
+        if recommendation.target_skill is None:
+            raise PracticeGenerationPersistenceError(
+                "persisted practice recommendation has no target skill"
+            )
+        captured_recommendation_id = recommendation.id
+        target_skill = recommendation.target_skill
+        generated = await self._generate_outside_transaction(recommendation)
+        self._session.rollback()
+        persisted = self._persist_if_agent_current(
+            learner_id=learner_id,
+            recommendation_id=captured_recommendation_id,
+            expected_learning_update_id=expected_learning_update_id,
+            target_skill=target_skill,
+            generated=generated,
+        )
+        if persisted is None:
+            return AgentGenerationOutcome(status="stale_discarded", provider_invoked=True)
+        practice, resolved = persisted
+        return AgentGenerationOutcome(
+            status="resolved" if resolved else "generated",
+            practice=_practice_response(practice),
+            provider_invoked=True,
+        )
+
+    def _agent_recommendation_is_current(
+        self,
+        *,
+        learner_id: int,
+        recommendation_id: int,
+        expected_learning_update_id: int,
+    ) -> bool:
+        try:
+            latest_id = self._session.scalar(
+                select(LearningUpdate.id)
+                .where(LearningUpdate.learner_id == learner_id)
+                .order_by(LearningUpdate.id.desc())
+                .limit(1)
+            )
+            current = self._session.scalar(
+                select(PracticeRecommendation.id).where(
+                    PracticeRecommendation.id == recommendation_id,
+                    PracticeRecommendation.learner_id == learner_id,
+                    PracticeRecommendation.learning_update_id == expected_learning_update_id,
+                )
+            )
+            self._session.rollback()
+            return latest_id == expected_learning_update_id and current is not None
+        except SQLAlchemyError as error:
+            self._session.rollback()
+            raise PracticeGenerationPersistenceError(
+                "agent generation freshness check failed"
+            ) from error
+
+    def _persist_if_agent_current(
+        self,
+        *,
+        learner_id: int,
+        recommendation_id: int,
+        expected_learning_update_id: int,
+        target_skill: str,
+        generated: GeneratedWritingPractice,
+    ) -> tuple[WritingPractice, bool] | None:
+        try:
+            with self._session.begin():
+                learner = self._session.scalar(
+                    select(Learner).where(Learner.id == learner_id).with_for_update()
+                )
+                if learner is None:
+                    raise RecommendationNotFoundError("learner was not found")
+                latest_id = self._session.scalar(
+                    select(LearningUpdate.id)
+                    .where(LearningUpdate.learner_id == learner_id)
+                    .order_by(LearningUpdate.id.desc())
+                    .limit(1)
+                )
+                current = self._session.scalar(
+                    select(PracticeRecommendation).where(
+                        PracticeRecommendation.id == recommendation_id,
+                        PracticeRecommendation.learner_id == learner_id,
+                        PracticeRecommendation.learning_update_id == expected_learning_update_id,
+                    )
+                )
+                if latest_id != expected_learning_update_id or current is None:
+                    return None
+                existing = _existing_practice(self._session, recommendation_id)
+                if existing is not None:
+                    return existing, True
+                practice = _new_practice(
+                    learner_id=learner_id,
+                    recommendation_id=recommendation_id,
+                    target_skill=target_skill,
+                    generated=generated,
+                )
+                self._session.add(practice)
+                self._session.flush()
+                return practice, False
+        except IntegrityError as error:
+            self._session.rollback()
+            if _violated_constraint(error) != PRACTICE_IDEMPOTENCY_CONSTRAINT:
+                raise PracticeGenerationPersistenceError(
+                    "writing practice could not be persisted"
+                ) from error
+            winner = _existing_practice(self._session, recommendation_id)
+            self._session.rollback()
+            if winner is None:
+                raise PracticeGenerationPersistenceError(
+                    "writing practice winner could not be resolved"
+                ) from error
+            return winner, True
+        except SQLAlchemyError as error:
+            self._session.rollback()
+            raise PracticeGenerationPersistenceError(
+                "agent generation persistence failure"
+            ) from error
 
     def _load_recommendation(
         self,
@@ -206,21 +382,11 @@ class PracticeGenerationService:
         target_skill: str,
         generated: GeneratedWritingPractice,
     ) -> WritingPractice:
-        practice = WritingPractice(
+        practice = _new_practice(
             learner_id=learner_id,
             recommendation_id=recommendation_id,
             target_skill=target_skill,
-            practice_type=generated.practice_type,
-            question=generated.question,
-            focus_objective=generated.focus_objective,
-            instructions=list(generated.instructions),
-            checkpoints=list(generated.checkpoints),
-            generator_policy_version=generated.generator_policy_version,
-            provider=generated.provider,
-            model=generated.model,
-            prompt_version=generated.prompt_version,
-            thinking_mode=generated.thinking_mode,
-            lifecycle_state=PracticeLifecycleState.GENERATED.value,
+            generated=generated,
         )
         try:
             with self._session.begin():

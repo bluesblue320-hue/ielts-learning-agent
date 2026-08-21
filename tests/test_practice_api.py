@@ -20,6 +20,7 @@ from app.services.practice_generation import (
 from app.services.practice_submission import (
     PracticeSubmissionPersistenceError,
     PracticeSubmissionService,
+    submission_fingerprint,
 )
 from tests.fakes import FakePracticeGenerator, FakeProvider
 from tests.test_learning_api import _seed_evaluation, _seed_learner, client, engine
@@ -228,8 +229,13 @@ def test_in_progress_and_completion_public_contract(client: TestClient, engine) 
             practice = session.get(WritingPractice, practice_id)
             assert practice is not None
             practice.lifecycle_state = "submission_in_progress"
-            practice.submission_fingerprint = "f" * 64
+            practice.submission_fingerprint = submission_fingerprint(
+                practice_id=practice.id,
+                question=practice.question,
+                essay="In progress essay.",
+            )
             practice.claim_token = "test-claim"
+            practice.submission_claimed_at = session.scalar(select(func.current_timestamp()))
             session.commit()
         in_progress = client.post(
             f"/learners/1/writing/practices/{practice_id}/submit", json={"essay": "In progress essay."}

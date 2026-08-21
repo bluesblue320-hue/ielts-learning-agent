@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { type LearnerStateResponse, type WritingSkill, apiClient, type WritingContextResponse } from "@/lib/api/client";
+import { type AgentTurnResponse, type LearnerStateResponse, type WritingSkill, apiClient, type WritingContextResponse } from "@/lib/api/client";
 import { useLearnerContext } from "@/components/learner-context";
 import { presentApiError, presentNoPracticeReasons, presentPlanningExplanation, presentPracticeReasons, skillLabels } from "@/lib/presentation";
 import { resumeActionExplanations, resumeActionLabels } from "@/lib/memory-presentation";
+import { presentAgentStep, presentAgentStopReason } from "@/lib/agent-presentation";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -17,6 +18,8 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [agentTurn, setAgentTurn] = useState<AgentTurnResponse | null>(null);
+  const [isAgentBusy, setIsAgentBusy] = useState(false);
   const learnerId = cache?.currentLearnerId ?? null;
   const planningExplanation = presentPlanningExplanation(context?.current_recommendation);
 
@@ -73,6 +76,13 @@ export default function DashboardPage() {
     }
   }
 
+  async function continueWithAgent() {
+    if (learnerId === null) return;
+    setIsAgentBusy(true); setError(null);
+    try { setAgentTurn(await apiClient.agentTurn(learnerId, { turn_type: "continue" })); }
+    catch (reason) { setError(presentApiError(reason)); }
+    finally { setIsAgentBusy(false); }
+  }
   function renderResumeAction() {
     if (context === null) return null;
     const action = context.resume_action;
@@ -145,6 +155,24 @@ export default function DashboardPage() {
       )}
       <section className="content-card next-step">
         <h2>继续学习</h2>
+        <button className="secondary-action" disabled={isAgentBusy} onClick={continueWithAgent} type="button">{isAgentBusy ? "正在继续学习…" : "使用学习助手继续"}</button>
+        {agentTurn !== null && (
+          <div className="supporting-copy" aria-live="polite" role="status">
+            <p>学习助手状态：{presentAgentStopReason(agentTurn.stop_reason)}</p>
+            <ol>
+              {agentTurn.steps.map((step, index) => (
+                <li key={`${index}-${step.tool}-${step.outcome}`}>
+                  {presentAgentStep(step.tool, step.outcome)}
+                </li>
+              ))}
+                        </ol>
+            {agentTurn.current_practice !== null && (
+              <Link className="primary-action" href={`/practice/${agentTurn.current_practice.id}`}>
+                开始本次练习
+              </Link>
+            )}
+          </div>
+        )}
         {context === null ? (
           <><p className="supporting-copy">正在读取下一步建议…</p><Link className="primary-action" href="/writing">进行首次写作</Link></>
         ) : (
