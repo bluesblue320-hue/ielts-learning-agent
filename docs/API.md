@@ -175,6 +175,23 @@ The lifecycle is `generated -> submission_in_progress -> submitted`. Provider
 calls are outside database transactions; PostgreSQL constraints and row locks
 enforce durable ownership and one logical submission.
 
+New practices use `writing-practice-generation-v2` with prompt
+`practice-generation-v2` and an application-owned
+`writing-practice-knowledge-context-v1` input. The context is bounded static
+Knowledge grounding, not learner state or provider authority, and is not a
+public response field. Historical v1 practice rows remain readable.
+
+## Grounded Writing guidance
+
+`GET /learners/{learner_id}/writing/guidance` returns the provider-free
+`writing-grounded-guidance-v1` projection for the latest accepted
+`LearningUpdate.id DESC`. It includes the safe learner-state summary, nullable
+current recommendation, grounded guidance items, application-owned citations,
+and exact knowledge/retrieval versions. It exposes no raw Planner context,
+Memory provenance, claim metadata, provider reasoning, or filesystem paths.
+
+No generic Knowledge search or runtime URL fetch endpoint is available.
+
 ## Phase 5 web compatibility
 
 `POST /writing/evaluate` returns `attempt_id`, persisted `evaluation_id`, and `evaluation`. `POST /learners/{learner_id}/writing/evaluations/{evaluation_id}/apply` returns `learning_update_id`, `reused`, persisted `recommendation_id`, and `recommendation`. Complete returns `next_recommendation_id` beside `next_recommendation`.

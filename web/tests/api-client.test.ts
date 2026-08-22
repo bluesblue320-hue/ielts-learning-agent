@@ -46,7 +46,7 @@ test("the client preserves the safe backend error envelope", async () => {
   );
 });
 
-test("the client fetches the Phase 6 memory read contracts as GETs", async () => {
+test("the client fetches the Phase 6 and Phase 9 read contracts as GETs", async () => {
   const requested: string[] = [];
   const client = createApiClient({
     baseUrl: "http://api.example.test",
@@ -60,12 +60,14 @@ test("the client fetches the Phase 6 memory read contracts as GETs", async () =>
   await client.getWritingHistoryEpisode(3, 7);
   await client.getWritingProgress(3);
   await client.getWritingContext(3);
+  await client.getWritingGuidance(3);
 
   assert.deepEqual(requested, [
     "GET http://api.example.test/learners/3/writing/history",
     "GET http://api.example.test/learners/3/writing/history/7",
     "GET http://api.example.test/learners/3/writing/progress",
     "GET http://api.example.test/learners/3/writing/context",
+    "GET http://api.example.test/learners/3/writing/guidance",
   ]);
 });
 

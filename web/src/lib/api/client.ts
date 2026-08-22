@@ -300,6 +300,47 @@ export type WritingContextResponse = {
   current_state: LearnerStateResponse["states"];
 };
 
+export type GroundedCitation = {
+  source_id: string;
+  publisher: string;
+  title: string;
+  url: string;
+  locator: string;
+  page: number | null;
+  section: string | null;
+};
+
+export type GroundedGuidanceItem = {
+  criterion: WritingSkill;
+  title: string;
+  explanation: string;
+  knowledge_ids: string[];
+  citations: GroundedCitation[];
+};
+
+export type GroundedRecommendationSummary = {
+  id: number;
+  decision_type: "practice" | "no_practice";
+  target_skill: WritingSkill | null;
+  learner_target_band: BandScore | null;
+  current_estimate: string | null;
+  reason_codes: string[];
+};
+
+export type WritingGroundedGuidanceResponse = {
+  learner_state: {
+    learner_id: number;
+    writing_target_band: BandScore;
+    current_estimates: Record<WritingSkill, string | null>;
+  };
+  current_recommendation: GroundedRecommendationSummary | null;
+  guidance_items: GroundedGuidanceItem[];
+  source_citations: GroundedCitation[];
+  guidance_version: "writing-grounded-guidance-v1";
+  knowledge_version: "ielts-writing-knowledge-v1";
+  retrieval_version: "writing-knowledge-structured-v1";
+};
+
 export type AgentTurnRequest =
   | { turn_type: "continue" }
   | { turn_type: "practice_submission"; practice_id: number; essay: string };
@@ -426,6 +467,10 @@ export function createApiClient(options: ApiClientOptions = {}) {
       request<WritingProgressResponse>(`/learners/${learnerId}/writing/progress`),
     getWritingContext: (learnerId: number) =>
       request<WritingContextResponse>(`/learners/${learnerId}/writing/context`),
+    getWritingGuidance: (learnerId: number) =>
+      request<WritingGroundedGuidanceResponse>(
+        `/learners/${learnerId}/writing/guidance`,
+      ),
     agentTurn: (learnerId: number, input: AgentTurnRequest) =>
       request<AgentTurnResponse>(`/learners/${learnerId}/writing/agent/turn`, { method: "POST", body: input }),
   };

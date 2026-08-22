@@ -99,7 +99,9 @@ class GeneratedWritingPractice(PracticeSchema):
     focus_objective: PracticeObjectiveText
     instructions: PracticeItemList
     checkpoints: PracticeItemList
-    generator_policy_version: Literal["writing-practice-generation-v1"]
+    generator_policy_version: Literal[
+        "writing-practice-generation-v1", "writing-practice-generation-v2"
+    ]
     provider: str = Field(min_length=1, max_length=64)
     model: str = Field(min_length=1, max_length=64)
     prompt_version: str = Field(min_length=1, max_length=64)

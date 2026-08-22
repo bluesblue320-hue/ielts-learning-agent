@@ -18,9 +18,9 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Annotated, Literal, Protocol, runtime_checkable
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
-from app.llm.provider import ProviderError, ThinkingMode
+from app.llm.provider import ThinkingMode
 from app.schemas.learner import WritingSkillKey
 from app.schemas.practice import GeneratedWritingPractice
 
@@ -36,6 +36,25 @@ class GeneratorBoundary(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
 
+class PracticeKnowledgeItem(GeneratorBoundary):
+    knowledge_id: NonBlankText
+    statement: NonBlankText
+    source_ids: tuple[NonBlankText, ...] = Field(min_length=1)
+
+
+class PracticeKnowledgeContext(GeneratorBoundary):
+    knowledge_context_version: Literal["writing-practice-knowledge-context-v1"] = (
+        "writing-practice-knowledge-context-v1"
+    )
+    knowledge_version: Literal["ielts-writing-knowledge-v1"] = (
+        "ielts-writing-knowledge-v1"
+    )
+    retrieval_version: Literal["writing-knowledge-structured-v1"] = (
+        "writing-knowledge-structured-v1"
+    )
+    items: tuple[PracticeKnowledgeItem, ...] = Field(min_length=1, max_length=7)
+
+
 class PracticeGenerationRequest(GeneratorBoundary):
     """Application-owned authority values for one practice generation.
 
@@ -49,8 +68,31 @@ class PracticeGenerationRequest(GeneratorBoundary):
     learner_target_band: Decimal | None = None
     reason_codes: list[str] = Field(default_factory=list)
     planner_version: NonBlankText
-    generator_policy_version: NonBlankText
-    prompt_version: NonBlankText
+    generator_policy_version: Literal[
+        "writing-practice-generation-v1", "writing-practice-generation-v2"
+    ]
+    prompt_version: Literal["practice-generation-v1", "practice-generation-v2"]
+
+    knowledge_context: PracticeKnowledgeContext | None = None
+
+    @model_validator(mode="after")
+    def _validate_version_pair(self) -> "PracticeGenerationRequest":
+        is_v2 = self.generator_policy_version == "writing-practice-generation-v2"
+        if is_v2 and (
+            self.prompt_version != "practice-generation-v2"
+            or self.knowledge_context is None
+        ):
+            raise ValueError(
+                "v2 generation requires the v2 prompt and knowledge context"
+            )
+        if not is_v2 and (
+            self.prompt_version != "practice-generation-v1"
+            or self.knowledge_context is not None
+        ):
+            raise ValueError(
+                "historical v1 generation cannot carry Phase 9 knowledge context"
+            )
+        return self
 
 
 @runtime_checkable

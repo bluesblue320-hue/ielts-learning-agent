@@ -9,7 +9,20 @@ it is not intended to be only a chatbot or a thin LLM wrapper.
 
 **Phase 1 = COMPLETE. Phase 2 = COMPLETE. Phase 3 = COMPLETE. Phase 4 = COMPLETE. Phase 5 = COMPLETE and MERGED through PR #9 (`feat: deliver Phase 5 Chinese-first web MVP`), merge commit `56498c3d59aad4ae645c5b78c6b6dc41bec62bcf`. Phase 6 = COMPLETE and MERGED through PR #10 (`feat: deliver Phase 6 hierarchical learning memory & longitudinal progress`), merge commit `b8e419d8c146c921539f4654b5aeb0b56ed6f425`.**
 
-**Phase 7 = COMPLETE and MERGED through PR #11 (`fix: repair Phase 7 snapshot audit replay`), PR head `f6990ab94f590f1a37122ea0bf12bf7e5218c727`, merge commit `cbf1ebabc87ec490f74957d1327037dae4242381`. External Design Review and External Implementation Review are APPROVED; PR CI and master merge CI are SUCCESS. Phase 8 is COMPLETE on `phase/8-core-learning-agent-v1`: the bounded, Writing-only Core Learning Agent v1 is available through `POST /learners/{learner_id}/agent/turn`; initial Writing remains on the granular flow, and the existing granular practice APIs remain supported. P8-13 is `INTERNAL_AUDIT_COMPLETE`; External Design Review and External Implementation Review are APPROVED, and Phase 9 = NOT_STARTED.**
+**Phase 7 = COMPLETE and MERGED through PR #11**, merge commit
+`cbf1ebabc87ec490f74957d1327037dae4242381`; both external reviews and CI
+are approved/successful.
+
+**Phase 8 = COMPLETE and MERGED through PR #12**, merge commit
+`4739bca53ebcae96f10bca256e3568a644f2fef4`. The bounded Writing-only
+Core Learning Agent v1 is available through
+`POST /learners/{learner_id}/writing/agent/turn`.
+
+**Phase 9 implementation is complete on
+`phase/9-ielts-knowledge-grounding-v1` and awaits External Implementation
+Review.** P9-13 is `INTERNAL_AUDIT_COMPLETE`; External Design Review is
+`APPROVED`, External Implementation Review is `PENDING`, and no PR or merge
+has been created.
 
 Phase 7 connects authoritative current learner state and longitudinal Writing
 Memory to deterministic Planner v2. Memory is consulted only for exact
@@ -38,9 +51,9 @@ pipeline:
   persistence models.
 
 The Phase 3 execution record is [docs/PHASE3_GRAPH.md](docs/PHASE3_GRAPH.md).
-An agent runtime, RAG, automatic lesson or exercise generation, and Speaking,
-Reading, and Listening workflows remain outside the implemented system (future
-phases).
+Semantic retrieval, generic RAG, and Speaking, Reading, and Listening workflows
+remain outside the implemented system. Phase 9 grounding is deterministic and
+Writing Task 2–only.
 
 ## Technology stack
 
@@ -107,6 +120,8 @@ local Python setup, migrations, cleanup, and Windows Docker troubleshooting.
 | `GET` | `/learners/{learner_id}/writing/practices/{practice_id}` | Inspect a persisted Writing practice |
 | `POST` | `/learners/{learner_id}/writing/practices/{practice_id}/submit` | Submit an essay only; the server uses the persisted question |
 | `GET` | `/learners/{learner_id}/writing/practices/{practice_id}/evaluation` | Read the persisted evaluation for a learner-owned submitted practice |
+| `GET` | `/learners/{learner_id}/writing/guidance` | Read provider-free, source-backed guidance for the latest accepted update |
+| `POST` | `/learners/{learner_id}/writing/agent/turn` | Run one bounded Writing Agent turn |
 | `POST` | `/learners/{learner_id}/writing/practices/{practice_id}/complete` | Apply its persisted evaluation and return the next recommendation |
 
 Readiness responses expose only `available` or `unavailable`; connection details
@@ -124,6 +139,7 @@ product-score disclaimer. Phase 3 endpoints return the same safe error contract
 │   ├── api/              # thin routes, dependencies, and safe error mapping
 │   ├── core/             # typed settings
 │   ├── db/               # SQLAlchemy base, engine, and sessions
+│   ├── knowledge/        # static official-source snapshot and deterministic retrieval
 │   ├── learner/          # frozen policies, evidence extraction, state engine, planner
 │   ├── llm/              # provider protocol, DeepSeek adapter, bounded retries
 │   ├── models/           # Writing and learning persistence models
@@ -139,20 +155,23 @@ product-score disclaimer. Phase 3 endpoints return the same safe error contract
 └── docs/
 ```
 
-An agent runtime, RAG, automatic content generation, and
-multi-skill workflows remain outside the implemented system.
+Semantic retrieval, generic RAG, and multi-skill workflows remain outside the
+implemented system.
 
 ## Development guidance
 
 Before changing the project, read these documents in order:
 
 1. [AGENTS.md](AGENTS.md)
-2. [Phase 8 graph](docs/PHASE8_GRAPH.md) and the frozen
+2. [Phase 9 graph](docs/PHASE9_GRAPH.md), frozen
+   [IELTS Knowledge policy](docs/IELTS_KNOWLEDGE_POLICY.md), and
+   [internal audit](docs/PHASE9_AUDIT.md)
+3. [Phase 8 graph](docs/PHASE8_GRAPH.md) and frozen
    [Core Learning Agent policy](docs/CORE_LEARNING_AGENT_POLICY.md), with the
    Phase 7 [planner policy](docs/MEMORY_AWARE_PLANNING_POLICY.md) and Phase 6
    [Writing memory policy](docs/WRITING_MEMORY_POLICY.md)
-3. [Development loop](docs/DEVELOPMENT_LOOP.md)
-4. [Target architecture](docs/ARCHITECTURE.md)
+4. [Development loop](docs/DEVELOPMENT_LOOP.md)
+5. [Target architecture](docs/ARCHITECTURE.md)
 
 Phase 1 remains complete and preserved in
 [docs/PHASE1_GRAPH.md](docs/PHASE1_GRAPH.md). Phase 2 is complete and preserved
@@ -174,7 +193,17 @@ Phase 7 is COMPLETE and merged through PR #11. `writing-practice-gap-memory-v2`
 is active for new Writing applies, while historical
 `writing-practice-gap-v1` remains supported. Memory is consulted only for exact
 maximum-gap ties. The frozen execution record is
-[docs/PHASE7_GRAPH.md](docs/PHASE7_GRAPH.md). Phase 8 is COMPLETE on `phase/8-core-learning-agent-v1`: the bounded, Writing-only Core Learning Agent v1 is available through `POST /learners/{learner_id}/agent/turn`; initial Writing remains on the granular flow, and the existing granular practice APIs remain supported. P8-13 is `INTERNAL_AUDIT_COMPLETE`; External Design Review and External Implementation Review are APPROVED, and Phase 9 = NOT_STARTED.
+[docs/PHASE7_GRAPH.md](docs/PHASE7_GRAPH.md).
+
+Phase 8 is COMPLETE and merged through PR #12. Its bounded,
+Writing-only Core Learning Agent v1 remains available through
+`POST /learners/{learner_id}/writing/agent/turn`; granular APIs remain
+supported. Phase 9 implementation is complete on
+`phase/9-ielts-knowledge-grounding-v1`: P9-13 is
+`INTERNAL_AUDIT_COMPLETE`, External Design Review is `APPROVED`, and External
+Implementation Review is `PENDING`. The frozen execution record and audit are
+[docs/PHASE9_GRAPH.md](docs/PHASE9_GRAPH.md) and
+[docs/PHASE9_AUDIT.md](docs/PHASE9_AUDIT.md).
 
 ## Phase 5 Web MVP
 
