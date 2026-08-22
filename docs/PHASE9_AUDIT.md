@@ -8,7 +8,7 @@ External Implementation Review is `PENDING`. No PR or merge has been created.
 ## Validation identity
 
 The repaired implementation and browser-test HEAD validated by every command
-below is `0aa30d88162035075ac966b332b16dfd6f350dc1`. The following
+below is `25e6591763283f485a0361d95c9f17017cb21d85`. The following
 documentation-only repair-audit commit does not change runtime or test
 behavior. The branch is based on Phase 8 master merge commit
 `4739bca53ebcae96f10bca256e3568a644f2fef4`.
@@ -45,6 +45,14 @@ Duplicate Knowledge IDs and unknown source IDs fail closed. Public citations
 are resolved by the application from registered source metadata and the exact
 retrieved claim locators; a provider cannot supply or rewrite them.
 
+All 40 criterion-by-integer-band descriptor summaries were independently
+recalibrated against the registered May 2023 official IELTS Writing Band
+Descriptors. Stable Knowledge IDs, `ielts-writing-band-descriptors-2023`
+source ownership, and deterministic criterion/band locators remain unchanged.
+Targeted semantic regressions protect Task Response Band 5, Coherence and
+Cohesion Band 6, and Lexical Resource Bands 5 and 6 from the reviewed adjacent-
+band overstatements.
+
 ## Deterministic retrieval proof
 
 Retrieval is provider-free and operates only over the Git-versioned snapshot.
@@ -66,12 +74,15 @@ and a non-blank semantic rationale. Runtime audit results are projected from
 that ledger. Missing, duplicate, extra, unknown-reference, blank-rationale,
 invalid-status, rubric-drift, and Knowledge-drift cases all fail closed.
 
-All 40 reviewed entries are `compatible_with_missing_provenance`: the frozen
-product rubric semantics align with the corresponding criterion-specific
-Knowledge summary, while the historical v1 rubric wording did not carry
-claim-level source provenance. No material conflict was found. The evaluator
-wording, scoring, weighting, product-band aggregation, and half-band behavior
-remain unchanged.
+The official-source recalibration produced 23
+`compatible_with_missing_provenance` entries and 17
+`gap_requires_documentation` entries. The documented gaps are Task Response
+Bands 3–8, Coherence and Cohesion Bands 3–8, Lexical Resource Bands 4–7, and
+Grammatical Range and Accuracy Band 4. These are meaningful adjacent-band
+severity differences between the concise official-source Knowledge and the
+historical product rubric; none changes runtime scoring authority. No
+`material_conflict` was found. The evaluator wording, scoring, weighting,
+product-band aggregation, and half-band behavior remain unchanged.
 
 ## Guidance and generation grounding
 
@@ -98,19 +109,21 @@ context.
 ## Fresh validation
 
 All results below were produced from
-`0aa30d88162035075ac966b332b16dfd6f350dc1` with an isolated local PostgreSQL
+`25e6591763283f485a0361d95c9f17017cb21d85` with an isolated local PostgreSQL
 18 cluster and no live DeepSeek or runtime web access.
 
-- Backend: `python -m pytest -q --strict-markers` — **1024 passed**, with one
+- Backend: `python -m pytest -q --strict-markers` — **1030 passed**, with one
   existing Starlette/httpx `TestClient` deprecation warning.
 - PostgreSQL chronology regression: **1 passed** with explicit thread events;
   update N was selected, N+1 committed, and the response still returned N's
   recommendation plus N's four 5.00 snapshot estimates while live state was
   already N+1's four 7.00 estimates.
-- Rubric ledger: all **40/40** explicit reviewed entries validated; all negative
+- Rubric ledger: all **40/40** explicit reviewed entries and current Knowledge
+  hashes validated; runtime preserved all 17 documented gaps, and all negative
   fail-closed ledger tests passed.
-- Descriptor snapshot: **40/40** criterion-specific integer-band units validated
-  with stable IDs and aligned official source locators; no half-band unit exists.
+- Descriptor snapshot: **40/40** criterion-specific integer-band units passed
+  official-source semantic calibration with stable IDs and aligned locators; no
+  half-band unit exists.
 - Frontend unit: `npm test` — **15 passed**.
 - Frontend gates: `npm run lint`, `npm run typecheck`, and `npm run build` —
   all passed.
@@ -138,8 +151,9 @@ payments, microservices, or new migration was introduced.
 
 - The v1 snapshot is deliberately concise, static, English-language, and
   Writing Task 2–only; source refresh remains an explicit reviewed Git change.
-- Existing `writing-task2-v1` rubric text retains the documented historical
-  missing-provenance caveat; Phase 9 does not rewrite it.
+- Existing `writing-task2-v1` rubric text retains its historical missing-
+  provenance caveat and the 17 documented semantic gaps above; Phase 9 does not
+  rewrite it or change scoring.
 - Retrieval is intentionally structured rather than semantic; no arbitrary
   corpus query or public Knowledge search endpoint exists.
 - External Implementation Review, PR/CI, merge authorization, and master merge

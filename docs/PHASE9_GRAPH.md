@@ -173,7 +173,10 @@ cause_solution
 
 Only approved official IELTS ecosystem sources are allowed. No runtime scraping,
 third-party blogs, forums, or large copied passages. Every unit must carry
-provenance and stable IDs.
+provenance and stable IDs. The implemented 40 criterion-by-integer-band
+summaries are independently calibrated against the registered May 2023 official
+IELTS Writing Band Descriptors rather than derived from the historical product
+rubric.
 
 ### P9-05 — Deterministic Structured Retriever
 
@@ -222,6 +225,12 @@ Knowledge text identities to mapped Knowledge IDs, an explicit status, and a
 non-blank rationale. Runtime results derive from the ledger; ID existence alone
 never establishes compatibility. Missing, duplicate, extra, unknown-reference,
 blank-rationale, invalid-status, and text-drift cases fail closed.
+
+The completed audit records 23 `compatible_with_missing_provenance` entries and
+17 `gap_requires_documentation` entries: Task Response Bands 3–8, Coherence and
+Cohesion Bands 3–8, Lexical Resource Bands 4–7, and Grammatical Range and
+Accuracy Band 4. No `material_conflict` was found, so the frozen evaluator and
+historical scoring semantics remain unchanged.
 
 Do not change scoring behavior.
 
