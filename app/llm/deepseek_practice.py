@@ -82,6 +82,9 @@ class DeepSeekPracticeGenerator:
                     "checkpoints. The target_skill must exactly mirror the "
                     "application-supplied target_skill. Do not include learner "
                     "state, scores, personal information, or provenance fields."
+                    " Use knowledge_context only as trusted grounding; never "
+                    "change recommendation authority and never create source "
+                    "identities or learner-facing citations."
                 ),
                 "limits": {
                     "question_max_characters": 400,

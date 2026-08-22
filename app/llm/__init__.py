@@ -2,7 +2,12 @@
 
 from app.llm.deepseek import DeepSeekProvider, DeepSeekSettings
 from app.llm.deepseek_practice import DeepSeekPracticeGenerator
-from app.llm.practice_generator import PracticeGenerationRequest, PracticeGenerator
+from app.llm.practice_generator import (
+    PracticeGenerationRequest,
+    PracticeGenerator,
+    PracticeKnowledgeContext,
+    PracticeKnowledgeItem,
+)
 from app.llm.practice_retry import RetryingPracticeGenerator
 from app.llm.provider import (
     LLMProvider,
@@ -27,6 +32,8 @@ __all__ = [
     "DeepSeekSettings",
     "PracticeGenerationRequest",
     "PracticeGenerator",
+    "PracticeKnowledgeContext",
+    "PracticeKnowledgeItem",
     "RetryingPracticeGenerator",
     "LLMProvider",
     "ProviderError",

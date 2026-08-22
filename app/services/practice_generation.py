@@ -3,16 +3,24 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Literal
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.llm.practice_generator import PracticeGenerationRequest, PracticeGenerator
+from app.knowledge.retriever import retrieve_knowledge
+from app.llm.practice_generator import (
+    PracticeGenerationRequest,
+    PracticeGenerator,
+    PracticeKnowledgeContext,
+    PracticeKnowledgeItem,
+)
 from app.models.learning import Learner, LearningUpdate, PracticeRecommendation
 from app.models.practice import WritingPractice
+from app.schemas.common import BandScore
+from app.schemas.knowledge import KnowledgeRetrievalPurpose, KnowledgeRetrievalQuery
 from app.schemas.practice import (
     GeneratedWritingPractice,
     GenerationOutcome,
@@ -21,8 +29,9 @@ from app.schemas.practice import (
 )
 
 
-GENERATION_POLICY_VERSION = "writing-practice-generation-v1"
-PRACTICE_PROMPT_VERSION = "practice-generation-v1"
+GENERATION_POLICY_VERSION = "writing-practice-generation-v2"
+PRACTICE_PROMPT_VERSION = "practice-generation-v2"
+KNOWLEDGE_CONTEXT_VERSION = "writing-practice-knowledge-context-v1"
 PRACTICE_IDEMPOTENCY_CONSTRAINT = "uq_writing_practice_recommendation_id"
 
 
@@ -143,7 +152,9 @@ class PracticeGenerationService:
         )
         existing = self._resolve_existing(recommendation.id)
         if existing is not None:
-            return GenerationOutcome(decision="practice", practice=_practice_response(existing))
+            return GenerationOutcome(
+                decision="practice", practice=_practice_response(existing)
+            )
 
         if recommendation.decision_type == "no_practice":
             return GenerationOutcome(
@@ -168,7 +179,9 @@ class PracticeGenerationService:
             target_skill=target_skill,
             generated=generated,
         )
-        return GenerationOutcome(decision="practice", practice=_practice_response(practice))
+        return GenerationOutcome(
+            decision="practice", practice=_practice_response(practice)
+        )
 
     async def generate_or_resolve_current(
         self,
@@ -211,7 +224,9 @@ class PracticeGenerationService:
             generated=generated,
         )
         if persisted is None:
-            return AgentGenerationOutcome(status="stale_discarded", provider_invoked=True)
+            return AgentGenerationOutcome(
+                status="stale_discarded", provider_invoked=True
+            )
         practice, resolved = persisted
         return AgentGenerationOutcome(
             status="resolved" if resolved else "generated",
@@ -237,7 +252,8 @@ class PracticeGenerationService:
                 select(PracticeRecommendation.id).where(
                     PracticeRecommendation.id == recommendation_id,
                     PracticeRecommendation.learner_id == learner_id,
-                    PracticeRecommendation.learning_update_id == expected_learning_update_id,
+                    PracticeRecommendation.learning_update_id
+                    == expected_learning_update_id,
                 )
             )
             self._session.rollback()
@@ -274,7 +290,8 @@ class PracticeGenerationService:
                     select(PracticeRecommendation).where(
                         PracticeRecommendation.id == recommendation_id,
                         PracticeRecommendation.learner_id == learner_id,
-                        PracticeRecommendation.learning_update_id == expected_learning_update_id,
+                        PracticeRecommendation.learning_update_id
+                        == expected_learning_update_id,
                     )
                 )
                 if latest_id != expected_learning_update_id or current is None:
@@ -317,7 +334,9 @@ class PracticeGenerationService:
         recommendation_id: int,
     ) -> PracticeRecommendation:
         try:
-            recommendation = self._session.get(PracticeRecommendation, recommendation_id)
+            recommendation = self._session.get(
+                PracticeRecommendation, recommendation_id
+            )
         except SQLAlchemyError as error:
             self._session.rollback()
             raise PracticeGenerationPersistenceError(
@@ -345,6 +364,43 @@ class PracticeGenerationService:
                 "writing practice persistence failure"
             ) from error
 
+    def _knowledge_context(
+        self,
+        recommendation: PracticeRecommendation,
+    ) -> PracticeKnowledgeContext:
+        if (
+            recommendation.target_skill is None
+            or recommendation.current_estimate is None
+            or recommendation.learner_target_band is None
+        ):
+            raise PracticeGenerationPersistenceError(
+                "practice recommendation lacks grounding authority"
+            )
+        current = Decimal(recommendation.current_estimate)
+        rounded_current = (current * 2).quantize(
+            Decimal("1"), rounding=ROUND_HALF_UP
+        ) / 2
+        result = retrieve_knowledge(
+            KnowledgeRetrievalQuery(
+                purpose=KnowledgeRetrievalPurpose.PRACTICE_GENERATION,
+                criterion=recommendation.target_skill,
+                current_band=BandScore(value=rounded_current),
+                target_band=BandScore(
+                    value=Decimal(recommendation.learner_target_band)
+                ),
+            )
+        )
+        return PracticeKnowledgeContext(
+            items=tuple(
+                PracticeKnowledgeItem(
+                    knowledge_id=unit.knowledge_id,
+                    statement=unit.statement,
+                    source_ids=tuple(ref.source_id for ref in unit.source_refs),
+                )
+                for unit in result.units
+            )
+        )
+
     async def _generate_outside_transaction(
         self,
         recommendation: PracticeRecommendation,
@@ -362,6 +418,7 @@ class PracticeGenerationService:
             planner_version=recommendation.planner_version,
             generator_policy_version=GENERATION_POLICY_VERSION,
             prompt_version=PRACTICE_PROMPT_VERSION,
+            knowledge_context=self._knowledge_context(recommendation),
         )
         # Attribute reads above can refresh an expired ORM row after the
         # idempotency lookup. Release that implicit read transaction before the
