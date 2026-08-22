@@ -7,9 +7,9 @@ External Implementation Review is `PENDING`. No PR or merge has been created.
 
 ## Validation identity
 
-The implementation and browser-test HEAD validated by every command below is
-`370e452b18970ffcb06812afe7a554b51656a447`. The documentation-only P9-13
-audit commit follows that validated HEAD and does not change runtime or test
+The repaired implementation and browser-test HEAD validated by every command
+below is `0aa30d88162035075ac966b332b16dfd6f350dc1`. The following
+documentation-only repair-audit commit does not change runtime or test
 behavior. The branch is based on Phase 8 master merge commit
 `4739bca53ebcae96f10bca256e3568a644f2fef4`.
 
@@ -58,22 +58,35 @@ capped at descriptor 9. No official half-band descriptor is created.
 
 ## Rubric compatibility result
 
-All 40 existing `writing-task2-v1` criterion/band anchors map to resolving
-Phase 9 Knowledge IDs. The recorded result is
-`compatible_with_missing_provenance`: the frozen product rubric dimensions and
-integer coverage are compatible, while its historical wording did not carry
-claim provenance. There is no material conflict and no scoring wording,
-aggregation, half-band, provider, or persistence semantic was changed.
+P9-06 now uses an explicit deterministic semantic compatibility ledger, not an
+inference from Knowledge-ID existence. Exactly 40 reviewed entries bind each
+`writing-task2-v1` criterion/band anchor to the frozen rubric-text identity,
+mapped Knowledge IDs, frozen Knowledge-statement identity, an explicit status,
+and a non-blank semantic rationale. Runtime audit results are projected from
+that ledger. Missing, duplicate, extra, unknown-reference, blank-rationale,
+invalid-status, rubric-drift, and Knowledge-drift cases all fail closed.
+
+All 40 reviewed entries are `compatible_with_missing_provenance`: the frozen
+product rubric semantics align with the corresponding criterion-specific
+Knowledge summary, while the historical v1 rubric wording did not carry
+claim-level source provenance. No material conflict was found. The evaluator
+wording, scoring, weighting, product-band aggregation, and half-band behavior
+remain unchanged.
 
 ## Guidance and generation grounding
 
 The guidance service is deterministic and provider-free. It returns a safe
-empty projection before the first accepted update, otherwise uses the
-authoritative persisted recommendation and state. Every learner-facing
-guidance explanation is composed from retrieved Knowledge statements, and
-each citation resolves to the exact sources/locators used by those statements.
-No provider reasoning, chain of thought, raw Planner context, Memory provenance,
-or filesystem path is public.
+empty projection before the first accepted update. Otherwise it resolves the
+latest accepted `LearningUpdate.id DESC`, its owned `PracticeRecommendation`,
+and the recommendation's strictly reconstructed immutable `state_snapshot`.
+All state values used by the guidance explanation therefore belong to that one
+accepted chronology; the endpoint does not query live `LearnerSkillState`
+after accepting an update. Corrupt persisted snapshots fail safely.
+
+Every learner-facing guidance explanation is composed from retrieved Knowledge
+statements, and each citation resolves to the exact sources/locators used by
+those statements. No provider reasoning, chain of thought, raw Planner context,
+Memory provenance, or filesystem path is public.
 
 Practice generation v2 receives a bounded application-owned Knowledge context.
 The persisted recommendation continues to own WHAT is trained; the provider
@@ -85,11 +98,19 @@ context.
 ## Fresh validation
 
 All results below were produced from
-`370e452b18970ffcb06812afe7a554b51656a447` with an isolated local PostgreSQL
+`0aa30d88162035075ac966b332b16dfd6f350dc1` with an isolated local PostgreSQL
 18 cluster and no live DeepSeek or runtime web access.
 
-- Backend: `python -m pytest -q --strict-markers` — **1012 passed**, with one
+- Backend: `python -m pytest -q --strict-markers` — **1024 passed**, with one
   existing Starlette/httpx `TestClient` deprecation warning.
+- PostgreSQL chronology regression: **1 passed** with explicit thread events;
+  update N was selected, N+1 committed, and the response still returned N's
+  recommendation plus N's four 5.00 snapshot estimates while live state was
+  already N+1's four 7.00 estimates.
+- Rubric ledger: all **40/40** explicit reviewed entries validated; all negative
+  fail-closed ledger tests passed.
+- Descriptor snapshot: **40/40** criterion-specific integer-band units validated
+  with stable IDs and aligned official source locators; no half-band unit exists.
 - Frontend unit: `npm test` — **15 passed**.
 - Frontend gates: `npm run lint`, `npm run typecheck`, and `npm run build` —
   all passed.

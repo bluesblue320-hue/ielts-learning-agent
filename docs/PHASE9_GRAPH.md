@@ -216,7 +216,12 @@ Knowledge IDs. Result payloads are bounded and provider-free.
 ### P9-06 — Existing Rubric Provenance & Compatibility Audit
 
 Compare the existing `writing-task2-v1` product rubric with the curated official
-Knowledge snapshot.
+Knowledge snapshot through an explicit deterministic 40-entry semantic
+compatibility ledger. Every criterion/band entry binds the frozen rubric and
+Knowledge text identities to mapped Knowledge IDs, an explicit status, and a
+non-blank rationale. Runtime results derive from the ledger; ID existence alone
+never establishes compatibility. Missing, duplicate, extra, unknown-reference,
+blank-rationale, invalid-status, and text-drift cases fail closed.
 
 Do not change scoring behavior.
 
@@ -235,11 +240,18 @@ STOP
 Authority remains:
 
 ```text
-learner state -> where the learner is
-Planner       -> what to train
-Knowledge     -> what IELTS expects
-service       -> grounded explanation
+latest accepted LearningUpdate.id DESC
+  -> owned PracticeRecommendation
+  -> strictly validated persisted state_snapshot
+  -> chronology-bound learner-state projection
+
+Planner   -> what to train
+Knowledge -> what IELTS expects
+service   -> grounded explanation
 ```
+
+After an accepted update is selected, guidance must not combine it with a live
+`LearnerSkillState` projection from another chronology.
 
 Prefer deterministic templates. If model wording is later used, all Knowledge is
 selected by the application first and citations remain application-owned.
@@ -312,6 +324,8 @@ Prove:
 - provider output cannot inject a new source ID;
 - unknown Knowledge/source IDs fail closed;
 - retrieval ordering is deterministic;
+- a real PostgreSQL synchronized interleaving cannot mix state from update N
+  with the recommendation from update N+1;
 - CI requires no live web or DeepSeek.
 
 ### P9-12 — Agent + Lifecycle + Browser Regression
