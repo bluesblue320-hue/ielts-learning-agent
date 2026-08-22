@@ -59,8 +59,8 @@ START
   -> P9-09 Public Knowledge / Guidance API [COMPLETE]
   -> P9-10 Chinese-First Grounded Explanation UX [COMPLETE]
   -> P9-11 Grounding / Citation / Hallucination Tests [COMPLETE]
-  -> P9-12 Agent + Lifecycle + Browser Regression [READY]
-  -> P9-13 Internal Final Audit [NOT_STARTED]
+  -> P9-12 Agent + Lifecycle + Browser Regression [COMPLETE]
+  -> P9-13 Internal Final Audit [READY]
   -> External Implementation Review [PENDING]
   -> Phase 9 [PENDING]
   -> STOP
