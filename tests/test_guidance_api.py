@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from decimal import Decimal
 from types import SimpleNamespace
 
@@ -7,34 +8,21 @@ from app.db.session import get_db_session
 from app.main import create_app
 
 
-class _Rows:
-    def __init__(self, rows: tuple[object, ...]) -> None:
-        self._rows = rows
-
-    def all(self) -> tuple[object, ...]:
-        return self._rows
-
-
 class _Session:
     def __init__(
         self,
         *,
         learner: object | None,
-        states: tuple[object, ...] = (),
         update: object | None = None,
         recommendation: object | None = None,
     ) -> None:
         self.learner = learner
-        self.states = states
         self.update = update
         self.recommendation = recommendation
         self.scalar_calls = 0
 
     def get(self, _model: object, _identifier: int) -> object | None:
         return self.learner
-
-    def scalars(self, _query: object) -> _Rows:
-        return _Rows(self.states)
 
     def scalar(self, _query: object) -> object | None:
         self.scalar_calls += 1
@@ -52,6 +40,44 @@ def _client(session: _Session) -> TestClient:
 
 def _learner() -> object:
     return SimpleNamespace(id=1, writing_target_band=Decimal("7.0"))
+
+
+def _snapshot() -> dict[str, object]:
+    return {
+        skill: {
+            "learner_id": 1,
+            "skill": skill,
+            "estimated_band": "6.25" if skill == "task_response" else "7.00",
+            "evidence_count": 3,
+            "last_evidence_id": index,
+            "state_policy_version": "writing-state-ewma-v1",
+            "revision": 3,
+            "updated_at": datetime(2026, 1, 1, tzinfo=timezone.utc),
+        }
+        for index, skill in enumerate(
+            (
+                "task_response",
+                "coherence_and_cohesion",
+                "lexical_resource",
+                "grammatical_range_and_accuracy",
+            ),
+            start=1,
+        )
+    }
+
+
+def _recommendation() -> object:
+    return SimpleNamespace(
+        id=10,
+        decision_type="practice",
+        target_skill="task_response",
+        learner_target_band=Decimal("7.0"),
+        current_estimate=Decimal("6.25"),
+        reason_codes=["largest_target_gap"],
+        planner_version="writing-practice-gap-v1",
+        state_snapshot=_snapshot(),
+        planner_context_snapshot=None,
+    )
 
 
 def test_guidance_route_is_exactly_one_read_only_public_surface() -> None:
@@ -84,23 +110,14 @@ def test_guidance_api_returns_safe_empty_state_before_first_update() -> None:
 def test_guidance_api_returns_grounded_practice_guidance_without_provider() -> None:
     session = _Session(
         learner=_learner(),
-        states=(
-            SimpleNamespace(skill="task_response", estimated_band=Decimal("6.25")),
-        ),
         update=SimpleNamespace(id=9),
-        recommendation=SimpleNamespace(
-            id=10,
-            decision_type="practice",
-            target_skill="task_response",
-            learner_target_band=Decimal("7.0"),
-            current_estimate=Decimal("6.25"),
-            reason_codes=["largest_target_gap"],
-        ),
+        recommendation=_recommendation(),
     )
     response = _client(session).get("/learners/1/writing/guidance")
     assert response.status_code == 200
     body = response.json()
     assert body["current_recommendation"]["target_skill"] == "task_response"
+    assert body["learner_state"]["current_estimates"]["task_response"] == "6.25"
     assert body["guidance_items"][0]["knowledge_ids"]
     assert body["source_citations"][0]["url"].startswith("https://ielts.org/")
 

@@ -10,7 +10,11 @@ from sqlalchemy.orm import Session
 
 from app.knowledge.retriever import retrieve_knowledge
 from app.knowledge.sources import KNOWLEDGE_SOURCES
-from app.models.learning import Learner, LearnerSkillState, LearningUpdate, PracticeRecommendation
+from app.learner.planning_reconstruction import (
+    PersistedPlanningReconstructionError,
+    reconstruct_persisted_planning_record,
+)
+from app.models.learning import Learner, LearningUpdate, PracticeRecommendation
 from app.schemas.common import BandScore
 from app.schemas.knowledge import (
     GroundedCitation,
@@ -47,27 +51,21 @@ class WritingGuidanceService:
             learner = self._session.get(Learner, learner_id)
             if learner is None:
                 raise LearnerNotFoundError("learner was not found")
-            estimates = {
-                row.skill: row.estimated_band
-                for row in self._session.scalars(
-                    select(LearnerSkillState).where(LearnerSkillState.learner_id == learner_id)
-                ).all()
-            }
-            state = GroundedLearnerStateSummary(
-                learner_id=learner.id,
-                writing_target_band=BandScore(value=learner.writing_target_band),
-                current_estimates={
-                    skill: estimates.get(skill)
-                    for skill in _CHINESE_CRITERION_LABELS
-                },
-            )
+
             update = self._session.scalar(
                 select(LearningUpdate)
                 .where(LearningUpdate.learner_id == learner_id)
                 .order_by(LearningUpdate.id.desc())
             )
             if update is None:
-                return WritingGroundedGuidanceResponse(learner_state=state)
+                return WritingGroundedGuidanceResponse(
+                    learner_state=GroundedLearnerStateSummary(
+                        learner_id=learner.id,
+                        writing_target_band=BandScore(value=learner.writing_target_band),
+                        current_estimates={skill: None for skill in _CHINESE_CRITERION_LABELS},
+                    )
+                )
+
             recommendation = self._session.scalar(
                 select(PracticeRecommendation).where(
                     PracticeRecommendation.learning_update_id == update.id,
@@ -76,33 +74,55 @@ class WritingGuidanceService:
             )
             if recommendation is None:
                 raise LearningPersistenceError("accepted update has no recommendation")
+
+            record = reconstruct_persisted_planning_record(recommendation)
+            decision = record.decision
+            estimates = {
+                skill: getattr(decision.state_snapshot, skill).estimated_band
+                for skill in _CHINESE_CRITERION_LABELS
+            }
+            target_band = (
+                decision.learner_target_band.value
+                if decision.learner_target_band is not None
+                else learner.writing_target_band
+            )
+            state = GroundedLearnerStateSummary(
+                learner_id=learner.id,
+                writing_target_band=BandScore(value=target_band),
+                current_estimates=estimates,
+            )
             summary = GroundedRecommendationSummary(
                 id=recommendation.id,
-                decision_type=recommendation.decision_type,
-                target_skill=recommendation.target_skill,
-                learner_target_band=(BandScore(value=recommendation.learner_target_band) if recommendation.learner_target_band is not None else None),
-                current_estimate=recommendation.current_estimate,
-                reason_codes=tuple(recommendation.reason_codes),
+                decision_type=decision.decision_type,
+                target_skill=decision.target_skill,
+                learner_target_band=decision.learner_target_band,
+                current_estimate=decision.current_estimate,
+                reason_codes=tuple(code.value for code in decision.reason_codes),
             )
-            if recommendation.decision_type != "practice" or recommendation.target_skill is None:
+            if decision.decision_type != "practice" or decision.target_skill is None:
                 return WritingGroundedGuidanceResponse(
                     learner_state=state, current_recommendation=summary
                 )
-            estimate = estimates.get(recommendation.target_skill)
-            if estimate is None or recommendation.learner_target_band is None:
+
+            estimate = estimates[decision.target_skill]
+            if estimate is None or decision.learner_target_band is None:
                 return WritingGroundedGuidanceResponse(
                     learner_state=state, current_recommendation=summary
                 )
             result = retrieve_knowledge(
                 KnowledgeRetrievalQuery(
                     purpose=KnowledgeRetrievalPurpose.LEARNER_GUIDANCE,
-                    criterion=recommendation.target_skill,
+                    criterion=decision.target_skill,
                     current_band=_nearest_half_band(estimate),
-                    target_band=BandScore(value=recommendation.learner_target_band),
+                    target_band=decision.learner_target_band,
                 )
             )
         except LearnerNotFoundError:
             raise
+        except PersistedPlanningReconstructionError as error:
+            raise LearningPersistenceError(
+                "accepted recommendation snapshot is invalid"
+            ) from error
         except SQLAlchemyError as error:
             self._session.rollback()
             raise LearningPersistenceError("learning data persistence failure") from error
@@ -117,14 +137,20 @@ class WritingGuidanceService:
                 key = (reference.source_id, reference.locator)
                 if key not in seen:
                     seen.add(key)
-                    citations.append(GroundedCitation(
-                        source_id=source.source_id, publisher=source.publisher,
-                        title=source.title, url=source.url, locator=reference.locator,
-                        page=reference.page, section=reference.section,
-                    ))
-        label = _CHINESE_CRITERION_LABELS[recommendation.target_skill]
+                    citations.append(
+                        GroundedCitation(
+                            source_id=source.source_id,
+                            publisher=source.publisher,
+                            title=source.title,
+                            url=source.url,
+                            locator=reference.locator,
+                            page=reference.page,
+                            section=reference.section,
+                        )
+                    )
+        label = _CHINESE_CRITERION_LABELS[decision.target_skill]
         item = GroundedGuidanceItem(
-            criterion=recommendation.target_skill,
+            criterion=decision.target_skill,
             title=f"{label}：下一步重点",
             explanation="；".join(unit.statement for unit in result.units),
             knowledge_ids=tuple(unit.knowledge_id for unit in result.units),

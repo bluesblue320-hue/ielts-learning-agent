@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 import json
 from decimal import Decimal
 from types import SimpleNamespace
@@ -38,6 +39,30 @@ class _Rows:
         return self._rows
 
 
+def _state_snapshot() -> dict[str, object]:
+    return {
+        skill: {
+            "learner_id": 1,
+            "skill": skill,
+            "estimated_band": "6.25" if skill == "task_response" else "7.00",
+            "evidence_count": 3,
+            "last_evidence_id": index,
+            "state_policy_version": "writing-state-ewma-v1",
+            "revision": 3,
+            "updated_at": datetime(2026, 1, 1, tzinfo=timezone.utc),
+        }
+        for index, skill in enumerate(
+            (
+                "task_response",
+                "coherence_and_cohesion",
+                "lexical_resource",
+                "grammatical_range_and_accuracy",
+            ),
+            start=1,
+        )
+    }
+
+
 class _GuidanceSession:
     def __init__(self) -> None:
         self._scalar_calls = 0
@@ -65,6 +90,9 @@ class _GuidanceSession:
             learner_target_band=Decimal("7.0"),
             current_estimate=Decimal("6.25"),
             reason_codes=["largest_target_gap"],
+            planner_version="writing-practice-gap-v1",
+            state_snapshot=_state_snapshot(),
+            planner_context_snapshot=None,
         )
 
     def rollback(self) -> None:

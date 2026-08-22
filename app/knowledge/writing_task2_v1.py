@@ -21,31 +21,69 @@ _CRITERIA: Final[tuple[tuple[str, str], ...]] = (
     ("grammatical_range_and_accuracy", "Grammatical Range and Accuracy"),
 )
 
-_BAND_PROGRESS: Final[tuple[str, ...]] = (
-    "No assessable evidence of this criterion is demonstrated.",
-    "Only isolated evidence is visible and sustained control is not demonstrated.",
-    "Very limited evidence is demonstrated; communication is seriously constrained.",
-    "Limited control is demonstrated and frequent weaknesses restrict the response.",
-    "Some relevant control is demonstrated, but important weaknesses remain.",
-    "Adequate control is demonstrated, though noticeable limitations remain.",
-    "Generally effective control is demonstrated with relevant development.",
-    "Clear and well-controlled performance is demonstrated for the task.",
-    "Highly effective, flexible control is demonstrated with only minor lapses.",
-    "Fully controlled performance is demonstrated throughout the response.",
-)
+_BAND_SUMMARIES: Final[dict[str, tuple[str, ...]]] = {
+    "task_response": (
+        "No assessable task response is present.",
+        "Isolated or copied material gives no answer or position.",
+        "The topic is barely engaged; no usable position or developed ideas.",
+        "Few task requirements are covered; position and support stay unclear.",
+        "Task coverage is partial; the position is weak and support limited.",
+        "Main requirements are covered, but position or support is uneven.",
+        "Main parts are answered with a relevant position and developed support.",
+        "All task parts are answered with a clear position and relevant support.",
+        "Thorough task coverage supports a well-developed position and extended ideas.",
+        "Every task demand is answered precisely with a fully developed position.",
+    ),
+    "coherence_and_cohesion": (
+        "No assessable organization or connected progression is present.",
+        "Isolated language has no progression, paragraphing, or cohesion.",
+        "Ideas show almost no logical relationship or organizational control.",
+        "Organization, progression, referencing, and cohesion are often unclear.",
+        "Some organization exists, but progression or cohesion is unreliable.",
+        "Progression is recognizable; paragraphing or cohesion can be mechanical.",
+        "Ideas progress coherently in logical paragraphs despite some cohesive lapses.",
+        "Logical paragraphing gives clear progression and controlled cohesion.",
+        "Skillful sequencing and paragraphing use flexible, unobtrusive cohesion.",
+        "Progression, paragraphing, referencing, and cohesion are fully controlled.",
+    ),
+    "lexical_resource": (
+        "No assessable vocabulary is present.",
+        "Only isolated words or copied vocabulary can be recognized.",
+        "Vocabulary is too limited to sustain meaning.",
+        "A narrow range causes imprecision, spelling, and word-formation failures.",
+        "Basic vocabulary conveys meaning, but repetition and errors limit precision.",
+        "Range is adequate, though word choice or formation errors are noticeable.",
+        "Vocabulary is varied and appropriate, with some imprecision or collocation error.",
+        "Flexible vocabulary is precise; less-common words and collocation are controlled.",
+        "Wide, precise vocabulary is fluent, with only rare formation or spelling slips.",
+        "Vocabulary is consistently natural, sophisticated, precise, and controlled.",
+    ),
+    "grammatical_range_and_accuracy": (
+        "No assessable sentence structure is present.",
+        "Isolated fragments show almost no grammar or punctuation control.",
+        "Minimal structures and errors prevent sustained communication.",
+        "Simple forms and frequent grammar or punctuation errors obscure meaning.",
+        "Limited structural range and frequent errors disrupt communication.",
+        "Simple forms exceed complex-form control; meaning survives frequent errors.",
+        "Simple and complex forms are used; errors rarely block meaning.",
+        "Varied complex structures show good grammatical and punctuation control.",
+        "Wide, flexible structures make most sentences accurate, with rare slips.",
+        "A full, natural structural range has consistently accurate control.",
+    ),
+}
 
 
 def _descriptor_units() -> tuple[KnowledgeUnit, ...]:
     items: list[KnowledgeUnit] = []
     for criterion, label in _CRITERIA:
-        for band, progress in enumerate(_BAND_PROGRESS):
+        for band, progress in enumerate(_BAND_SUMMARIES[criterion]):
             items.append(
                 KnowledgeUnit(
                     knowledge_id=f"writing-{criterion.replace('_', '-')}-band-{band}",
                     category=KnowledgeCategory.BAND_GUIDANCE,
                     criterion=criterion,
                     descriptor_band=band,
-                    statement=f"{label}: {progress}",
+                    statement=progress,
                     source_refs=(
                         KnowledgeSourceRef(
                             source_id="ielts-writing-band-descriptors-2023",
