@@ -1,5 +1,7 @@
 """Semantic and provenance invariants for the repaired descriptor snapshot."""
 
+import pytest
+
 from app.knowledge.sources import KNOWLEDGE_SOURCES
 from app.knowledge.writing_task2_v1 import WRITING_TASK2_KNOWLEDGE_UNITS
 from app.schemas.knowledge import KnowledgeCategory
@@ -78,3 +80,48 @@ def test_same_band_preserves_each_criterion_specific_semantics() -> None:
     assert len(set(band_seven.values())) == 4
     for criterion, markers in _BAND_SEVEN_SEMANTIC_MARKERS.items():
         assert all(marker in band_seven[criterion] for marker in markers)
+
+
+@pytest.mark.parametrize(
+    ("criterion", "band", "required", "forbidden"),
+    (
+        (
+            "task_response",
+            5,
+            ("incomplete", "unclear", "underdeveloped"),
+            ("requirements are covered", "generally addressed"),
+        ),
+        (
+            "coherence_and_cohesion",
+            6,
+            ("progression", "mechanical", "illogical"),
+            ("consistently logical", "paragraphing is logical"),
+        ),
+        (
+            "lexical_resource",
+            5,
+            ("limited", "minimally adequate", "errors"),
+            ("range is adequate", "flexible"),
+        ),
+        (
+            "lexical_resource",
+            6,
+            ("adequate", "restricted", "imprecise"),
+            ("varied", "flexible"),
+        ),
+    ),
+)
+def test_official_source_calibration_preserves_adjacent_band_limitations(
+    criterion: str,
+    band: int,
+    required: tuple[str, ...],
+    forbidden: tuple[str, ...],
+) -> None:
+    statement = next(
+        unit.statement.lower()
+        for unit in _descriptors()
+        if unit.criterion == criterion and unit.descriptor_band == band
+    )
+
+    assert all(marker in statement for marker in required)
+    assert all(overstatement not in statement for overstatement in forbidden)

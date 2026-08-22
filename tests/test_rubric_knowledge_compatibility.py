@@ -1,4 +1,6 @@
+from collections import Counter
 from dataclasses import replace
+from hashlib import sha256
 
 import pytest
 
@@ -114,3 +116,47 @@ def test_runtime_audit_returns_the_status_declared_by_the_ledger() -> None:
     assert set(audit) == set(WRITING_TASK2_BAND_DESCRIPTORS)
     assert audit[reviewed_as_compatible.criterion][0] is RubricCompatibilityStatus.COMPATIBLE
     assert audit[WritingCriterion.TASK_RESPONSE][1] is RubricCompatibilityStatus.COMPATIBLE_WITH_MISSING_PROVENANCE
+
+
+_DOCUMENTED_GAPS = {
+    (WritingCriterion.TASK_RESPONSE, band) for band in range(3, 9)
+} | {
+    (WritingCriterion.COHERENCE_AND_COHESION, band) for band in range(3, 9)
+} | {
+    (WritingCriterion.LEXICAL_RESOURCE, band) for band in range(4, 8)
+} | {
+    (WritingCriterion.GRAMMATICAL_RANGE_AND_ACCURACY, 4)
+}
+
+
+def test_all_40_reviewed_hashes_match_current_knowledge_statements() -> None:
+    units = {unit.knowledge_id: unit for unit in WRITING_TASK2_KNOWLEDGE_UNITS}
+
+    for entry in RUBRIC_COMPATIBILITY_LEDGER:
+        statements = "\n".join(
+            units[knowledge_id].statement for knowledge_id in entry.knowledge_ids
+        )
+        assert entry.knowledge_statement_sha256 == sha256(
+            statements.encode("utf-8")
+        ).hexdigest()
+
+
+def test_reviewed_status_distribution_and_all_documented_gaps_are_preserved() -> None:
+    status_by_key = {
+        (entry.criterion, entry.band): entry.compatibility_status
+        for entry in RUBRIC_COMPATIBILITY_LEDGER
+    }
+
+    assert {
+        key
+        for key, status in status_by_key.items()
+        if status is RubricCompatibilityStatus.GAP_REQUIRES_DOCUMENTATION
+    } == _DOCUMENTED_GAPS
+    assert Counter(status_by_key.values()) == {
+        RubricCompatibilityStatus.COMPATIBLE_WITH_MISSING_PROVENANCE: 23,
+        RubricCompatibilityStatus.GAP_REQUIRES_DOCUMENTATION: 17,
+    }
+
+    audit = audit_writing_task2_rubric()
+    for criterion, band in _DOCUMENTED_GAPS:
+        assert audit[criterion][band] is RubricCompatibilityStatus.GAP_REQUIRES_DOCUMENTATION
