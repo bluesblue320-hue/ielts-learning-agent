@@ -25,7 +25,7 @@ Phase 9 branch.
 - Practice prompt v2: `practice-generation-v2`
 - Knowledge context version: `writing-practice-knowledge-context-v1`
 - External Design Review: APPROVED
-- Phase 9 implementation: IN_PROGRESS
+- Phase 9 implementation: IMPLEMENTATION_COMPLETE_AWAITING_EXTERNAL_REVIEW
 
 ## Phase goal
 
@@ -60,9 +60,9 @@ START
   -> P9-10 Chinese-First Grounded Explanation UX [COMPLETE]
   -> P9-11 Grounding / Citation / Hallucination Tests [COMPLETE]
   -> P9-12 Agent + Lifecycle + Browser Regression [COMPLETE]
-  -> P9-13 Internal Final Audit [READY]
+  -> P9-13 Internal Final Audit [INTERNAL_AUDIT_COMPLETE]
   -> External Implementation Review [PENDING]
-  -> Phase 9 [PENDING]
+  -> Phase 9 [IMPLEMENTATION_COMPLETE_AWAITING_EXTERNAL_REVIEW]
   -> STOP
 ```
 

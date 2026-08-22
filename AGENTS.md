@@ -40,18 +40,18 @@ Always inspect the current phase documentation before implementing features.
 Current phase:
 
 ```text
-Phase 8 — Core Learning Agent Orchestration v1
+Phase 9 — IELTS Knowledge Layer & Grounded Learning v1
 ```
 
 Read:
 
 ```text
-docs/PHASE8_GRAPH.md
-docs/CORE_LEARNING_AGENT_POLICY.md
+docs/PHASE9_GRAPH.md
+docs/IELTS_KNOWLEDGE_POLICY.md
 docs/DEVELOPMENT_LOOP.md
 ```
 
-Phase 8 status:
+Current status:
 
 ```text
 Phase 1 = COMPLETE
@@ -112,9 +112,26 @@ P8-11 = COMPLETE
 P8-12 = COMPLETE
 P8-13 = INTERNAL_AUDIT_COMPLETE
 Phase 8 = COMPLETE
-External Design Review = APPROVED
-External Implementation Review = APPROVED
-Phase 9 = NOT_STARTED
+Phase 8 External Design Review = APPROVED
+Phase 8 External Implementation Review = APPROVED
+PR #12 = MERGED
+Phase 9 P9-01 = COMPLETE
+Phase 9 P9-02 = COMPLETE
+Phase 9 External Design Review = APPROVED
+P9-03 = COMPLETE
+P9-04 = COMPLETE
+P9-05 = COMPLETE
+P9-06 = COMPLETE
+P9-07 = COMPLETE
+P9-08 = COMPLETE
+P9-09 = COMPLETE
+P9-10 = COMPLETE
+P9-11 = COMPLETE
+P9-12 = COMPLETE
+P9-13 = INTERNAL_AUDIT_COMPLETE
+Phase 9 = IMPLEMENTATION_COMPLETE_AWAITING_EXTERNAL_REVIEW
+Phase 9 External Implementation Review = PENDING
+Phase 10 = NOT_STARTED
 ```
 
 Phase 6 design (P6-01 audit, P6-02 contract freeze, versions
@@ -144,7 +161,17 @@ and P8-13 is INTERNAL_AUDIT_COMPLETE. The bounded Writing-only Agent v1 and its
 shared granular lifecycle compatibility are defined by
 [docs/PHASE8_GRAPH.md](docs/PHASE8_GRAPH.md) and
 [docs/CORE_LEARNING_AGENT_POLICY.md](docs/CORE_LEARNING_AGENT_POLICY.md).
-The graph defines WHAT should be implemented.
+Phase 9 implementation is complete on
+`phase/9-ielts-knowledge-grounding-v1` and awaits External Implementation
+Review. It adds the static, source-backed `ielts-writing-knowledge-v1`
+snapshot, deterministic `writing-knowledge-structured-v1` retrieval,
+provider-free grounded guidance API/Web UX, and knowledge-grounded practice
+generation v2. Existing `writing-task2-v1` scoring, learner state, Planner,
+Memory, and Agent authority remain frozen. No migration or new dependency was
+added. See [docs/PHASE9_AUDIT.md](docs/PHASE9_AUDIT.md) for validation evidence.
+
+The Phase 9 graph defines WHAT was implemented. External Implementation Review,
+PR/CI, merge authorization, and master merge remain pending.
 
 The development loop defines HOW each graph node should be executed.
 
