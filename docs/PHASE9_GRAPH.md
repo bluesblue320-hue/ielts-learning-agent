@@ -25,7 +25,7 @@ Phase 9 branch.
 - Practice prompt v2: `practice-generation-v2`
 - Knowledge context version: `writing-practice-knowledge-context-v1`
 - External Design Review: APPROVED
-- Phase 9 implementation: NOT_STARTED
+- Phase 9 implementation: IN_PROGRESS
 
 ## Phase goal
 
@@ -57,8 +57,8 @@ START
   -> P9-07 Grounded Learner Guidance Service [COMPLETE]
   -> P9-08 Knowledge-Grounded Practice Generation [COMPLETE]
   -> P9-09 Public Knowledge / Guidance API [COMPLETE]
-  -> P9-10 Chinese-First Grounded Explanation UX [READY]
-  -> P9-11 Grounding / Citation / Hallucination Tests [NOT_STARTED]
+  -> P9-10 Chinese-First Grounded Explanation UX [COMPLETE]
+  -> P9-11 Grounding / Citation / Hallucination Tests [READY]
   -> P9-12 Agent + Lifecycle + Browser Regression [NOT_STARTED]
   -> P9-13 Internal Final Audit [NOT_STARTED]
   -> External Implementation Review [PENDING]

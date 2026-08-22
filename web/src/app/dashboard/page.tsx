@@ -4,7 +4,14 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { type AgentTurnResponse, type LearnerStateResponse, type WritingSkill, apiClient, type WritingContextResponse } from "@/lib/api/client";
+import {
+  type AgentTurnResponse,
+  type LearnerStateResponse,
+  type WritingContextResponse,
+  type WritingGroundedGuidanceResponse,
+  type WritingSkill,
+  apiClient,
+} from "@/lib/api/client";
 import { useLearnerContext } from "@/components/learner-context";
 import { presentApiError, presentNoPracticeReasons, presentPlanningExplanation, presentPracticeReasons, skillLabels } from "@/lib/presentation";
 import { resumeActionExplanations, resumeActionLabels } from "@/lib/memory-presentation";
@@ -15,6 +22,8 @@ export default function DashboardPage() {
   const { cache, isReady } = useLearnerContext();
   const [state, setState] = useState<LearnerStateResponse | null>(null);
   const [context, setContext] = useState<WritingContextResponse | null>(null);
+  const [guidance, setGuidance] =
+    useState<WritingGroundedGuidanceResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -41,16 +50,24 @@ export default function DashboardPage() {
         if (active) setContext(result);
       } catch (reason) {
         if (active) setError(presentApiError(reason));
-      } finally {
-        if (active) setIsLoading(false);
       }
     }
+    async function loadGuidance() {
+      try {
+        const result = await apiClient.getWritingGuidance(activeLearnerId);
+        if (active) setGuidance(result);
+      } catch (reason) {
+        if (active) setError(presentApiError(reason));
+      }
+    }
+
     async function load() {
       setIsLoading(true);
       setError(null);
-      // Load state and context independently so a resume-context failure does
-      // not blank the authoritative state grid.
-      await Promise.all([loadState(), loadContext()]);
+      // Load each server-authoritative read model independently so one failure
+      // does not blank the other dashboard sections.
+      await Promise.all([loadState(), loadContext(), loadGuidance()]);
+      if (active) setIsLoading(false);
     }
     void load();
     return () => { active = false; };
@@ -152,6 +169,57 @@ export default function DashboardPage() {
             );
           })}
         </div>
+      )}
+      {guidance !== null && (
+        <section className="content-card next-step" aria-labelledby="ielts-guidance-title">
+          <p className="eyebrow">IELTS 官方标准</p>
+          <h2 id="ielts-guidance-title">本次写作指导</h2>
+          {guidance.current_recommendation === null ? (
+            <p className="supporting-copy">完成首次写作后，这里会显示基于官方评分标准的针对性指导。</p>
+          ) : guidance.current_recommendation.decision_type === "no_practice" ? (
+            <p className="supporting-copy">
+              {presentNoPracticeReasons(guidance.current_recommendation.reason_codes)}
+            </p>
+          ) : (
+            <>
+              <p className="supporting-copy">
+                训练维度：{guidance.current_recommendation.target_skill === null
+                  ? "—"
+                  : skillLabels[guidance.current_recommendation.target_skill]}
+              </p>
+              <p className="supporting-copy">
+                当前水平：{guidance.current_recommendation.current_estimate ?? "尚未评估"} · 目标：
+                {guidance.current_recommendation.learner_target_band?.value ??
+                  guidance.learner_state.writing_target_band.value}
+              </p>
+              <p className="supporting-copy">
+                主要差距与下一步：
+                {presentPracticeReasons(guidance.current_recommendation.reason_codes)}
+              </p>
+              {guidance.guidance_items.map((item) => (
+                <article key={item.criterion}>
+                  <h3>{item.title}</h3>
+                  <p className="supporting-copy">IELTS 对该维度的要求：{item.explanation}</p>
+                </article>
+              ))}
+              {guidance.source_citations.length > 0 && (
+                <div className="supporting-copy">
+                  <p>依据与来源：</p>
+                  <ul>
+                    {guidance.source_citations.map((citation) => (
+                      <li key={`${citation.source_id}-${citation.locator}`}>
+                        <a href={citation.url} rel="noreferrer" target="_blank">
+                          {citation.publisher}《{citation.title}》
+                        </a>
+                        （{citation.locator}）
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          )}
+        </section>
       )}
       <section className="content-card next-step">
         <h2>继续学习</h2>
