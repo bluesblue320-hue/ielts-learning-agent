@@ -2,7 +2,7 @@
 
 ## Status
 
-**P10-01 - Existing Evaluation Surface Audit: COMPLETE_AWAITING_REVIEW.** This is a
+**P10-01 - Existing Evaluation Surface Audit: COMPLETE. P10-01 External Review: APPROVED.** This is a
 repository-backed, documentation-only audit. It adds no Eval implementation,
 corpus, labels, API, migration, CI change, dependency, or production behavior
 change. The scope is frozen Writing Task 2 and writing-task2-v1.
@@ -172,4 +172,4 @@ provider variance != code regression
   vector DB/RAG, LangChain/LangGraph, Redis/Celery/Kafka, or live-provider CI gate.
 - Any scoring, rubric, Planner, Memory, Agent, or Knowledge semantic change.
 
-P10-01 audit work is COMPLETE_AWAITING_REVIEW after external repair. P10-02 is BLOCKED_BY_P10-01_REVIEW. Formal External Design Review remains blocked; P10-03 and implementation remain unauthorized.
+P10-01 audit and its External Review are COMPLETE and APPROVED. P10-02 is the sole next READY design node. Formal External Design Review remains PENDING_P10-02; P10-03 and implementation remain unauthorized.
