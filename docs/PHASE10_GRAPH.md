@@ -2,7 +2,7 @@
 
 ## Document status
 
-**DESIGN GRAPH EXECUTING — Formal Phase 10 External Design Review APPROVED; P10-03 READY. Batch A (P10-03 through P10-09) is authorized; P10-10 remains blocked by Milestone Review.**
+**DESIGN GRAPH EXECUTING — Formal Phase 10 External Design Review APPROVED; P10-03 COMPLETE and P10-04 READY. Batch A (P10-03 through P10-09) is authorized; P10-10 remains blocked by Milestone Review.**
 
 Phase 9 is COMPLETE and merged to `master` through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`). Phase 10 starts from the
@@ -32,8 +32,9 @@ External Design Review approval authorizes P10-03.
 - P10-01 External Review: APPROVED
 - P10-02: COMPLETE
 - Phase 10 External Design Review: APPROVED
-- P10-03: READY
-- P10-04 through P10-09: BLOCKED_BY_BATCH_A_DEPENDENCIES
+- P10-03: COMPLETE
+- P10-04: READY
+- P10-05 through P10-09: BLOCKED_BY_BATCH_A_DEPENDENCIES
 - Phase 10 Milestone Review: BLOCKED_BY_P10-09
 - P10-10: BLOCKED_BY_MILESTONE_REVIEW
 - P10-11 onward: BLOCKED_BY_MILESTONE_REVIEW
@@ -440,8 +441,8 @@ START
   -> P10-01 External Review [APPROVED]
   -> P10-02 Evaluation & Calibration Contract Freeze [COMPLETE]
   -> Phase 10 External Design Review [APPROVED]
-  -> P10-03 Canonical Eval Case Schemas [READY]
-  -> P10-04 Regression and Calibration Corpora v1 [BLOCKED_BY_P10-03]
+  -> P10-03 Canonical Eval Case Schemas [COMPLETE]
+  -> P10-04 Regression and Calibration Corpora v1 [READY]
   -> P10-05 Deterministic Outcome Evaluator
   -> P10-06 Trajectory Evaluator
   -> P10-07 Knowledge Grounding Evaluator
@@ -668,7 +669,7 @@ If the formal review is not APPROVED, remain in DESIGN/FIXING. Do not begin
 P10-03. After P10-02 completes, STOP for the formal review unless separate
 authority already exists according to the repository workflow.
 
-## P10-03 — Canonical Eval Case Schemas
+## P10-03 — Canonical Eval Case Schemas — COMPLETE
 
 ### Dependency
 
@@ -698,7 +699,7 @@ and suite results.
 
 Prove malformed, duplicate, unsupported-version, unknown-evaluator, and ambiguous required-field cases fail closed.
 
-## P10-04 — Regression and Calibration Corpora v1
+## P10-04 — Regression and Calibration Corpora v1 — READY
 
 ### Objective
 
