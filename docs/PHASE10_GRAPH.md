@@ -2,7 +2,7 @@
 
 ## Document status
 
-**DESIGN GRAPH CREATED — P10-01 COMPLETE; P10-02 READY. IMPLEMENTATION NOT AUTHORIZED.**
+**DESIGN GRAPH MAINTAINED — P10-01 and P10-02 COMPLETE; Formal Phase 10 External Design Review READY_FOR_REVIEW. IMPLEMENTATION NOT AUTHORIZED.**
 
 Phase 9 is COMPLETE and merged to `master` through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`). Phase 10 starts from the
@@ -30,8 +30,8 @@ External Design Review approval authorizes P10-03.
 - Phase 10 Graph Review: APPROVED
 - P10-01: COMPLETE
 - P10-01 External Review: APPROVED
-- P10-02: READY
-- Phase 10 External Design Review: PENDING_P10-02
+- P10-02: COMPLETE
+- Phase 10 External Design Review: READY_FOR_REVIEW
 - P10-03 onward: BLOCKED_BY_EXTERNAL_DESIGN_REVIEW
 - Phase 10 implementation: NOT_AUTHORIZED
 
@@ -434,8 +434,8 @@ START
   -> Phase 10 Graph Review [APPROVED]
   -> P10-01 Existing Evaluation Surface Audit [COMPLETE]
   -> P10-01 External Review [APPROVED]
-  -> P10-02 Evaluation & Calibration Contract Freeze [READY]
-  -> Phase 10 External Design Review [PENDING_P10-02]
+  -> P10-02 Evaluation & Calibration Contract Freeze [COMPLETE]
+  -> Phase 10 External Design Review [READY_FOR_REVIEW]
   -> P10-03 Canonical Eval Case Schemas [BLOCKED_BY_EXTERNAL_DESIGN_REVIEW]
   -> P10-04 Regression and Calibration Corpora v1
   -> P10-05 Deterministic Outcome Evaluator
@@ -458,10 +458,29 @@ START
   -> STOP (do not start Phase 11)
 ```
 
-P10-02 may freeze a non-linear dependency DAG and allow multiple nodes to become
-READY, but execution remains serial: at most one node may be ACTIVE at a time.
-Select the lowest-numbered READY node unless the user explicitly selects another
-valid READY node.
+P10-02 freezes a non-linear dependency DAG and permits future serial batches,
+but execution remains serial: at most one node may be ACTIVE at a time. Select
+the lowest-numbered READY node unless the user explicitly selects another valid
+READY node.
+
+### Authorized future batch boundaries
+
+After Formal Phase 10 External Design Review is APPROVED, Batch A is:
+
+```text
+P10-03 -> P10-04 -> P10-05 -> P10-06 -> P10-07 -> P10-08 -> P10-09
+-> STOP -> Milestone Review
+```
+
+After Milestone Review is APPROVED, Batch B is:
+
+```text
+P10-10 -> P10-11 -> P10-12 -> P10-13 -> P10-14 -> P10-15 -> P10-16
+-> P10-17 -> P10-18 -> STOP -> External Implementation Review
+```
+
+These are future authorization boundaries only. They do not mark a downstream
+node `READY`, authorize parallel work, or cross either review gate.
 
 ## P10-00 — Phase 10 Kickoff / Graph Establishment — COMPLETE
 
@@ -563,7 +582,7 @@ The audit must answer at least:
 - no production behavior is changed;
 - P10-02 has enough evidence to freeze a minimal contract.
 
-## P10-02 — Evaluation & Calibration Contract Freeze — READY
+## P10-02 — Evaluation & Calibration Contract Freeze — COMPLETE
 
 ### Dependency
 
@@ -610,18 +629,24 @@ At minimum:
 
 ### Versioning
 
-P10-02 must choose exact stable identifiers before implementation. Suggested names may include concepts such as:
+P10-02 freezes exact stable identifiers before implementation in
+`docs/WRITING_EVAL_CALIBRATION_POLICY.md`, including:
 
 ```text
+writing-eval-calibration-v1
 writing-eval-regression-corpus-v1
 writing-score-calibration-corpus-v1
-writing-eval-case-v1
+writing-eval-regression-case-v1
+writing-score-calibration-case-v1
+writing-score-reference-label-v1
+writing-score-provider-capture-v1
 writing-eval-result-v1
-writing-eval-suite-v1
-writing-score-calibration-v1
+writing-score-calibration-result-v1
+writing-eval-failure-taxonomy-v1
+writing-eval-report-v1
 ```
 
-These names are suggestions only until P10-02 freezes them.
+These names are frozen by `writing-eval-calibration-v1`; P10-03 must use them.
 
 ### Formal External Design Review gate
 
@@ -1159,10 +1184,11 @@ At any time:
 - record evidence before moving forward;
 - do not start Phase 11 automatically.
 
-Current next action after P10-01 External Review approval:
+Current next gate after P10-02 completion:
 
 ```text
-P10-02 Evaluation & Calibration Contract Freeze
+Formal Phase 10 External Design Review
 ```
 
-Phase 10 implementation remains unauthorized until the design gate is passed.
+P10-03 onward and Phase 10 implementation remain unauthorized until that gate
+is explicitly APPROVED.

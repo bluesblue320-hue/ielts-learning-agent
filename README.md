@@ -23,9 +23,10 @@ Core Learning Agent v1 is available through
 External Implementation Review are `APPROVED`. Phase 9 delivers the static
 `ielts-writing-knowledge-v1` snapshot, deterministic structured retrieval,
 provider-free grounded guidance, knowledge-grounded practice generation v2, and
-source/citation UX. The Phase 10 graph has passed graph review; P10-01 is the
-next design node. The formal External Design Review has not yet occurred
-because P10-01 and P10-02 are incomplete, and implementation has not started.
+source/citation UX. The Phase 10 graph review, P10-01 audit/external review,
+and P10-02 frozen `writing-eval-calibration-v1` contract are complete. Formal
+Phase 10 External Design Review is READY_FOR_REVIEW; implementation has not
+started.
 
 Phase 7 connects authoritative current learner state and longitudinal Writing
 Memory to deterministic Planner v2. Memory is consulted only for exact
@@ -169,8 +170,8 @@ Before changing the project, read these documents in order:
 2. Completed [Phase 9 graph](docs/PHASE9_GRAPH.md), frozen
    [IELTS Knowledge policy](docs/IELTS_KNOWLEDGE_POLICY.md), and
    [internal audit](docs/PHASE9_AUDIT.md). The [Phase 10 graph](docs/PHASE10_GRAPH.md)
-   has passed graph review; P10-01 is next. The formal External Design Review
-   awaits completion of P10-01 and P10-02, and implementation has not started.
+   has passed graph review; P10-01 and P10-02 are complete. Formal External
+   Design Review is READY_FOR_REVIEW, and implementation has not started.
 3. [Phase 8 graph](docs/PHASE8_GRAPH.md) and frozen
    [Core Learning Agent policy](docs/CORE_LEARNING_AGENT_POLICY.md), with the
    Phase 7 [planner policy](docs/MEMORY_AWARE_PLANNING_POLICY.md) and Phase 6

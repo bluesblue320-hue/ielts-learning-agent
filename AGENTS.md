@@ -139,8 +139,8 @@ P10-00 = COMPLETE
 Phase 10 Graph Review = APPROVED
 P10-01 = COMPLETE
 P10-01 External Review = APPROVED
-P10-02 = READY
-Phase 10 External Design Review = PENDING_P10-02
+P10-02 = COMPLETE
+Phase 10 External Design Review = READY_FOR_REVIEW
 P10-03 onward = BLOCKED_BY_EXTERNAL_DESIGN_REVIEW
 Phase 10 implementation = NOT_AUTHORIZED
 ```
@@ -184,9 +184,10 @@ remain frozen. No migration or new dependency was added. See
 
 The Phase 9 graph and audit are completed historical execution records. The
 Phase 10 graph review is APPROVED. P10-01 audit and its External Review are
-COMPLETE and APPROVED. P10-02 is the sole next READY design node. The formal
-Phase 10 External Design Review remains PENDING_P10-02; P10-03 onward and all
-Phase 10 implementation remain blocked until that formal design gate is approved.
+COMPLETE and APPROVED. P10-02 is COMPLETE and freezes
+`writing-eval-calibration-v1`. The formal Phase 10 External Design Review is
+READY_FOR_REVIEW; P10-03 onward and all Phase 10 implementation remain blocked
+until that formal design gate is approved.
 
 The development loop defines HOW each graph node should be executed.
 
