@@ -140,9 +140,12 @@ Phase 10 Graph Review = APPROVED
 P10-01 = COMPLETE
 P10-01 External Review = APPROVED
 P10-02 = COMPLETE
-Phase 10 External Design Review = READY_FOR_REVIEW
-P10-03 onward = BLOCKED_BY_EXTERNAL_DESIGN_REVIEW
-Phase 10 implementation = NOT_AUTHORIZED
+Phase 10 External Design Review = APPROVED
+P10-03 = READY
+Phase 10 Milestone Review = BLOCKED_BY_P10-09
+P10-10 = BLOCKED_BY_MILESTONE_REVIEW
+P10-11 onward = BLOCKED_BY_MILESTONE_REVIEW
+Phase 10 implementation = AUTHORIZED_FOR_BATCH_A_ONLY
 ```
 
 Phase 6 design (P6-01 audit, P6-02 contract freeze, versions
@@ -186,8 +189,8 @@ The Phase 9 graph and audit are completed historical execution records. The
 Phase 10 graph review is APPROVED. P10-01 audit and its External Review are
 COMPLETE and APPROVED. P10-02 is COMPLETE and freezes
 `writing-eval-calibration-v1`. The formal Phase 10 External Design Review is
-READY_FOR_REVIEW; P10-03 onward and all Phase 10 implementation remain blocked
-until that formal design gate is approved.
+APPROVED. Batch A authorizes only serial execution of P10-03 through P10-09;
+Phase 10 Milestone Review blocks P10-10 and all later nodes.
 
 The development loop defines HOW each graph node should be executed.
 
