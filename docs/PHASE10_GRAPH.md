@@ -443,7 +443,8 @@ START
   -> P10-07 Knowledge Grounding Evaluator
   -> P10-08 Authority / Fail-Closed Evaluator
   -> P10-09 Learning Lifecycle Evaluator
-  -> P10-10 Writing Score Calibration Analysis
+  -> Phase 10 Milestone Review [BLOCKED_BY_P10-09]
+  -> P10-10 Writing Score Calibration Analysis [BLOCKED_BY_MILESTONE_REVIEW]
   -> P10-11 Failure Taxonomy & Attribution
   -> P10-12 Eval Runner / Harness
   -> P10-13 Machine-Readable Eval Result & Human Report
@@ -469,10 +470,10 @@ After Formal Phase 10 External Design Review is APPROVED, Batch A is:
 
 ```text
 P10-03 -> P10-04 -> P10-05 -> P10-06 -> P10-07 -> P10-08 -> P10-09
--> STOP -> Milestone Review
+-> STOP -> Phase 10 Milestone Review [READY_FOR_REVIEW]
 ```
 
-After Milestone Review is APPROVED, Batch B is:
+Only after Phase 10 Milestone Review is APPROVED, Batch B is:
 
 ```text
 P10-10 -> P10-11 -> P10-12 -> P10-13 -> P10-14 -> P10-15 -> P10-16
@@ -841,7 +842,39 @@ submission/evaluation
 - repeated execution of deterministic read/eval paths does not mutate state;
 - lifecycle evaluator reports the earliest failing boundary where evidence supports attribution.
 
+## Phase 10 Milestone Review
+
+### Dependency
+
+`P10-09 = COMPLETE`.
+
+### Status before review
+
+`READY_FOR_REVIEW`. Until then, this future gate is `BLOCKED_BY_P10-09`.
+
+### Review inputs and scope
+
+Review P10-03 through P10-09 outputs for schema correctness; regression and
+calibration corpus separation; deterministic and trajectory evaluator evidence;
+Knowledge grounding; authority/fail-closed and lifecycle correctness;
+frozen-contract preservation; production semantic drift; unauthorized
+dependency, migration, or API changes; and relevant tests/evidence.
+
+### Results and approval effect
+
+Possible results are `APPROVED` and `FIXING_REQUIRED`.
+
+`APPROVED` makes P10-10 `READY`. `FIXING_REQUIRED` keeps P10-10 blocked. P10-09
+completion alone does not make P10-10 ready.
+
 ## P10-10 — Writing Score Calibration Analysis
+
+### Dependency
+
+`P10-09 = COMPLETE` and `Phase 10 Milestone Review = APPROVED`.
+
+Until the Milestone Review is approved, P10-10 is
+`BLOCKED_BY_MILESTONE_REVIEW`; there is no automatic bypass.
 
 ### Objective
 
