@@ -1,0 +1,13 @@
+{
+  "criteria": {
+    "task_response": {"band": {"value": "6.0"}, "evidence": ["example"], "feedback": "example"},
+    "coherence_and_cohesion": {"band": {"value": "6.0"}, "evidence": ["example"], "feedback": "example"},
+    "lexical_resource": {"band": {"value": "6.0"}, "evidence": ["example"], "feedback": "example"},
+    "grammatical_range_and_accuracy": {"band": {"value": "6.0"}, "evidence": ["example"], "feedback": "example"}
+  },
+  "strengths": ["example"],
+  "weaknesses": ["example"],
+  "error_tags": [],
+  "recommended_skills": [],
+  "feedback": "example"
+}
