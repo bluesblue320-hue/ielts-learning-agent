@@ -25,9 +25,10 @@ Phase 7 adds deterministic Memory-aware exact-tie planning. Phase 8 adds the
 bounded Writing-only Core Learning Agent v1. Phase 9 adds a Git-versioned,
 source-backed Writing Task 2 Knowledge layer, deterministic structured
 retrieval, provider-free grounded guidance, practice-generation grounding, and
-Chinese-first citation UX. Phase 9 implementation is internally audited and
-awaits External Implementation Review; no database table, migration, or new
-dependency was introduced.
+Chinese-first citation UX. Phase 9 is COMPLETE and merged to `master` through
+PR #13 (merge commit `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`); both external
+reviews are approved. No database table, migration, or new dependency was
+introduced. Phase 10 is authorized for design only.
 
 The completed [PHASE1_GRAPH.md](PHASE1_GRAPH.md) remains the historical Phase 1
 execution record, and [PHASE2_GRAPH.md](PHASE2_GRAPH.md) records the completed
@@ -114,7 +115,7 @@ The core agent coordinates the learning loop. Planner, Memory, Evaluator, and IE
 | Learner Model | Represent goals, current level, skill mastery, weaknesses, and history as structured persistent data | Implemented Phase 3 learner state and persistence |
 | Planner | Select the next learning objective using deterministic priorities, with constrained generation where useful | Phase 3 deterministic planner v1 is historically supported; Phase 7 deterministic memory-aware planner v2 is implemented |
 | Memory | Separate stable profile data, learning events, and derived patterns | Implemented Phase 6 read models (`writing-memory-v1` / `writing-progress-v1`); no new tables |
-| IELTS Knowledge | Ground guidance and practice content in versioned official-source claims | Phase 9 Writing Task 2 static snapshot and deterministic retrieval implemented; external review pending |
+| IELTS Knowledge | Ground guidance and practice content in versioned official-source claims | Phase 9 Writing Task 2 static snapshot and deterministic retrieval complete and merged through PR #13 |
 | Writing Evaluator | Convert a Task 2 submission into validated structured evidence through the provider protocol | Implemented for Writing Task 2 only |
 | LLM Provider | Isolate vendor HTTP behavior behind a typed contract | Protocol, test fake, and DeepSeek adapter implemented; no runtime fake selection |
 | Tool Layer | Expose focused learning activities behind explicit interfaces | Writing practice implemented; wider skills deferred |
@@ -202,9 +203,10 @@ for exact maximum-gap ties while frozen v1 history remains supported. Phase 8
 implements the deterministic, bounded, Writing-only Core Learning Agent v1
 while preserving the granular lifecycle APIs; it is complete and merged through
 PR #12. Phase 9 implements deterministic Writing Task 2 Knowledge retrieval,
-grounded guidance, practice-generation context, and source-aware Web UX. P9-13
-is internally audited; External Design Review is approved and External
-Implementation Review is pending.
+grounded guidance, practice-generation context, and source-aware Web UX. It is
+COMPLETE and merged through PR #13 (merge commit
+`75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`); both external reviews are
+approved. Phase 10 is authorized for design only.
 Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
 
 ## Phase 5 presentation layer
@@ -214,8 +216,8 @@ Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
 
 Phase 5 is complete and merged through PR #9. Phase 6 Memory and Phase 7
 memory-aware planning are complete and merged. Phase 8 is complete and merged
-through PR #12. Phase 9 implementation is internally audited: the source-backed
-static Knowledge snapshot, structured retrieval, grounded guidance API, v2
-generation context, and dashboard citation UX are implemented without a new
-migration or dependency. External Design Review is approved; External
-Implementation Review, PR/CI, and merge remain pending.
+through PR #12. Phase 9 is COMPLETE and merged through PR #13 (merge commit
+`75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`): the source-backed static Knowledge
+snapshot, structured retrieval, grounded guidance API, v2 generation context,
+and dashboard citation UX are implemented without a new migration or dependency.
+Both external reviews are approved. Phase 10 is authorized for design only.

@@ -18,11 +18,12 @@ are approved/successful.
 Core Learning Agent v1 is available through
 `POST /learners/{learner_id}/writing/agent/turn`.
 
-**Phase 9 implementation is complete on
-`phase/9-ielts-knowledge-grounding-v1` and awaits External Implementation
-Review.** P9-13 is `INTERNAL_AUDIT_COMPLETE`; External Design Review is
-`APPROVED`, External Implementation Review is `PENDING`, and no PR or merge
-has been created.
+**Phase 9 = COMPLETE and MERGED through PR #13**, merge commit
+`75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`. Both External Design Review and
+External Implementation Review are `APPROVED`. Phase 9 delivers the static
+`ielts-writing-knowledge-v1` snapshot, deterministic structured retrieval,
+provider-free grounded guidance, knowledge-grounded practice generation v2, and
+source/citation UX.
 
 Phase 7 connects authoritative current learner state and longitudinal Writing
 Memory to deterministic Planner v2. Memory is consulted only for exact
@@ -163,9 +164,10 @@ implemented system.
 Before changing the project, read these documents in order:
 
 1. [AGENTS.md](AGENTS.md)
-2. [Phase 9 graph](docs/PHASE9_GRAPH.md), frozen
+2. Completed [Phase 9 graph](docs/PHASE9_GRAPH.md), frozen
    [IELTS Knowledge policy](docs/IELTS_KNOWLEDGE_POLICY.md), and
-   [internal audit](docs/PHASE9_AUDIT.md)
+   [internal audit](docs/PHASE9_AUDIT.md). Phase 10 is authorized for design
+   only; do not begin implementation until its graph exists and is approved.
 3. [Phase 8 graph](docs/PHASE8_GRAPH.md) and frozen
    [Core Learning Agent policy](docs/CORE_LEARNING_AGENT_POLICY.md), with the
    Phase 7 [planner policy](docs/MEMORY_AWARE_PLANNING_POLICY.md) and Phase 6
@@ -198,12 +200,12 @@ maximum-gap ties. The frozen execution record is
 Phase 8 is COMPLETE and merged through PR #12. Its bounded,
 Writing-only Core Learning Agent v1 remains available through
 `POST /learners/{learner_id}/writing/agent/turn`; granular APIs remain
-supported. Phase 9 implementation is complete on
-`phase/9-ielts-knowledge-grounding-v1`: P9-13 is
-`INTERNAL_AUDIT_COMPLETE`, External Design Review is `APPROVED`, and External
-Implementation Review is `PENDING`. The frozen execution record and audit are
+supported. Phase 9 is COMPLETE and merged through PR #13 (merge commit
+`75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`); both external reviews are
+approved. The completed execution record and audit are
 [docs/PHASE9_GRAPH.md](docs/PHASE9_GRAPH.md) and
-[docs/PHASE9_AUDIT.md](docs/PHASE9_AUDIT.md).
+[docs/PHASE9_AUDIT.md](docs/PHASE9_AUDIT.md). Phase 10 is authorized for design
+only; its implementation has not started.
 
 ## Phase 5 Web MVP
 

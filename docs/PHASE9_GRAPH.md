@@ -4,11 +4,11 @@
 
 **DESIGN CONTRACT FROZEN — External Design Review APPROVED.**
 
-Phase 8 is COMPLETE and merged to `master` through PR #12. Phase 9 begins with a
-Writing Task 2–only, versioned IELTS Knowledge Layer. P9-01 baseline audit and
-P9-02 contract freeze are complete in this design document. External Design
-Review is APPROVED; implementation may begin from P9-03 on the dedicated
-Phase 9 branch.
+Phase 8 is COMPLETE and merged to `master` through PR #12. Phase 9 is COMPLETE
+and merged to `master` through PR #13 (merge commit
+`75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`). This document remains the frozen
+Writing Task 2 Knowledge design and completed execution record. Both external
+reviews are APPROVED.
 
 - Repository: `bluesblue320-hue/ielts-learning-agent`
 - Phase 8 merge commit / Phase 9 design base:
@@ -25,7 +25,11 @@ Phase 9 branch.
 - Practice prompt v2: `practice-generation-v2`
 - Knowledge context version: `writing-practice-knowledge-context-v1`
 - External Design Review: APPROVED
-- Phase 9 implementation: IMPLEMENTATION_COMPLETE_AWAITING_EXTERNAL_REVIEW
+- External Implementation Review: APPROVED
+- PR #13: MERGED
+- Phase 9 master merge commit: `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`
+- Phase 9: COMPLETE
+- Phase 10: AUTHORIZED_FOR_DESIGN
 
 ## Phase goal
 
@@ -61,9 +65,12 @@ START
   -> P9-11 Grounding / Citation / Hallucination Tests [COMPLETE]
   -> P9-12 Agent + Lifecycle + Browser Regression [COMPLETE]
   -> P9-13 Internal Final Audit [INTERNAL_AUDIT_COMPLETE]
-  -> External Implementation Review [PENDING]
-  -> Phase 9 [IMPLEMENTATION_COMPLETE_AWAITING_EXTERNAL_REVIEW]
-  -> STOP
+  -> External Implementation Review [APPROVED]
+  -> PR #13 [MERGED]
+  -> master merge `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`
+  -> Phase 9 [COMPLETE]
+  -> Phase 10 [AUTHORIZED_FOR_DESIGN]
+  -> STOP (no Phase 10 implementation)
 ```
 
 ## P9-01 — Baseline & Knowledge Gap Audit — COMPLETE
