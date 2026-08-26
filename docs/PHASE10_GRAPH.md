@@ -2,7 +2,7 @@
 
 ## Document status
 
-**DESIGN GRAPH EXECUTING — Formal Phase 10 External Design Review APPROVED; P10-03 through P10-05 COMPLETE, P10-06 READY. Batch A (P10-03 through P10-09) is authorized; P10-10 remains blocked by Milestone Review.**
+**DESIGN GRAPH EXECUTING — Formal Phase 10 External Design Review APPROVED; P10-03 through P10-06 COMPLETE, P10-07 READY. Batch A (P10-03 through P10-09) is authorized; P10-10 remains blocked by Milestone Review.**
 
 Phase 9 is COMPLETE and merged to `master` through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`). Phase 10 starts from the
@@ -35,8 +35,9 @@ External Design Review approval authorizes P10-03.
 - P10-03: COMPLETE
 - P10-04: COMPLETE
 - P10-05: COMPLETE
-- P10-06: READY
-- P10-07 through P10-09: BLOCKED_BY_BATCH_A_DEPENDENCIES
+- P10-06: COMPLETE
+- P10-07: READY
+- P10-08 through P10-09: BLOCKED_BY_BATCH_A_DEPENDENCIES
 - Phase 10 Milestone Review: BLOCKED_BY_P10-09
 - P10-10: BLOCKED_BY_MILESTONE_REVIEW
 - P10-11 onward: BLOCKED_BY_MILESTONE_REVIEW
@@ -446,8 +447,8 @@ START
   -> P10-03 Canonical Eval Case Schemas [COMPLETE]
   -> P10-04 Regression and Calibration Corpora v1 [COMPLETE]
   -> P10-05 Deterministic Outcome Evaluator [COMPLETE]
-  -> P10-06 Trajectory Evaluator [READY]
-  -> P10-07 Knowledge Grounding Evaluator
+  -> P10-06 Trajectory Evaluator [COMPLETE]
+  -> P10-07 Knowledge Grounding Evaluator [READY]
   -> P10-08 Authority / Fail-Closed Evaluator
   -> P10-09 Learning Lifecycle Evaluator
   -> Phase 10 Milestone Review [BLOCKED_BY_P10-09]
@@ -767,7 +768,7 @@ Structured Agent response and state evidence is authoritative. Natural-language
 claim checking is secondary and applies only where free-form output actually
 exists; it is never the primary correctness authority.
 
-## P10-06 — Trajectory Evaluator — READY
+## P10-06 — Trajectory Evaluator — COMPLETE
 
 ### Objective
 
@@ -782,7 +783,7 @@ Verify allowed lifecycle execution from observable application evidence.
 
 If required evidence is not observable, add the smallest test-only or non-semantic instrumentation approved by P10-02. Do not add a production behavioral dependency merely for eval convenience.
 
-## P10-07 — Knowledge Grounding Evaluator
+## P10-07 — Knowledge Grounding Evaluator — READY
 
 ### Objective
 
