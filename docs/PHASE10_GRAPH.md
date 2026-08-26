@@ -2,7 +2,7 @@
 
 ## Document status
 
-**DESIGN GRAPH CREATED — P10-01 COMPLETE; P10-02 READY. IMPLEMENTATION NOT AUTHORIZED.**
+**DESIGN GRAPH CREATED — P10-01 COMPLETE_AWAITING_REVIEW; P10-02 BLOCKED. IMPLEMENTATION NOT AUTHORIZED.**
 
 Phase 9 is COMPLETE and merged to `master` through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`). Phase 10 starts from the
@@ -28,9 +28,9 @@ External Design Review approval authorizes P10-03.
 - Phase 10 status: DESIGN
 - P10-00: COMPLETE
 - Phase 10 Graph Review: APPROVED
-- P10-01: COMPLETE
-- P10-02: READY
-- Phase 10 External Design Review: PENDING_P10-02
+- P10-01: COMPLETE_AWAITING_REVIEW
+- P10-02: BLOCKED_BY_P10-01_REVIEW
+- Phase 10 External Design Review: PENDING_P10-01_REVIEW_AND_P10-02
 - P10-03 onward: BLOCKED_BY_EXTERNAL_DESIGN_REVIEW
 - Phase 10 implementation: NOT_AUTHORIZED
 
@@ -431,9 +431,9 @@ If an LLM judge is introduced at all in Phase 10:
 START
   -> P10-00 Phase 10 Kickoff / Graph Establishment [COMPLETE]
   -> Phase 10 Graph Review [APPROVED]
-  -> P10-01 Existing Evaluation Surface Audit [COMPLETE]
-  -> P10-02 Evaluation & Calibration Contract Freeze [READY]
-  -> Phase 10 External Design Review [PENDING_P10-02]
+  -> P10-01 Existing Evaluation Surface Audit [COMPLETE_AWAITING_REVIEW]
+  -> P10-02 Evaluation & Calibration Contract Freeze [BLOCKED_BY_P10-01_REVIEW]
+  -> Phase 10 External Design Review [PENDING_P10-01_REVIEW_AND_P10-02]
   -> P10-03 Canonical Eval Case Schemas [BLOCKED_BY_EXTERNAL_DESIGN_REVIEW]
   -> P10-04 Regression and Calibration Corpora v1
   -> P10-05 Deterministic Outcome Evaluator
@@ -478,7 +478,7 @@ Establish an explicit Phase 10 design boundary after Phase 9 merge without start
 
 P10-01 may be selected as the first executable design node. No implementation node is authorized.
 
-## P10-01 — Existing Evaluation Surface Audit — COMPLETE
+## P10-01 — Existing Evaluation Surface Audit — COMPLETE_AWAITING_REVIEW
 
 ### Objective
 
@@ -557,7 +557,7 @@ The audit must answer at least:
 - no production behavior is changed;
 - P10-02 has enough evidence to freeze a minimal contract.
 
-## P10-02 — Evaluation & Calibration Contract Freeze — READY
+## P10-02 — Evaluation & Calibration Contract Freeze — BLOCKED_BY_P10-01_REVIEW
 
 ### Dependency
 
@@ -1153,10 +1153,10 @@ At any time:
 - record evidence before moving forward;
 - do not start Phase 11 automatically.
 
-Current next action after P10-01 completion:
+Current next action while P10-01 external repair awaits review:
 
 ```text
-P10-02 Evaluation & Calibration Contract Freeze
+STOP — P10-02 remains BLOCKED_BY_P10-01_REVIEW
 ```
 
 Phase 10 implementation remains unauthorized until the design gate is passed.
