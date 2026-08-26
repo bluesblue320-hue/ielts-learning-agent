@@ -27,12 +27,14 @@ contract.
 - Phase 10 status: DESIGN
 - P10-01: READY
 - P10-02: BLOCKED_BY_P10-01
-- External Design Review: PENDING
+- External Design Review: FIXING_REQUIRED / PENDING_RE_REVIEW
 - P10-03 onward: BLOCKED_BY_EXTERNAL_DESIGN_REVIEW
 
 ## Phase goal
 
-Build a deterministic, replayable, source-backed Evaluation & Calibration Harness for the existing Writing Task 2 learning system so that the repository can answer, with evidence:
+Build a deterministic contract-regression harness with separate live and replayable
+score-calibration modes for the existing Writing Task 2 learning system so that
+the repository can answer, with evidence:
 
 1. whether final outcomes are correct against frozen contracts;
 2. whether the Agent followed an allowed execution trajectory;
@@ -62,6 +64,32 @@ Eval may expose a mismatch.
 Eval may fail a regression.
 Eval may NOT silently redefine production semantics to make the mismatch vanish.
 ```
+
+## Execution modes and provider boundary
+
+`WritingEvaluationService` calls an injected `LLMProvider` and normalizes its
+validated structured output. Real Writing scores are therefore provider-backed,
+not inherently deterministic. Phase 10 keeps the following modes separate:
+
+1. **Deterministic Regression Mode** uses frozen mock or captured provider
+   fixtures to run contract, lifecycle, authority, grounding, and deterministic
+   replay checks. It is provider-free at execution time and is eligible for CI
+   merge gating.
+2. **Live Calibration Mode** invokes a real provider for real or canonical
+   essays, compares the resulting scores with admissible reference labels, and
+   measures agreement, bias, and variance. It is observational, non-
+   deterministic, and never a required deterministic CI merge gate.
+3. **Calibration Replay Mode** consumes previously captured provider outputs to
+   recompute calibration metrics and regenerate reports without another provider
+   invocation. It is reproducible analysis, not a substitute for a live score.
+
+```text
+provider variance != code regression
+```
+
+A different live provider score must not automatically fail deterministic CI.
+Live provider failure or score disagreement is recorded as operational or
+calibration evidence, not automatically as a deterministic contract failure.
 
 ## Why Phase 10 exists
 
@@ -302,26 +330,34 @@ Examples of likely VETO failures:
 - non-deterministic replay where the frozen path is required to be deterministic;
 - eval runner mutating non-isolated or production-like data.
 
-## Dataset principles
+## Corpus principles
 
-The Phase 10 canonical dataset must be repository-safe, reviewable, bounded, and versioned.
+Phase 10 maintains two repository-safe, reviewable, bounded, and versioned
+corpora. P10-02 freezes their exact identifiers and formats; suggested concepts
+are `writing-eval-regression-corpus-v1` and
+`writing-score-calibration-corpus-v1`.
 
-It must contain representative categories such as:
+### Deterministic regression corpus
 
-1. normal accepted Writing Task 2 evaluations;
-2. low / middle / high score profiles;
-3. criterion-specific weakness patterns;
-4. half-band learner-state cases;
-5. repeated episodes that exercise Memory and trend logic;
-6. exact Planner tie cases;
-7. stale / missing / malformed state or provider payload cases;
-8. grounding and provenance cases;
-9. Agent direct-answer versus lifecycle-action cases;
-10. failure / fallback paths;
-11. regression cases promoted from historical bugs;
-12. calibration cases with explicit provenance for reference judgments.
+This corpus contains deterministic contract cases, lifecycle cases, authority
+and grounding cases, provider validation/failure fixtures, structured Agent
+trajectory cases, and historical regression cases. Expected outputs are
+application-contract expectations backed by frozen mock or captured provider
+fixtures. It covers, where relevant, accepted evaluations, half-band state,
+Memory, Planner ties, recommendation ownership, Knowledge provenance,
+generation compatibility, chronology/freshness mismatches, and multi-episode
+trajectories. It has no runtime network dependency and may be CI-gating.
 
-The dataset must not copy large copyrighted source passages. It must not depend on network access during normal regression execution.
+### Score calibration corpus
+
+This corpus contains essay/input material, reference criterion and overall
+scores where admissible, rater provenance, evidence tier, ambiguity metadata,
+and adjudication metadata. It is for live calibration measurement and captured-
+output replay analysis. Reference human or calibration labels must never
+silently become deterministic production expected outputs.
+
+Neither corpus may copy large copyrighted source passages, contain secrets, or
+use uncontrolled production records.
 
 ## Calibration reference principles
 
@@ -332,6 +368,8 @@ At minimum:
 - every reference label must identify its origin;
 - machine-generated reference labels cannot be presented as official examiner truth;
 - human labels must record enough metadata to distinguish single-rater opinion from stronger adjudicated evidence;
+- when two or more independent human labels exist, raw rater labels must be
+  preserved and any adjudicated label stored separately;
 - public or licensed sample use must respect source constraints;
 - reference labels and production rubric outputs must be stored as separate fields;
 - no disagreement may be erased by overwriting the reference or production result in place;
@@ -349,7 +387,11 @@ The exact tiers and admissibility rules are frozen in P10-02.
 
 ## Determinism and provider policy
 
-Phase 10 must prefer deterministic evaluators whenever the contract can be checked from structured state.
+Deterministic Regression Mode is the provider-free CI-gating path. It verifies
+structured contracts using frozen mock or captured outputs; it does not claim
+that a live Writing score is deterministic. Live Calibration Mode and Calibration
+Replay Mode remain separately reported, and neither may convert provider variance
+into a code-regression verdict.
 
 ```text
 Structured contract
@@ -367,7 +409,8 @@ If an LLM judge is introduced at all in Phase 10:
 - deterministic contract checks take precedence;
 - judge unavailability must not fabricate PASS;
 - nondeterministic results must be reported as such;
-- provider-backed evaluation must be separable from the deterministic core regression suite.
+- provider-backed evaluation must be separable from deterministic regression
+  gating and calibration replay.
 
 ## Dependency graph
 
@@ -376,9 +419,9 @@ START
   -> P10-00 Phase 10 Kickoff / Graph Establishment [COMPLETE]
   -> P10-01 Existing Evaluation Surface Audit [READY]
   -> P10-02 Evaluation & Calibration Contract Freeze [BLOCKED_BY_P10-01]
-  -> External Design Review [PENDING]
+  -> External Design Review [FIXING_REQUIRED / PENDING_RE_REVIEW]
   -> P10-03 Canonical Eval Case Schemas [BLOCKED_BY_EXTERNAL_DESIGN_REVIEW]
-  -> P10-04 Golden Writing Eval Dataset v1
+  -> P10-04 Regression and Calibration Corpora v1
   -> P10-05 Deterministic Outcome Evaluator
   -> P10-06 Trajectory Evaluator
   -> P10-07 Knowledge Grounding Evaluator
@@ -399,7 +442,10 @@ START
   -> STOP (do not start Phase 11)
 ```
 
-The implementation node order above is the default dependency chain. P10-02 may propose a limited safe parallelization only if it preserves deterministic ownership and External Design Review explicitly approves it.
+P10-02 may freeze a non-linear dependency DAG and allow multiple nodes to become
+READY, but execution remains serial: at most one node may be ACTIVE at a time.
+Select the lowest-numbered READY node unless the user explicitly selects another
+valid READY node.
 
 ## P10-00 — Phase 10 Kickoff / Graph Establishment — COMPLETE
 
@@ -524,19 +570,21 @@ At minimum:
 3. Eval result version and status vocabulary.
 4. Evaluator IDs / dimensions.
 5. severity and veto semantics.
-6. deterministic core versus optional provider-backed evaluators.
+6. Deterministic Regression, Live Calibration, and Calibration Replay mode rules.
 7. trace/evidence representation.
 8. isolation and database lifecycle.
-9. canonical dataset storage format.
-10. reference-label admissibility and provenance.
-11. calibration metrics and interpretation.
+9. distinct regression-corpus and calibration-corpus storage formats and
+   authority boundaries.
+10. reference-label admissibility, provenance, and inter-rater metadata.
+11. calibration metrics, uncertainty, and interpretation.
 12. regression promotion rules.
 13. fail-closed behavior.
-14. CI gating policy.
+14. CI gating policy, limited to deterministic regression checks.
 15. compatibility rules for historical production versions.
-16. provider configuration recording if a secondary judge exists.
+16. provider configuration and capture recording for live calibration or a
+   secondary judge.
 17. exact prohibition on private chain-of-thought requirements.
-18. update process for golden cases.
+18. update process for regression fixtures and calibration labels.
 19. rules preventing test-data overfitting or silent semantic repair.
 20. audit/report evidence required for Phase completion.
 
@@ -545,6 +593,8 @@ At minimum:
 P10-02 must choose exact stable identifiers before implementation. Suggested names may include concepts such as:
 
 ```text
+writing-eval-regression-corpus-v1
+writing-score-calibration-corpus-v1
 writing-eval-case-v1
 writing-eval-result-v1
 writing-eval-suite-v1
@@ -574,15 +624,20 @@ External Design Review APPROVED.
 
 ### Objective
 
-Implement strict versioned schemas for canonical eval cases, expected outcomes, execution evidence, evaluator verdicts, failure attribution, and suite results.
+Implement strict versioned schemas for deterministic regression cases and their
+contract expectations, separately from calibration cases, reference labels,
+rater metadata, execution evidence, evaluator verdicts, failure attribution,
+and suite results.
 
 ### Requirements
 
 - closed enums where the frozen policy requires them;
 - explicit version fields;
-- stable case IDs;
-- no free-form executable code embedded in dataset rows;
-- explicit expected authority/evidence references;
+- stable case IDs in each corpus;
+- no free-form executable code embedded in corpus rows;
+- explicit expected authority/evidence references for regression expectations;
+- calibration labels, raw-rater metadata, and adjudication metadata remain
+  separate from deterministic expected outputs;
 - strict validation of unknown evaluator IDs and malformed expectations;
 - deterministic serialization suitable for repository review;
 - no production database schema migration unless P10-02 demonstrates and explicitly authorizes a need.
@@ -591,40 +646,41 @@ Implement strict versioned schemas for canonical eval cases, expected outcomes, 
 
 Prove malformed, duplicate, unsupported-version, unknown-evaluator, and ambiguous required-field cases fail closed.
 
-## P10-04 — Golden Writing Eval Dataset v1
+## P10-04 — Regression and Calibration Corpora v1
 
 ### Objective
 
-Create the bounded canonical v1 dataset using the P10-03 schemas and P10-02 admissibility rules.
+Create the bounded deterministic regression corpus and separately the score
+calibration corpus using the P10-03 schemas and P10-02 admissibility rules.
 
-### Dataset coverage
+### Regression corpus coverage
 
-Must cover representative success, boundary, and failure cases across:
+The deterministic regression corpus must cover representative success, boundary,
+and failure cases across evaluator/provider validation contracts,
+accepted/rejected lifecycle transitions, learner state, Memory, Planner ties,
+recommendation ownership, Knowledge retrieval/guidance/provenance, generation
+v1/v2 compatibility, structured Agent trajectories, malformed-provider paths,
+chronology/freshness mismatches, and at least one multi-episode learner
+trajectory.
 
-- evaluator scoring contract;
-- accepted/rejected lifecycle transitions;
-- learner state;
-- Memory and longitudinal history;
-- Planner and tie-breaking;
-- recommendation ownership;
-- Knowledge retrieval / guidance / provenance;
-- generation v1/v2 compatibility where required;
-- Agent orchestration;
-- fallback / malformed-provider paths;
-- chronology / freshness mismatches;
-- at least one multi-episode learner trajectory.
+### Calibration corpus coverage
 
-### Golden-data rules
+The calibration corpus must preserve the essay/input, reference criterion and
+overall score where admissible, evidence tier, raw rater labels, ambiguity, and
+adjudication metadata. Its labels measure agreement; they are not deterministic
+production expected outputs.
+
+### Corpus rules
 
 - every case has rationale;
-- every expected value has a declared authority source;
-- calibration labels have provenance metadata;
+- every deterministic expectation has a declared contract authority source;
+- every calibration label has provenance metadata;
 - ambiguous references remain explicitly ambiguous;
-- no network dependency for deterministic cases;
-- no hidden local files or secrets;
-- no production-user records.
+- deterministic regression cases have no network dependency;
+- no hidden local files, secrets, or production-user records.
 
-The final minimum case count must be justified by coverage, not by an arbitrary large number. P10-02 may freeze category minimums.
+The final minimum case count for each corpus must be justified by coverage, not
+by an arbitrary large number. P10-02 may freeze category minimums.
 
 ## P10-05 — Deterministic Outcome Evaluator
 
@@ -648,7 +704,13 @@ Evaluate final structured outputs and persisted outcomes against case expectatio
 - accepted update identity;
 - current recommendation ownership;
 - guidance response versions;
-- Agent final answer claims consistent with authoritative structured evidence.
+- `AgentTurnResponse` initial/final observations, `AgentStep` sequence,
+  `stop_reason`, recommendation ownership, practice ownership, and freshness
+  or chronology evidence.
+
+Structured Agent response and state evidence is authoritative. Natural-language
+claim checking is secondary and applies only where free-form output actually
+exists; it is never the primary correctness authority.
 
 ## P10-06 — Trajectory Evaluator
 
@@ -697,7 +759,8 @@ At minimum include cases for:
 - stale or mismatched episode/recommendation evidence;
 - generator attempting to contradict the recommendation;
 - Knowledge attempting to override Planner authority;
-- Agent final response claiming an operation succeeded when the operation did not succeed;
+- `AgentTurnResponse` or its structured evidence claiming an operation succeeded
+  when the authoritative operation did not succeed;
 - unsupported action or route;
 - missing required evidence.
 
@@ -735,7 +798,10 @@ submission/evaluation
 
 ### Objective
 
-Measure agreement between frozen `writing-task2-v1` outputs and admissible reference labels without redefining score semantics.
+In Live Calibration Mode, measure agreement between frozen `writing-task2-v1`
+outputs and admissible reference labels without redefining score semantics. In
+Calibration Replay Mode, recompute the same analysis from captured provider
+outputs without another provider invocation.
 
 ### Minimum analysis dimensions
 
@@ -749,22 +815,35 @@ Subject to P10-02 final freeze, include appropriate metrics such as:
 - disagreement by reference-evidence tier;
 - explicit sample count and coverage caveats.
 
-Do not present a metric as statistically meaningful when the dataset is too small to support that claim.
+When two or more independent human labels exist, also report human uncertainty
+without replacing raw labels: exact agreement, within-0.5 agreement, mean
+absolute rater difference, and criterion-level disagreement where appropriate
+and where sample size supports interpretation. Preserve any adjudicated label
+separately from raw rater labels.
+
+Do not present a metric as statistically meaningful when the dataset is too
+small to support that claim. Do not conclude that the system is inaccurate when
+substantial human disagreement exists without reporting that uncertainty.
 
 ### Calibration failure behavior
 
-A material mismatch must produce evidence such as:
+A material mismatch or live-provider operational failure must produce evidence
+such as:
 
 ```text
 case ID
 reference provenance
-evaluator output
+raw and adjudicated labels where available
+captured evaluator output
 delta
 criterion(s)
 confidence / ambiguity metadata
+provider execution metadata
 ```
 
-It must not automatically mutate the rubric or golden label.
+It must not automatically mutate the rubric or a calibration label, and it must
+not be treated as deterministic CI contract failure merely because a live score
+differs.
 
 ## P10-11 — Failure Taxonomy & Attribution
 
@@ -804,18 +883,23 @@ Prefer the earliest proven failing boundary. Do not claim root cause when only a
 
 ### Objective
 
-Build one reproducible entrypoint that executes selected canonical cases in an isolated environment and applies the registered evaluator set.
+Build one reproducible entrypoint that executes selected corpus cases in an
+isolated environment and applies the registered evaluator set.
 
 ### Required characteristics
 
-- deterministic core mode works without external model/network access where the tested production path permits it;
-- explicit optional provider-backed mode if approved;
-- case selection/filtering by stable metadata;
+- Deterministic Regression Mode runs frozen mock/captured provider fixtures
+  without external model/network access and has a non-zero exit only for gated
+  deterministic contract failures;
+- Live Calibration Mode is explicit, provider-backed, observational, and never
+  a required deterministic CI merge gate;
+- Calibration Replay Mode consumes captured provider outputs without another
+  provider invocation to recompute metrics and reports;
+- case selection/filtering by stable metadata and corpus identity;
 - isolated database state;
 - repeatable setup/teardown;
 - bounded runtime and output;
-- structured machine-readable result;
-- non-zero failure exit for gated deterministic failures;
+- structured machine-readable result including execution mode;
 - safe interruption without contaminating later cases;
 - no mutation of production-like user data.
 
@@ -831,6 +915,7 @@ Produce durable evidence that is both automation-friendly and reviewable.
 
 Must include enough information to reproduce/inspect:
 
+- execution mode and corpus identity/version;
 - suite version;
 - case IDs and case versions;
 - evaluator IDs/versions;
@@ -838,8 +923,8 @@ Must include enough information to reproduce/inspect:
 - severity;
 - failure attribution;
 - relevant production version identifiers;
-- calibration deltas where applicable;
-- environment/provider metadata allowed by policy;
+- calibration deltas and human-disagreement evidence where applicable;
+- captured provider metadata allowed by policy;
 - timestamps only where they do not break deterministic comparison semantics.
 
 ### Human report
@@ -852,13 +937,13 @@ docs/PHASE10_EVAL_REPORT.md
 
 The report must be answer-first and include:
 
-- suite coverage;
+- deterministic regression corpus coverage and gated regression status;
 - veto failures;
 - major failures;
-- calibration findings;
+- separate live-calibration and calibration-replay findings;
+- human-reference disagreement and adjudication caveats where applicable;
 - known blind spots;
-- provider-dependent exclusions;
-- regression status;
+- provider-dependent exclusions or operational failures;
 - recommended follow-up without silently implementing future-phase changes.
 
 ## P10-14 — Regression Corpus Promotion
@@ -881,7 +966,10 @@ Every promoted case must have:
 - proof it passes after the repair;
 - no unrelated implementation detail encoded as the expectation.
 
-Golden-case edits must be reviewable. Deleting or weakening a regression case requires an explicit rationale and contract change evidence.
+Regression-corpus edits must be reviewable. Deleting or weakening a regression
+case requires an explicit rationale and contract-change evidence. Calibration
+labels remain separate measurement evidence and may not weaken a regression
+expectation.
 
 ## P10-15 — CI-Compatible Deterministic Eval Gate
 
@@ -891,11 +979,12 @@ Add the deterministic core suite to CI at a cost and runtime appropriate for the
 
 ### Requirements
 
-- provider-free gated path;
+- provider-free Deterministic Regression Mode as the only gated path;
 - reproducible test/database setup;
 - clear command documented locally and in CI;
-- veto/major contract failures cause CI failure according to P10-02;
-- optional provider/calibration jobs must not masquerade as deterministic gates;
+- veto/major deterministic contract failures cause CI failure according to P10-02;
+- Live Calibration Mode and Calibration Replay Mode report separately and must
+  not masquerade as deterministic gates;
 - existing Phase 1–9 test suite remains intact.
 
 If CI runtime is too high, split smoke and full deterministic suites only if the policy defines exactly what remains merge-gating.
@@ -913,9 +1002,9 @@ At minimum capture:
 - backend tests;
 - frontend/browser checks where existing repository contracts require them;
 - database/migration checks even if no migration is expected, when repository standard validation includes them;
-- deterministic Eval Harness result;
-- calibration analysis result;
-- CI-equivalent commands;
+- Deterministic Regression Mode result;
+- separate Live Calibration and/or Calibration Replay analysis result;
+- CI-equivalent commands for the deterministic gate only;
 - no unexpected production contract changes.
 
 Historical Phase 1–9 behavior must remain compatible unless P10-02 explicitly freezes a justified narrow compatibility exception.
@@ -956,15 +1045,17 @@ docs/PHASE10_AUDIT.md
 ### Audit must prove
 
 1. every frozen P10-02 invariant is implemented or explicitly marked blocked;
-2. canonical dataset validates against the frozen schema;
-3. deterministic suite is reproducible;
+2. deterministic regression and score calibration corpora each validate against
+   their frozen schemas and remain authority-separated;
+3. Deterministic Regression Mode and Calibration Replay Mode are reproducible;
 4. veto-class violations fail closed;
 5. failure attribution is evidence-backed;
 6. Knowledge grounding reuses Phase 9 authority;
 7. `writing-task2-v1` semantics were not silently changed;
 8. Planner / Memory / Agent authority was not expanded;
-9. calibration results preserve reference provenance and disagreement evidence;
-10. CI gating matches policy;
+9. calibration results preserve reference provenance, raw-rater disagreement,
+   adjudication evidence where present, and captured-provider provenance;
+10. CI gating includes only Deterministic Regression Mode as frozen by policy;
 11. regression corpus is reviewable;
 12. full relevant Phase 1–10 tests pass;
 13. no secret, personal production data, or uncontrolled network dependency was introduced;
@@ -1012,8 +1103,9 @@ Phase 10 is COMPLETE only when all of the following are true:
 1. P10-01 through P10-18 are COMPLETE according to the frozen graph/policy.
 2. External Design Review is APPROVED.
 3. External Implementation Review is APPROVED or the project's explicitly accepted equivalent approval state.
-4. deterministic Eval Harness passes its merge-gating suite.
-5. calibration report exists with provenance and caveats.
+4. Deterministic Regression Mode passes its merge-gating suite.
+5. separate live-calibration and/or calibration-replay reports exist with
+   provenance, provider-variance, and human-disagreement caveats.
 6. full relevant regression suite passes.
 7. documentation is synchronized.
 8. PR/CI/merge steps explicitly authorized by the user are complete.

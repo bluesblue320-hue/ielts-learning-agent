@@ -40,16 +40,17 @@ Always inspect the current phase documentation before implementing features.
 Current phase:
 
 ```text
-Phase 10 — Writing Evaluation Calibration v1 (design authorization only)
+Phase 10 — Writing Evaluation Calibration v1
 ```
 
 Read:
 
 ```text
-docs/PHASE10_GRAPH.md when it exists and has been approved
+docs/PHASE10_GRAPH.md
+docs/DEVELOPMENT_LOOP.md
 docs/PHASE9_GRAPH.md
 docs/IELTS_KNOWLEDGE_POLICY.md
-docs/DEVELOPMENT_LOOP.md
+docs/CORE_LEARNING_AGENT_POLICY.md
 ```
 
 Current status:
@@ -133,7 +134,13 @@ P9-13 = INTERNAL_AUDIT_COMPLETE
 Phase 9 = COMPLETE
 Phase 9 External Implementation Review = APPROVED
 PR #13 = MERGED
-Phase 10 = AUTHORIZED_FOR_DESIGN
+Phase 10 = DESIGN
+P10-00 = COMPLETE
+P10-01 = READY
+P10-02 = BLOCKED_BY_P10-01
+Phase 10 External Design Review = FIXING_REQUIRED / PENDING_RE_REVIEW
+P10-03 onward = BLOCKED_BY_EXTERNAL_DESIGN_REVIEW
+Phase 10 implementation = NOT_AUTHORIZED
 ```
 
 Phase 6 design (P6-01 audit, P6-02 contract freeze, versions
@@ -173,9 +180,11 @@ API/Web UX, and knowledge-grounded practice generation v2. Existing
 remain frozen. No migration or new dependency was added. See
 [docs/PHASE9_AUDIT.md](docs/PHASE9_AUDIT.md) for validation evidence.
 
-The Phase 9 graph and audit are completed historical execution records. Phase
-10 is authorized for design only; do not begin Phase 10 implementation until a
-Phase 10 graph exists and explicitly authorizes it.
+The Phase 9 graph and audit are completed historical execution records. The
+Phase 10 graph exists and is in DESIGN with External Design Review
+FIXING_REQUIRED / PENDING_RE_REVIEW. P10-01 is READY but must not be executed
+as part of this design repair; P10-03 onward and all Phase 10 implementation
+remain blocked until the design gate is approved.
 
 The development loop defines HOW each graph node should be executed.
 
