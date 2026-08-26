@@ -10,10 +10,11 @@ post-merge documentation-sync commit
 `1038af81f87ad1543e65c6093a10448c973193a8` on
 `phase/10-writing-evaluation-calibration-v1`.
 
-This graph authorizes only the Phase 10 design sequence until External Design
-Review is APPROVED. No Phase 10 implementation node may start before P10-01 and
-P10-02 are COMPLETE and External Design Review explicitly approves the frozen
-contract.
+The Phase 10 Graph Review authorizes the Phase 10 design sequence through
+P10-01 and P10-02. No Phase 10 implementation node may start before P10-01 and
+P10-02 are COMPLETE and the formal Phase 10 External Design Review explicitly
+approves the frozen contract. Graph Review approval authorizes P10-01; formal
+External Design Review approval authorizes P10-03.
 
 - Repository: `bluesblue320-hue/ielts-learning-agent`
 - Branch: `phase/10-writing-evaluation-calibration-v1`
@@ -25,10 +26,13 @@ contract.
 - Current evaluator semantics: `writing-task2-v1` remains frozen
 - Phase 9 Knowledge: `ielts-writing-knowledge-v1` remains frozen
 - Phase 10 status: DESIGN
+- P10-00: COMPLETE
+- Phase 10 Graph Review: APPROVED
 - P10-01: READY
 - P10-02: BLOCKED_BY_P10-01
-- External Design Review: FIXING_REQUIRED / PENDING_RE_REVIEW
+- Phase 10 External Design Review: PENDING_P10-01_AND_P10-02
 - P10-03 onward: BLOCKED_BY_EXTERNAL_DESIGN_REVIEW
+- Phase 10 implementation: NOT_AUTHORIZED
 
 ## Phase goal
 
@@ -158,9 +162,18 @@ Phase 10 must NOT introduce or authorize:
 - a production LLM judge as the sole correctness authority;
 - a new Planner strategy merely to improve eval pass rate;
 - a new Memory semantic merely to improve eval pass rate;
-- new public product features unless strictly necessary to expose already-owned evaluation evidence and explicitly approved by the design contract;
+- new public product APIs;
+- user-facing Eval endpoints, Eval dashboards, or product features;
+- public Eval endpoints or admin APIs such as `GET /eval`, `POST /eval`, or an `/eval` dashboard;
 - evaluation data containing secrets, private user data, or uncontrolled production records;
 - test assertions that bless current behavior solely because it currently exists.
+
+Evaluation evidence may be exposed only through repository-native or internal
+mechanisms: CLI, pytest, structured JSON/report artifacts, CI output, docs,
+test-only instrumentation, or non-semantic internal application-owned evidence.
+Any additional observability is limited to test-only instrumentation or
+non-semantic internal evidence exposure, subject to P10-02. It must not change
+production application behavior.
 
 If evaluation identifies a material product-semantic problem, record and route the finding. Do not repair the production contract inside Phase 10 unless the frozen Phase 10 design explicitly includes a narrow defect fix required to make an earlier contract internally consistent.
 
@@ -417,9 +430,10 @@ If an LLM judge is introduced at all in Phase 10:
 ```text
 START
   -> P10-00 Phase 10 Kickoff / Graph Establishment [COMPLETE]
+  -> Phase 10 Graph Review [APPROVED]
   -> P10-01 Existing Evaluation Surface Audit [READY]
   -> P10-02 Evaluation & Calibration Contract Freeze [BLOCKED_BY_P10-01]
-  -> External Design Review [FIXING_REQUIRED / PENDING_RE_REVIEW]
+  -> Phase 10 External Design Review [PENDING_P10-01_AND_P10-02]
   -> P10-03 Canonical Eval Case Schemas [BLOCKED_BY_EXTERNAL_DESIGN_REVIEW]
   -> P10-04 Regression and Calibration Corpora v1
   -> P10-05 Deterministic Outcome Evaluator
@@ -603,7 +617,7 @@ writing-score-calibration-v1
 
 These names are suggestions only until P10-02 freezes them.
 
-### External Design Review gate
+### Formal External Design Review gate
 
 After P10-02:
 
@@ -611,16 +625,18 @@ After P10-02:
 P10-01 audit
   + P10-02 frozen policy
   + PHASE10_GRAPH.md
-  -> External Design Review
+  -> Formal Phase 10 External Design Review
 ```
 
-If review is not APPROVED, remain in DESIGN/FIXING. Do not begin P10-03.
+If the formal review is not APPROVED, remain in DESIGN/FIXING. Do not begin
+P10-03. After P10-02 completes, STOP for the formal review unless separate
+authority already exists according to the repository workflow.
 
 ## P10-03 — Canonical Eval Case Schemas
 
 ### Dependency
 
-External Design Review APPROVED.
+Formal Phase 10 External Design Review APPROVED.
 
 ### Objective
 
@@ -1101,7 +1117,7 @@ Only an approved outcome may proceed to PR/CI/merge authorization according to t
 Phase 10 is COMPLETE only when all of the following are true:
 
 1. P10-01 through P10-18 are COMPLETE according to the frozen graph/policy.
-2. External Design Review is APPROVED.
+2. Formal Phase 10 External Design Review is APPROVED.
 3. External Implementation Review is APPROVED or the project's explicitly accepted equivalent approval state.
 4. Deterministic Regression Mode passes its merge-gating suite.
 5. separate live-calibration and/or calibration-replay reports exist with
@@ -1120,7 +1136,7 @@ Immediately STOP and report instead of routing around the graph if:
 - a required deterministic evaluator can only be implemented by inspecting private chain-of-thought;
 - evaluation would require unsafe access to production learner data;
 - implementation would require a future-phase capability outside this graph;
-- External Design Review or External Implementation Review blocks progress;
+- Formal Phase 10 External Design Review or External Implementation Review blocks progress;
 - required validation cannot be made trustworthy;
 - continuing would require unauthorized PR, merge, history rewrite, or secret handling.
 
