@@ -96,18 +96,37 @@ def evaluate_lifecycle(evidence: LifecycleEvidence) -> EvalFinding:
         or evidence.practice_recommendation_id != evidence.recommendation_id
     ):
         return _failure(FailureBoundary.PRACTICE_GENERATION, "practice_ownership_mismatch", EvalSeverity.VETO)
+    if evidence.practice_id is not None and (
+        not evidence.knowledge_ids or evidence.grounding_evidence is None
+    ):
+        return _failure(FailureBoundary.KNOWLEDGE, "knowledge_evidence_missing", EvalSeverity.VETO)
     if evidence.grounding_evidence is not None:
-        grounding = evaluate_knowledge_grounding(
+        grounding = evidence.grounding_evidence
+        if (
+            evidence.knowledge_ids != grounding.knowledge_ids
+            or grounding.learner_id != evidence.learner_id
+            or grounding.current_learning_update_id != evidence.current_learning_update_id
+            or grounding.recommendation.id != evidence.recommendation_id
+            or grounding.recommendation_learner_id != evidence.recommendation_learner_id
+            or grounding.recommendation_learning_update_id
+            != evidence.recommendation_learning_update_id
+        ):
+            return _failure(
+                FailureBoundary.KNOWLEDGE,
+                "knowledge_lifecycle_context_mismatch",
+                EvalSeverity.VETO,
+            )
+        grounding_finding = evaluate_knowledge_grounding(
             knowledge_ids=evidence.knowledge_ids,
-            evidence=evidence.grounding_evidence,
+            evidence=grounding,
         )
-        if grounding.status == EvalStatus.FAIL:
+        if grounding_finding.status is EvalStatus.FAIL:
             return EvalFinding(
                 evaluator=EvaluatorId.LIFECYCLE,
                 status=EvalStatus.FAIL,
-                severity=grounding.severity,
-                first_failing_boundary=grounding.first_failing_boundary,
-                failure_codes=grounding.failure_codes,
+                severity=grounding_finding.severity,
+                first_failing_boundary=grounding_finding.first_failing_boundary,
+                failure_codes=grounding_finding.failure_codes,
             )
     if evidence.read_counts_before != evidence.read_counts_after:
         return _failure(FailureBoundary.INFRASTRUCTURE, "deterministic_read_mutated_state", EvalSeverity.VETO)

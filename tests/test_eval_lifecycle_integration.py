@@ -17,14 +17,28 @@ from app.agent.observation import observe_agent_state
 from app.agent.tools import AgentTools
 from app.db.session import create_session_factory
 from app.eval.corpora import load_regression_corpus
+from app.eval.knowledge import GroundingEvidence, normalize_generation_current_band
 from app.eval.lifecycle import LifecycleEvidence, OrderedLifecycleRecord, evaluate_lifecycle
+from app.eval.schemas import FailureBoundary
+from app.knowledge.retriever import retrieve_knowledge
+from app.knowledge.writing_task2_v1 import WRITING_TASK2_KNOWLEDGE_UNITS
 from app.memory.episode_queries import list_learner_episodes
 from app.models.learning import Learner, LearnerSkillState, LearningEvidence, LearningUpdate, PracticeRecommendation
 from app.models.practice import WritingPractice
 from app.models.writing import WritingAttempt, WritingEvaluation
 from app.schemas.agent import ContinueAgentTurn
+from app.schemas.common import BandScore
+from app.schemas.knowledge import (
+    GroundedRecommendationSummary,
+    KnowledgeRetrievalPurpose,
+    KnowledgeRetrievalQuery,
+)
 from app.services.learning_application import apply_writing_evaluation
-from app.services.practice_generation import PracticeGenerationService
+from app.services.practice_generation import (
+    GENERATION_POLICY_VERSION,
+    PRACTICE_PROMPT_VERSION,
+    PracticeGenerationService,
+)
 from tests.fakes import FakePracticeGenerator
 from tests.support.database import validate_test_database_url
 
@@ -122,12 +136,79 @@ def test_multi_episode_authoritative_learning_loop_is_real_and_repeatable(factor
             PracticeRecommendation.learning_update_id == current_update.id
         ))
         assert current_recommendation is not None and current_recommendation.learner_id == 1
-        generated = asyncio.run(PracticeGenerationService(session, FakePracticeGenerator()).generate_or_resolve_current(
+        assert current_recommendation.target_skill is not None
+        assert current_recommendation.learner_target_band is not None
+        assert current_recommendation.current_estimate is not None
+        generator = FakePracticeGenerator()
+        service = PracticeGenerationService(session, generator)
+        generated = asyncio.run(service.generate_or_resolve_current(
             learner_id=1,
             recommendation_id=current_recommendation.id,
             expected_learning_update_id=current_update.id,
         ))
         assert generated.status == "generated" and generated.practice is not None
+        assert len(generator.requests) == 1
+        request = generator.requests[0]
+        assert request.recommendation_id == current_recommendation.id
+        assert request.decision_type == "practice"
+        assert request.target_skill == current_recommendation.target_skill
+        assert request.learner_target_band == current_recommendation.learner_target_band
+        assert request.planner_version == current_recommendation.planner_version
+        assert request.generator_policy_version == GENERATION_POLICY_VERSION
+        assert request.prompt_version == PRACTICE_PROMPT_VERSION
+        assert request.knowledge_context is not None
+        assert request.knowledge_context.items
+
+        expected_query = KnowledgeRetrievalQuery(
+            purpose=KnowledgeRetrievalPurpose.PRACTICE_GENERATION,
+            criterion=current_recommendation.target_skill,
+            current_band=normalize_generation_current_band(
+                Decimal(current_recommendation.current_estimate)
+            ),
+            target_band=BandScore(
+                value=Decimal(current_recommendation.learner_target_band)
+            ),
+        )
+        expected_units = retrieve_knowledge(expected_query).units
+        request_knowledge_ids = tuple(
+            item.knowledge_id for item in request.knowledge_context.items
+        )
+        assert request_knowledge_ids == tuple(
+            unit.knowledge_id for unit in expected_units
+        )
+        snapshot_by_id = {
+            unit.knowledge_id: unit for unit in WRITING_TASK2_KNOWLEDGE_UNITS
+        }
+        for item in request.knowledge_context.items:
+            unit = snapshot_by_id[item.knowledge_id]
+            assert item.source_ids == tuple(
+                reference.source_id for reference in unit.source_refs
+            )
+
+        grounding_evidence = GroundingEvidence(
+            learner_id=1,
+            current_learning_update_id=current_update.id,
+            recommendation_learner_id=current_recommendation.learner_id,
+            recommendation_learning_update_id=(
+                current_recommendation.learning_update_id
+            ),
+            recommendation=GroundedRecommendationSummary(
+                id=current_recommendation.id,
+                decision_type="practice",
+                target_skill=current_recommendation.target_skill,
+                learner_target_band=BandScore(
+                    value=Decimal(current_recommendation.learner_target_band)
+                ),
+                current_estimate=Decimal(current_recommendation.current_estimate),
+                reason_codes=tuple(current_recommendation.reason_codes),
+            ),
+            query=expected_query,
+            knowledge_ids=request_knowledge_ids,
+            practice_knowledge_source_ids={
+                item.knowledge_id: item.source_ids
+                for item in request.knowledge_context.items
+            },
+        )
         observed = observe_agent_state(session, learner_id=1)
         response = asyncio.run(AgentTurnExecutor(
             tools=AgentTools(session=session), observe=lambda learner_id: observe_agent_state(session, learner_id=learner_id)
@@ -157,11 +238,32 @@ def test_multi_episode_authoritative_learning_loop_is_real_and_repeatable(factor
             practice_id=generated.practice.id,
             practice_learner_id=generated.practice.learner_id,
             practice_recommendation_id=generated.practice.recommendation_id,
+            knowledge_ids=request_knowledge_ids,
+            grounding_evidence=grounding_evidence,
             read_counts_before=before,
             read_counts_after=after,
         )
         assert tuple(episode.episode_id for episode in repeated_episodes) == evidence.memory_update_ids
         assert evaluate_lifecycle(evidence).status.value == "pass"
+        wrong_current = (
+            Decimal("6.0")
+            if expected_query.current_band.value != Decimal("6.0")
+            else Decimal("6.5")
+        )
+        bad_grounding = grounding_evidence.model_copy(
+            update={
+                "query": expected_query.model_copy(
+                    update={"current_band": BandScore(value=wrong_current)}
+                )
+            }
+        )
+        bad_finding = evaluate_lifecycle(
+            evidence.model_copy(update={"grounding_evidence": bad_grounding})
+        )
+        assert bad_finding.first_failing_boundary is FailureBoundary.KNOWLEDGE
+        assert bad_finding.failure_codes == (
+            "knowledge_recommendation_context_mismatch",
+        )
         assert session.scalar(select(func.count()).select_from(WritingPractice)) == 1
         assert len(episodes) == 2
         assert accepted_newer.learning_update_id in evidence.memory_update_ids
