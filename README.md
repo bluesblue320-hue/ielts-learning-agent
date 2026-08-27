@@ -25,8 +25,9 @@ External Implementation Review are `APPROVED`. Phase 9 delivers the static
 provider-free grounded guidance, knowledge-grounded practice generation v2, and
 source/citation UX. The Phase 10 graph review, P10-01 audit/external review,
 and P10-02 frozen `writing-eval-calibration-v1` contract are complete. Formal
-Phase 10 External Design Review is APPROVED; implementation is authorized only
-for Batch A (P10-03 through P10-09), with P10-10 blocked by Milestone Review.
+Phase 10 External Design Review and Milestone Review are APPROVED. Batch A
+is COMPLETE; Batch B is authorized serially from P10-10 through P10-18, with
+P10-10 currently READY.
 
 Phase 7 connects authoritative current learner state and longitudinal Writing
 Memory to deterministic Planner v2. Memory is consulted only for exact
@@ -171,7 +172,8 @@ Before changing the project, read these documents in order:
    [IELTS Knowledge policy](docs/IELTS_KNOWLEDGE_POLICY.md), and
    [internal audit](docs/PHASE9_AUDIT.md). The [Phase 10 graph](docs/PHASE10_GRAPH.md)
    has passed graph review; P10-01 and P10-02 are complete. Formal External
-   Design Review is APPROVED; only Batch A (P10-03 through P10-09) is authorized.
+   Design Review and Milestone Review are APPROVED; Batch A is complete and
+   Batch B is authorized serially from P10-10 through P10-18.
 3. [Phase 8 graph](docs/PHASE8_GRAPH.md) and frozen
    [Core Learning Agent policy](docs/CORE_LEARNING_AGENT_POLICY.md), with the
    Phase 7 [planner policy](docs/MEMORY_AWARE_PLANNING_POLICY.md) and Phase 6
@@ -208,8 +210,8 @@ supported. Phase 9 is COMPLETE and merged through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`); both external reviews are
 approved. The completed execution record and audit are
 [docs/PHASE9_GRAPH.md](docs/PHASE9_GRAPH.md) and
-[docs/PHASE9_AUDIT.md](docs/PHASE9_AUDIT.md). The Phase 10 graph is in design
-review with implementation not started.
+[docs/PHASE9_AUDIT.md](docs/PHASE9_AUDIT.md). Phase 10 Batch A is complete and its Milestone Review is APPROVED; Batch B is
+authorized and begins at P10-10.
 
 ## Phase 5 Web MVP
 

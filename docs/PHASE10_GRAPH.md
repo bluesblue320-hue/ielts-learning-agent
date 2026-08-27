@@ -2,7 +2,7 @@
 
 ## Document status
 
-**BATCH A COMPLETE — P10-03 through P10-09 are COMPLETE after final repair and isolated PostgreSQL validation. Phase 10 Milestone Review is READY_FOR_REVIEW. P10-10 remains blocked by Milestone Review.**
+**BATCH B AUTHORIZED — P10-03 through P10-09 are COMPLETE and Phase 10 Milestone Review is APPROVED. P10-10 is READY; P10-11 onward remain transitively blocked by predecessor completion.**
 
 Phase 9 is COMPLETE and merged to `master` through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`). Phase 10 starts from the
@@ -39,10 +39,10 @@ External Design Review approval authorizes P10-03.
 - P10-07: COMPLETE
 - P10-08: COMPLETE
 - P10-09: COMPLETE
-- Phase 10 Milestone Review: READY_FOR_REVIEW
-- P10-10: BLOCKED_BY_MILESTONE_REVIEW
-- P10-11 onward: BLOCKED_BY_MILESTONE_REVIEW
-- Phase 10 implementation: PAUSED_AT_MILESTONE_REVIEW
+- Phase 10 Milestone Review: APPROVED
+- P10-10: READY
+- P10-11 onward: BLOCKED_BY_PREDECESSOR
+- Phase 10 implementation: BATCH_B_AUTHORIZED
 
 ## Phase goal
 
@@ -452,8 +452,8 @@ START
   -> P10-07 Knowledge Grounding Evaluator [COMPLETE]
   -> P10-08 Authority / Fail-Closed Evaluator [COMPLETE]
   -> P10-09 Learning Lifecycle Evaluator [COMPLETE]
-  -> Phase 10 Milestone Review [READY_FOR_REVIEW]
-  -> P10-10 Writing Score Calibration Analysis [BLOCKED_BY_MILESTONE_REVIEW]
+  -> Phase 10 Milestone Review [APPROVED]
+  -> P10-10 Writing Score Calibration Analysis [READY]
   -> P10-11 Failure Taxonomy & Attribution
   -> P10-12 Eval Runner / Harness
   -> P10-13 Machine-Readable Eval Result & Human Report
@@ -479,7 +479,7 @@ After Formal Phase 10 External Design Review is APPROVED, Batch A is:
 
 ```text
 P10-03 -> P10-04 -> P10-05 -> P10-06 -> P10-07 -> P10-08 -> P10-09
--> STOP -> Phase 10 Milestone Review [READY_FOR_REVIEW]
+-> STOP -> Phase 10 Milestone Review [APPROVED]
 ```
 
 Only after Phase 10 Milestone Review is APPROVED, Batch B is:
@@ -859,7 +859,7 @@ submission/evaluation
 
 ### Status before review
 
-`READY_FOR_REVIEW`. P10-10 remains `BLOCKED_BY_MILESTONE_REVIEW` until external review explicitly approves this gate.
+`APPROVED`. P10-10 is `READY`, and Batch B is authorized for serial execution through P10-18.
 
 ### Review inputs and scope
 
