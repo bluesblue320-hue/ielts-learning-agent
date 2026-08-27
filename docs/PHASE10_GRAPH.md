@@ -2,7 +2,7 @@
 
 ## Document status
 
-**DESIGN GRAPH EXECUTING — Batch A Review is FIXING_REQUIRED: P10-03, P10-04, P10-06, and P10-07 require repair; P10-09 is blocked by the repair cycle. P10-10 remains blocked by Milestone Review.**
+**DESIGN GRAPH EXECUTING — P10-03 through P10-08 are COMPLETE after the Batch A repair cycle. P10-09 implementation is present but BLOCKED_BY_ISOLATED_POSTGRES_VALIDATION. P10-10 remains blocked by Milestone Review.**
 
 Phase 9 is COMPLETE and merged to `master` through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`). Phase 10 starts from the
@@ -38,11 +38,11 @@ External Design Review approval authorizes P10-03.
 - P10-06: COMPLETE
 - P10-07: COMPLETE
 - P10-08: COMPLETE
-- P10-09: BLOCKED_BY_BATCH_A_REPAIR
+- P10-09: BLOCKED_BY_ISOLATED_POSTGRES_VALIDATION
 - Phase 10 Milestone Review: NOT_READY
 - P10-10: BLOCKED_BY_MILESTONE_REVIEW
 - P10-11 onward: BLOCKED_BY_MILESTONE_REVIEW
-- Phase 10 implementation: AUTHORIZED_FOR_BATCH_A_ONLY
+- Phase 10 implementation: P10-09_VALIDATION_BLOCKED_BY_LOCAL_ENVIRONMENT
 
 ## Phase goal
 
@@ -451,7 +451,7 @@ START
   -> P10-06 Trajectory Evaluator [COMPLETE]
   -> P10-07 Knowledge Grounding Evaluator [COMPLETE]
   -> P10-08 Authority / Fail-Closed Evaluator [COMPLETE]
-  -> P10-09 Learning Lifecycle Evaluator [BLOCKED_BY_BATCH_A_REPAIR]
+  -> P10-09 Learning Lifecycle Evaluator [BLOCKED_BY_ISOLATED_POSTGRES_VALIDATION]
   -> Phase 10 Milestone Review [BLOCKED_BY_P10-09]
   -> P10-10 Writing Score Calibration Analysis [BLOCKED_BY_MILESTONE_REVIEW]
   -> P10-11 Failure Taxonomy & Attribution
@@ -823,7 +823,7 @@ At minimum include cases for:
 
 Veto-class authority violations must fail the suite regardless of lower-severity passes elsewhere.
 
-## P10-09 — Learning Lifecycle Evaluator — BLOCKED_BY_BATCH_A_REPAIR
+## P10-09 — Learning Lifecycle Evaluator — BLOCKED_BY_ISOLATED_POSTGRES_VALIDATION
 
 ### Objective
 
@@ -1226,7 +1226,7 @@ At any time:
 - record evidence before moving forward;
 - do not start Phase 11 automatically.
 
-Current authorized repair sequence after Batch A Review FIXING_REQUIRED:
+Current authorized node after completed Batch A repairs:
 
 ```text
 P10-03 Canonical Eval Case Schemas [COMPLETE]
