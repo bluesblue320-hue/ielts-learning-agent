@@ -2,7 +2,7 @@
 
 ## Document status
 
-**DESIGN GRAPH EXECUTING — P10-03 through P10-08 are COMPLETE after the Batch A repair cycle. P10-09 implementation is present but BLOCKED_BY_ISOLATED_POSTGRES_VALIDATION. P10-10 remains blocked by Milestone Review.**
+**BATCH A COMPLETE — P10-03 through P10-09 are COMPLETE after final repair and isolated PostgreSQL validation. Phase 10 Milestone Review is READY_FOR_REVIEW. P10-10 remains blocked by Milestone Review.**
 
 Phase 9 is COMPLETE and merged to `master` through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`). Phase 10 starts from the
@@ -38,11 +38,11 @@ External Design Review approval authorizes P10-03.
 - P10-06: COMPLETE
 - P10-07: COMPLETE
 - P10-08: COMPLETE
-- P10-09: BLOCKED_BY_ISOLATED_POSTGRES_VALIDATION
-- Phase 10 Milestone Review: NOT_READY
+- P10-09: COMPLETE
+- Phase 10 Milestone Review: READY_FOR_REVIEW
 - P10-10: BLOCKED_BY_MILESTONE_REVIEW
 - P10-11 onward: BLOCKED_BY_MILESTONE_REVIEW
-- Phase 10 implementation: P10-09_VALIDATION_BLOCKED_BY_LOCAL_ENVIRONMENT
+- Phase 10 implementation: PAUSED_AT_MILESTONE_REVIEW
 
 ## Phase goal
 
@@ -451,8 +451,8 @@ START
   -> P10-06 Trajectory Evaluator [COMPLETE]
   -> P10-07 Knowledge Grounding Evaluator [COMPLETE]
   -> P10-08 Authority / Fail-Closed Evaluator [COMPLETE]
-  -> P10-09 Learning Lifecycle Evaluator [BLOCKED_BY_ISOLATED_POSTGRES_VALIDATION]
-  -> Phase 10 Milestone Review [BLOCKED_BY_P10-09]
+  -> P10-09 Learning Lifecycle Evaluator [COMPLETE]
+  -> Phase 10 Milestone Review [READY_FOR_REVIEW]
   -> P10-10 Writing Score Calibration Analysis [BLOCKED_BY_MILESTONE_REVIEW]
   -> P10-11 Failure Taxonomy & Attribution
   -> P10-12 Eval Runner / Harness
@@ -823,7 +823,7 @@ At minimum include cases for:
 
 Veto-class authority violations must fail the suite regardless of lower-severity passes elsewhere.
 
-## P10-09 — Learning Lifecycle Evaluator — BLOCKED_BY_ISOLATED_POSTGRES_VALIDATION
+## P10-09 — Learning Lifecycle Evaluator — COMPLETE
 
 ### Objective
 
@@ -859,7 +859,7 @@ submission/evaluation
 
 ### Status before review
 
-`READY_FOR_REVIEW`. Until then, this future gate is `BLOCKED_BY_P10-09`.
+`READY_FOR_REVIEW`. P10-10 remains `BLOCKED_BY_MILESTONE_REVIEW` until external review explicitly approves this gate.
 
 ### Review inputs and scope
 
