@@ -195,8 +195,8 @@ The Phase 9 graph and audit are completed historical execution records. The
 Phase 10 graph review is APPROVED. P10-01 audit and its External Review are
 COMPLETE and APPROVED. P10-02 is COMPLETE and freezes
 `writing-eval-calibration-v1`. The formal Phase 10 External Design Review is
-APPROVED. Batch A authorizes only serial execution of P10-03 through P10-09;
-Phase 10 Milestone Review blocks P10-10 and all later nodes.
+APPROVED. Batch A is COMPLETE, and the Phase 10 Milestone Review is APPROVED.
+Batch B authorizes serial execution of P10-10 through P10-18; P10-10 is READY.
 
 The development loop defines HOW each graph node should be executed.
 

@@ -882,8 +882,7 @@ completion alone does not make P10-10 ready.
 
 `P10-09 = COMPLETE` and `Phase 10 Milestone Review = APPROVED`.
 
-Until the Milestone Review is approved, P10-10 is
-`BLOCKED_BY_MILESTONE_REVIEW`; there is no automatic bypass.
+The Milestone Review is APPROVED. P10-10 is `READY`; later Batch B nodes remain blocked until their predecessor completes.
 
 ### Objective
 
