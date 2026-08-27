@@ -36,7 +36,7 @@ External Design Review approval authorizes P10-03.
 - P10-04: COMPLETE
 - P10-05: COMPLETE
 - P10-06: COMPLETE
-- P10-07: FIXING_REQUIRED
+- P10-07: COMPLETE
 - P10-08: COMPLETE
 - P10-09: BLOCKED_BY_BATCH_A_REPAIR
 - Phase 10 Milestone Review: NOT_READY
@@ -449,7 +449,7 @@ START
   -> P10-04 Regression and Calibration Corpora v1 [COMPLETE]
   -> P10-05 Deterministic Outcome Evaluator [COMPLETE]
   -> P10-06 Trajectory Evaluator [COMPLETE]
-  -> P10-07 Knowledge Grounding Evaluator [FIXING_REQUIRED]
+  -> P10-07 Knowledge Grounding Evaluator [COMPLETE]
   -> P10-08 Authority / Fail-Closed Evaluator [COMPLETE]
   -> P10-09 Learning Lifecycle Evaluator [BLOCKED_BY_BATCH_A_REPAIR]
   -> Phase 10 Milestone Review [BLOCKED_BY_P10-09]
@@ -784,7 +784,7 @@ Verify allowed lifecycle execution from observable application evidence.
 
 If required evidence is not observable, add the smallest test-only or non-semantic instrumentation approved by P10-02. Do not add a production behavioral dependency merely for eval convenience.
 
-## P10-07 — Knowledge Grounding Evaluator — FIXING_REQUIRED
+## P10-07 — Knowledge Grounding Evaluator — COMPLETE
 
 ### Objective
 
