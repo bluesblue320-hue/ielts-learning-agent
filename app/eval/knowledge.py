@@ -35,7 +35,7 @@ class GroundingEvidence(EvalSchema):
     recommendation: GroundedRecommendationSummary
     query: KnowledgeRetrievalQuery
     knowledge_ids: tuple[str, ...] = Field(min_length=1)
-    citations: tuple[GroundedCitation, ...] = Field(min_length=1)
+    citations: tuple[GroundedCitation, ...] = Field(default=())
     citation_owner: str = "application"
 
 
@@ -76,36 +76,53 @@ def evaluate_knowledge_grounding(
             or evidence.recommendation.id <= 0
         ):
             return _failure("knowledge_recommendation_context_mismatch", EvalSeverity.VETO)
-        recommendation = evidence.recommendation
-        if (
-            recommendation.decision_type != "practice"
-            or recommendation.target_skill is None
-            or recommendation.learner_target_band is None
-            or evidence.query.purpose != KnowledgeRetrievalPurpose.LEARNER_GUIDANCE
-            or evidence.query.criterion != recommendation.target_skill
-            or evidence.query.target_band != recommendation.learner_target_band
-        ):
-            return _failure("knowledge_recommendation_context_mismatch", EvalSeverity.VETO)
-        expected_citations = {
-            (reference.source_id, reference.locator)
-            for knowledge_id in knowledge_ids
-            for reference in units[knowledge_id].source_refs
-        }
-        observed_citations = set()
-        for citation in evidence.citations:
-            source = KNOWLEDGE_SOURCES.get(citation.source_id)
-            if source is None or (citation.source_id, citation.locator) not in expected_citations:
-                return _failure("knowledge_unknown_citation", EvalSeverity.VETO)
-            if (citation.publisher, citation.title, citation.url) != (
-                source.publisher,
-                source.title,
-                source.url,
-            ):
-                return _failure("knowledge_provider_invented_citation", EvalSeverity.VETO)
-            observed_citations.add((citation.source_id, citation.locator))
-        if observed_citations != expected_citations:
-            return _failure("knowledge_citation_coverage_mismatch", EvalSeverity.VETO)
         effective_query = evidence.query
+        recommendation = evidence.recommendation
+        if evidence.query.purpose == KnowledgeRetrievalPurpose.LEARNER_GUIDANCE:
+            if (
+                recommendation.decision_type != "practice"
+                or recommendation.target_skill is None
+                or recommendation.learner_target_band is None
+                or evidence.query.criterion != recommendation.target_skill
+                or evidence.query.target_band != recommendation.learner_target_band
+            ):
+                return _failure("knowledge_recommendation_context_mismatch", EvalSeverity.VETO)
+            expected_citations = {
+                (reference.source_id, reference.locator)
+                for knowledge_id in knowledge_ids
+                for reference in units[knowledge_id].source_refs
+            }
+            observed_citations = set()
+            for citation in evidence.citations:
+                source = KNOWLEDGE_SOURCES.get(citation.source_id)
+                if source is None or (citation.source_id, citation.locator) not in expected_citations:
+                    return _failure("knowledge_unknown_citation", EvalSeverity.VETO)
+                if (citation.publisher, citation.title, citation.url) != (
+                    source.publisher,
+                    source.title,
+                    source.url,
+                ):
+                    return _failure("knowledge_provider_invented_citation", EvalSeverity.VETO)
+                observed_citations.add((citation.source_id, citation.locator))
+            if observed_citations != expected_citations:
+                return _failure("knowledge_citation_coverage_mismatch", EvalSeverity.VETO)
+        elif evidence.query.purpose == KnowledgeRetrievalPurpose.PRACTICE_GENERATION:
+            if (
+                recommendation.decision_type != "practice"
+                or recommendation.target_skill is None
+                or recommendation.learner_target_band is None
+                or evidence.query.criterion != recommendation.target_skill
+                or evidence.query.target_band != recommendation.learner_target_band
+            ):
+                return _failure("knowledge_recommendation_context_mismatch", EvalSeverity.VETO)
+            retrieved_ids = {
+                unit.knowledge_id
+                for unit in retrieve_knowledge(effective_query).units
+            }
+            if not set(knowledge_ids).issubset(retrieved_ids):
+                return _failure("knowledge_practice_scope_mismatch", EvalSeverity.MAJOR)
+        else:
+            return _failure("knowledge_recommendation_context_mismatch", EvalSeverity.VETO)
 
     if effective_query is not None:
         first = tuple(unit.knowledge_id for unit in retrieve_knowledge(effective_query).units)

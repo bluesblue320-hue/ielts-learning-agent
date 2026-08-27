@@ -71,6 +71,7 @@ def evaluate_trajectory(response: AgentTurnResponse) -> EvalFinding:
     has_submission_context = response.initial_observation.kind == ObservationKind.NEEDS_COMPLETION
     generated_this_turn = False
     completion_seen = False
+    submission_seen = False
     terminal_outcome: AgentOutcome | None = None
 
     for step in steps[1:]:
@@ -110,6 +111,11 @@ def evaluate_trajectory(response: AgentTurnResponse) -> EvalFinding:
                 AgentOutcome.SUBMISSION_SUBMITTED,
                 AgentOutcome.SUBMISSION_REUSED,
             }:
+                if submission_seen:
+                    return _failure(
+                        "trajectory_duplicate_submission", EvalSeverity.VETO
+                    )
+                submission_seen = True
                 has_submission_context = True
             if step.outcome in {
                 AgentOutcome.SUBMISSION_CONFLICT,

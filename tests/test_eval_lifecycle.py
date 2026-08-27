@@ -1,14 +1,26 @@
 """P10-09 deterministic lifecycle-evidence checks over frozen boundaries."""
 
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 
 import pytest
 
+from app.eval.knowledge import GroundingEvidence, evaluate_knowledge_grounding
 from app.eval.lifecycle import (
     LifecycleEvidence,
     OrderedLifecycleRecord,
     evaluate_lifecycle,
 )
+from app.knowledge.sources import KNOWLEDGE_SOURCES
+from app.knowledge.writing_task2_v1 import WRITING_TASK2_KNOWLEDGE_UNITS
+from app.schemas.common import BandScore
+from app.schemas.knowledge import (
+    GroundedCitation,
+    GroundedRecommendationSummary,
+    KnowledgeRetrievalPurpose,
+    KnowledgeRetrievalQuery,
+)
+from app.schemas.writing import WritingCriterion
 
 
 def _evidence(**overrides: object) -> LifecycleEvidence:
@@ -81,3 +93,68 @@ def test_lifecycle_keeps_purpose_specific_chronologies_separate() -> None:
     )
 
     assert finding.failure_codes == ("state_chronology_mismatch",)
+
+
+def _grounding_evidence(unit, *, knowledge_ids=None) -> GroundingEvidence:
+    citations = tuple(
+        GroundedCitation(
+            source_id=ref.source_id,
+            publisher=KNOWLEDGE_SOURCES[ref.source_id].publisher,
+            title=KNOWLEDGE_SOURCES[ref.source_id].title,
+            url=KNOWLEDGE_SOURCES[ref.source_id].url,
+            locator=ref.locator,
+            page=ref.page,
+            section=ref.section,
+        )
+        for ref in unit.source_refs
+    )
+    return GroundingEvidence(
+        learner_id=1,
+        current_learning_update_id=21,
+        recommendation_learner_id=1,
+        recommendation_learning_update_id=21,
+        recommendation=GroundedRecommendationSummary(
+            id=30,
+            decision_type="practice",
+            target_skill="task_response",
+            learner_target_band=BandScore(value=Decimal("6.5")),
+            reason_codes=("largest_target_gap",),
+        ),
+        query=KnowledgeRetrievalQuery(
+            purpose=KnowledgeRetrievalPurpose.LEARNER_GUIDANCE,
+            criterion=WritingCriterion.TASK_RESPONSE,
+            current_band=BandScore(value=Decimal("6.0")),
+            target_band=BandScore(value=Decimal("6.5")),
+            task_type="opinion",
+        ),
+        knowledge_ids=knowledge_ids if knowledge_ids is not None else (unit.knowledge_id,),
+        citations=citations,
+    )
+
+
+def test_lifecycle_with_passing_grounding_evidence_passes() -> None:
+    unit = WRITING_TASK2_KNOWLEDGE_UNITS[0]
+    evidence = _evidence(
+        knowledge_ids=(unit.knowledge_id,),
+        grounding_evidence=_grounding_evidence(unit),
+    )
+
+    assert evaluate_lifecycle(evidence).status.value == "pass"
+
+
+def test_lifecycle_propagates_grounding_failure_preserving_boundary() -> None:
+    unit = WRITING_TASK2_KNOWLEDGE_UNITS[0]
+    other = WRITING_TASK2_KNOWLEDGE_UNITS[1]
+    evidence = _evidence(
+        knowledge_ids=(unit.knowledge_id,),
+        grounding_evidence=_grounding_evidence(
+            other, knowledge_ids=(other.knowledge_id,)
+        ),
+    )
+
+    finding = evaluate_lifecycle(evidence)
+
+    assert finding.status.value == "fail"
+    assert finding.severity.value == "veto"
+    assert finding.failure_codes == ("knowledge_evidence_identity_mismatch",)
+    assert finding.first_failing_boundary.value == "knowledge"

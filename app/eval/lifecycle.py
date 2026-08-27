@@ -4,6 +4,7 @@ from datetime import datetime
 
 from pydantic import Field, model_validator
 
+from app.eval.knowledge import GroundingEvidence, evaluate_knowledge_grounding
 from app.eval.schemas import (
     EvalFinding,
     EvalSchema,
@@ -39,6 +40,7 @@ class LifecycleEvidence(EvalSchema):
     practice_learner_id: int | None = Field(default=None, gt=0)
     practice_recommendation_id: int | None = Field(default=None, gt=0)
     knowledge_ids: tuple[str, ...] = ()
+    grounding_evidence: GroundingEvidence | None = None
     replay_duplicate_effects: int = Field(default=0, ge=0)
     read_counts_before: tuple[int, int, int] = (0, 0, 0)
     read_counts_after: tuple[int, int, int] = (0, 0, 0)
@@ -94,6 +96,19 @@ def evaluate_lifecycle(evidence: LifecycleEvidence) -> EvalFinding:
         or evidence.practice_recommendation_id != evidence.recommendation_id
     ):
         return _failure(FailureBoundary.PRACTICE_GENERATION, "practice_ownership_mismatch", EvalSeverity.VETO)
+    if evidence.grounding_evidence is not None:
+        grounding = evaluate_knowledge_grounding(
+            knowledge_ids=evidence.knowledge_ids,
+            evidence=evidence.grounding_evidence,
+        )
+        if grounding.status == EvalStatus.FAIL:
+            return EvalFinding(
+                evaluator=EvaluatorId.LIFECYCLE,
+                status=EvalStatus.FAIL,
+                severity=grounding.severity,
+                first_failing_boundary=grounding.first_failing_boundary,
+                failure_codes=grounding.failure_codes,
+            )
     if evidence.read_counts_before != evidence.read_counts_after:
         return _failure(FailureBoundary.INFRASTRUCTURE, "deterministic_read_mutated_state", EvalSeverity.VETO)
     return EvalFinding(

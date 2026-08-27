@@ -144,6 +144,33 @@ def test_valid_replay_and_reuse_trajectory_remains_allowed() -> None:
     assert evaluate_trajectory(response).status.value == "pass"
 
 
+def test_single_submission_reuse_remains_allowed() -> None:
+    response = _response(
+        _observe(),
+        AgentStep(tool=AgentTool.SUBMIT_PRACTICE, outcome=AgentOutcome.SUBMISSION_REUSED),
+        initial=ObservationKind.NEEDS_PRACTICE_SUBMISSION,
+        final=ObservationKind.NEEDS_PRACTICE_SUBMISSION,
+        stop=AgentStopReason.PRACTICE_READY,
+    )
+
+    assert evaluate_trajectory(response).status.value == "pass"
+
+
+def test_duplicate_mutating_submission_is_rejected() -> None:
+    response = _response(
+        _observe(),
+        AgentStep(tool=AgentTool.SUBMIT_PRACTICE, outcome=AgentOutcome.SUBMISSION_SUBMITTED),
+        AgentStep(tool=AgentTool.SUBMIT_PRACTICE, outcome=AgentOutcome.SUBMISSION_REUSED),
+        initial=ObservationKind.NEEDS_PRACTICE_SUBMISSION,
+        stop=AgentStopReason.NEEDS_PRACTICE_SUBMISSION,
+    )
+
+    finding = evaluate_trajectory(response)
+
+    assert finding.severity.value == "veto"
+    assert finding.failure_codes == ("trajectory_duplicate_submission",)
+
+
 def test_stale_generation_requires_bounded_stop() -> None:
     response = _response(
         _observe(),

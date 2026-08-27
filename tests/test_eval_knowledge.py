@@ -3,6 +3,7 @@
 from decimal import Decimal
 
 from app.eval.knowledge import GroundingEvidence, evaluate_knowledge_grounding
+from app.knowledge.retriever import retrieve_knowledge
 from app.knowledge.sources import KNOWLEDGE_SOURCES
 from app.knowledge.writing_task2_v1 import WRITING_TASK2_KNOWLEDGE_UNITS
 from app.schemas.common import BandScore
@@ -105,6 +106,76 @@ def test_recommendation_context_mismatch_fails_closed() -> None:
 
     finding = evaluate_knowledge_grounding(
         knowledge_ids=mismatched.knowledge_ids, evidence=mismatched
+    )
+
+    assert finding.failure_codes == ("knowledge_recommendation_context_mismatch",)
+
+
+def _practice_query() -> KnowledgeRetrievalQuery:
+    return KnowledgeRetrievalQuery(
+        purpose=KnowledgeRetrievalPurpose.PRACTICE_GENERATION,
+        criterion=WritingCriterion.TASK_RESPONSE,
+        current_band=BandScore(value=Decimal("6.0")),
+        target_band=BandScore(value=Decimal("6.5")),
+        task_type="opinion",
+    )
+
+
+def _practice_evidence(*, target_skill: str = "task_response") -> GroundingEvidence:
+    unit = WRITING_TASK2_KNOWLEDGE_UNITS[0]
+    return GroundingEvidence(
+        learner_id=11,
+        current_learning_update_id=22,
+        recommendation_learner_id=11,
+        recommendation_learning_update_id=22,
+        recommendation=GroundedRecommendationSummary(
+            id=33,
+            decision_type="practice",
+            target_skill=target_skill,
+            learner_target_band=BandScore(value=Decimal("6.5")),
+            reason_codes=("largest_target_gap",),
+        ),
+        query=_practice_query(),
+        knowledge_ids=(unit.knowledge_id,),
+    )
+
+
+def test_practice_generation_grounding_within_retrieval_scope_passes() -> None:
+    unit = WRITING_TASK2_KNOWLEDGE_UNITS[0]
+    retrieved = {u.knowledge_id for u in retrieve_knowledge(_practice_query()).units}
+    assert unit.knowledge_id in retrieved
+
+    finding = evaluate_knowledge_grounding(
+        knowledge_ids=(unit.knowledge_id,),
+        evidence=_practice_evidence(),
+    )
+
+    assert finding.status.value == "pass"
+
+
+def test_practice_generation_grounding_out_of_scope_fails() -> None:
+    retrieved = {u.knowledge_id for u in retrieve_knowledge(_practice_query()).units}
+    out_of_scope = next(
+        unit.knowledge_id
+        for unit in WRITING_TASK2_KNOWLEDGE_UNITS
+        if unit.knowledge_id not in retrieved
+    )
+
+    finding = evaluate_knowledge_grounding(
+        knowledge_ids=(out_of_scope,),
+        evidence=_practice_evidence().model_copy(update={"knowledge_ids": (out_of_scope,)}),
+    )
+
+    assert finding.severity.value == "major"
+    assert finding.failure_codes == ("knowledge_practice_scope_mismatch",)
+
+
+def test_practice_generation_grounding_recommendation_mismatch_fails() -> None:
+    evidence = _practice_evidence(target_skill="lexical_resource")
+
+    finding = evaluate_knowledge_grounding(
+        knowledge_ids=evidence.knowledge_ids,
+        evidence=evidence,
     )
 
     assert finding.failure_codes == ("knowledge_recommendation_context_mismatch",)
