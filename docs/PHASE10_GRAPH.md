@@ -35,7 +35,7 @@ External Design Review approval authorizes P10-03.
 - P10-03: COMPLETE
 - P10-04: COMPLETE
 - P10-05: COMPLETE
-- P10-06: FIXING_REQUIRED
+- P10-06: COMPLETE
 - P10-07: FIXING_REQUIRED
 - P10-08: COMPLETE
 - P10-09: BLOCKED_BY_BATCH_A_REPAIR
@@ -448,7 +448,7 @@ START
   -> P10-03 Canonical Eval Case Schemas [COMPLETE]
   -> P10-04 Regression and Calibration Corpora v1 [COMPLETE]
   -> P10-05 Deterministic Outcome Evaluator [COMPLETE]
-  -> P10-06 Trajectory Evaluator [FIXING_REQUIRED]
+  -> P10-06 Trajectory Evaluator [COMPLETE]
   -> P10-07 Knowledge Grounding Evaluator [FIXING_REQUIRED]
   -> P10-08 Authority / Fail-Closed Evaluator [COMPLETE]
   -> P10-09 Learning Lifecycle Evaluator [BLOCKED_BY_BATCH_A_REPAIR]
@@ -769,7 +769,7 @@ Structured Agent response and state evidence is authoritative. Natural-language
 claim checking is secondary and applies only where free-form output actually
 exists; it is never the primary correctness authority.
 
-## P10-06 — Trajectory Evaluator — FIXING_REQUIRED
+## P10-06 — Trajectory Evaluator — COMPLETE
 
 ### Objective
 
