@@ -149,9 +149,10 @@ P10-07 = COMPLETE
 P10-08 = COMPLETE
 P10-09 = COMPLETE
 Phase 10 Milestone Review = APPROVED
-P10-10 = READY
-P10-11 onward = BLOCKED_BY_PREDECESSOR
-Phase 10 implementation = BATCH_B_AUTHORIZED
+P10-10 = COMPLETE
+P10-11 = READY
+P10-12 onward = BLOCKED_BY_PREDECESSOR
+Phase 10 implementation = BATCH_B_P10-11_READY
 ```
 
 Phase 6 design (P6-01 audit, P6-02 contract freeze, versions
