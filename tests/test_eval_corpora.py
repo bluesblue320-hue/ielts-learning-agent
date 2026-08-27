@@ -7,6 +7,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.eval.corpora import (
+    RegressionCorpus,
     CalibrationReferenceDataStatus,
     load_calibration_corpus,
     load_regression_corpus,
@@ -24,7 +25,7 @@ def test_regression_corpus_is_versioned_unique_and_resolves_fixtures() -> None:
 
     assert corpus.corpus_version == "writing-eval-regression-corpus-v1"
     assert len(corpus.cases) == len({case.case_id for case in corpus.cases})
-    assert len(corpus.cases) == 10
+    assert len(corpus.cases) == 11
     assert {case.category.value for case in corpus.cases} >= {
         "provider_contract",
         "persistence",
@@ -37,7 +38,28 @@ def test_regression_corpus_is_versioned_unique_and_resolves_fixtures() -> None:
     }
     planner_tie = next(case for case in corpus.cases if case.case_id == "memory-planner-exact-tie")
     assert planner_tie.expected_structured_outcomes["tie_break_order"] == "persistent_gap_trend_recency_priority"
+    lifecycle_case = next(
+        case for case in corpus.cases if case.case_id == "multi-episode-authoritative-learning-loop"
+    )
+    lifecycle = lifecycle_case.multi_episode_lifecycle
+    assert lifecycle is not None
+    assert "lifecycle" in lifecycle_case.applicable_evaluators
+    assert len(lifecycle.episodes) == 2
+    assert {episode.learner_id for episode in lifecycle.episodes} == {"eval-lifecycle-learner-001"}
+    assert all(episode.replay_duplicate_effects == 0 for episode in lifecycle.episodes)
+    assert lifecycle.state_chronology == "writing_attempt_created_at_id_asc"
+    assert lifecycle.memory_chronology == "learning_update_created_at_id_desc"
+    assert lifecycle.current_observation_chronology == "learning_update_id_desc"
 
+
+def test_regression_corpus_requires_structured_multi_episode_lifecycle_evidence() -> None:
+    data = json.loads((FIXTURE_ROOT / "regression_corpus.json").read_text(encoding="utf-8"))
+    data["cases"] = [
+        case for case in data["cases"] if case["case_id"] != "multi-episode-authoritative-learning-loop"
+    ]
+
+    with pytest.raises(ValidationError, match="structured multi-episode lifecycle case"):
+        RegressionCorpus.model_validate(data)
 
 def test_regression_corpus_rejects_unknown_fixture_reference(tmp_path: Path) -> None:
     data = json.loads((FIXTURE_ROOT / "regression_corpus.json").read_text(encoding="utf-8"))

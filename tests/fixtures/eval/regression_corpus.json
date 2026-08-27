@@ -103,7 +103,32 @@
       "expected_trajectory_constraints": {"structured_trace_only": true},
       "applicable_evaluators": ["trajectory", "outcome"],
       "severity_expectations": [{"boundary": "agent_trajectory", "severity": "major"}],
-      "provenance": {"source": "P10-01 audit", "locator": "tests/test_agent_executor.py::test_turn_never_exceeds_frozen_mutation_provider_or_observation_bounds"}
-    }
+      "provenance": {"source": "P10-01 audit", "locator": "tests/test_agent_executor.py::test_turn_never_exceeds_frozen_mutation_provider_or_observation_bounds"}    },
+    {
+      "case_id": "multi-episode-authoritative-learning-loop",
+      "description": "Two accepted Writing episodes rebuild canonical state while Memory, Planner, recommendation, and replay remain learner-owned.",
+      "category": "lifecycle",
+      "input": {"learner_id": "eval-lifecycle-learner-001", "episode_arrival_order": "first_then_late_older"},
+      "expected_structured_outcomes": {"accepted_updates": 2, "duplicate_effects": 0, "planner_projection": "authoritative_current_projection"},
+      "expected_lifecycle_evidence": [
+        {"kind": "learner", "locator": "eval-lifecycle-learner-001"},
+        {"kind": "chronology", "locator": "writing_attempt_created_at_id_asc"},
+        {"kind": "chronology", "locator": "learning_update_created_at_id_desc"},
+        {"kind": "chronology", "locator": "learning_update_id_desc"}
+      ],
+      "multi_episode_lifecycle": {
+        "state_chronology": "writing_attempt_created_at_id_asc",
+        "memory_chronology": "learning_update_created_at_id_desc",
+        "current_observation_chronology": "learning_update_id_desc",
+        "planner_projection": "authoritative_current_projection",
+        "episodes": [
+          {"episode_id": "eval-lifecycle-episode-1", "learner_id": "eval-lifecycle-learner-001", "writing_evaluation": {"kind": "writing_evaluation", "locator": "episode-1"}, "learning_update": {"kind": "learning_update", "locator": "episode-1"}, "state_projection": {"kind": "learner_state", "locator": "after-episode-1"}, "memory_projection": {"kind": "memory", "locator": "after-episode-1"}, "recommendation": {"kind": "recommendation", "locator": "after-episode-1"}, "replay_duplicate_effects": 0},
+          {"episode_id": "eval-lifecycle-episode-2", "learner_id": "eval-lifecycle-learner-001", "writing_evaluation": {"kind": "writing_evaluation", "locator": "episode-2"}, "learning_update": {"kind": "learning_update", "locator": "episode-2"}, "state_projection": {"kind": "learner_state", "locator": "after-episode-2"}, "memory_projection": {"kind": "memory", "locator": "after-episode-2"}, "recommendation": {"kind": "recommendation", "locator": "after-episode-2"}, "replay_duplicate_effects": 0}
+        ]
+      },
+      "applicable_evaluators": ["outcome", "lifecycle", "authority"],
+      "severity_expectations": [{"boundary": "learning_update", "severity": "veto"}],
+      "provenance": {"source": "P10-01 audit", "locator": "tests/test_learning_application.py::test_idempotent_replay_returns_existing_without_duplicate_effects"}
+      }
   ]
 }

@@ -30,6 +30,8 @@ class RegressionCorpus(EvalSchema):
     @model_validator(mode="after")
     def has_unique_case_ids(self) -> "RegressionCorpus":
         _require_unique_case_ids(self.cases)
+        if not any(case.multi_episode_lifecycle is not None for case in self.cases):
+            raise ValueError("Regression corpus requires one structured multi-episode lifecycle case.")
         return self
 
 
@@ -65,9 +67,15 @@ def load_regression_corpus(path: Path, *, fixture_directory: Path) -> Regression
     """Load a strict corpus and prove every declared provider fixture resolves."""
 
     corpus = RegressionCorpus.model_validate(_read_json(path))
+    repository_root = fixture_directory.parents[2]
     for case in corpus.cases:
         if case.provider_fixture is not None and not (fixture_directory / case.provider_fixture).is_file():
             raise ValueError(f"Regression case {case.case_id} references unknown fixture {case.provider_fixture}.")
+        if case.provenance is None:
+            raise ValueError(f"Regression case {case.case_id} is missing provenance.")
+        locator_path = case.provenance.locator.split("::", maxsplit=1)[0].replace("/", str(Path("/"))[0])
+        if not (repository_root / locator_path).is_file():
+            raise ValueError(f"Regression case {case.case_id} references unknown provenance locator {case.provenance.locator}.")
     return corpus
 
 

@@ -144,6 +144,38 @@ class EvidenceReference(EvalSchema):
     locator: NonBlank
 
 
+class LifecycleEpisodeExpectation(EvalSchema):
+    """Stable evidence for one accepted durable Writing learning episode."""
+
+    episode_id: CaseId
+    learner_id: NonBlank
+    writing_evaluation: EvidenceReference
+    learning_update: EvidenceReference
+    state_projection: EvidenceReference
+    memory_projection: EvidenceReference
+    recommendation: EvidenceReference
+    replay_duplicate_effects: Literal[0] = 0
+
+
+class MultiEpisodeLifecycleExpectation(EvalSchema):
+    """Required structured evidence for a canonical lifecycle regression case."""
+
+    state_chronology: Literal["writing_attempt_created_at_id_asc"]
+    memory_chronology: Literal["learning_update_created_at_id_desc"]
+    current_observation_chronology: Literal["learning_update_id_desc"]
+    planner_projection: Literal["authoritative_current_projection"]
+    episodes: tuple[LifecycleEpisodeExpectation, ...] = Field(min_length=2)
+
+    @model_validator(mode="after")
+    def episodes_are_distinct_for_one_learner(self) -> "MultiEpisodeLifecycleExpectation":
+        episode_ids = [episode.episode_id for episode in self.episodes]
+        learner_ids = {episode.learner_id for episode in self.episodes}
+        if len(episode_ids) != len(set(episode_ids)):
+            raise ValueError("Multi-episode lifecycle evidence contains duplicate episode IDs.")
+        if len(learner_ids) != 1:
+            raise ValueError("Multi-episode lifecycle evidence must belong to one learner.")
+        return self
+
 class SeverityExpectation(EvalSchema):
     boundary: FailureBoundary
     severity: EvalSeverity
@@ -169,6 +201,7 @@ class RegressionCase(EvalSchema):
     captured_fixture_reference: NonBlank | None = None
     expected_structured_outcomes: JsonObject
     expected_lifecycle_evidence: tuple[EvidenceReference, ...] = ()
+    multi_episode_lifecycle: MultiEpisodeLifecycleExpectation | None = None
     expected_trajectory_constraints: JsonObject = Field(default_factory=dict)
     applicable_evaluators: tuple[EvaluatorId, ...] = Field(min_length=1)
     severity_expectations: tuple[SeverityExpectation, ...] = Field(min_length=1)
@@ -180,6 +213,8 @@ class RegressionCase(EvalSchema):
             raise ValueError(
                 "A regression case may use a provider fixture or a captured fixture, not both."
             )
+        if self.multi_episode_lifecycle is not None and EvaluatorId.LIFECYCLE not in self.applicable_evaluators:
+            raise ValueError("Multi-episode lifecycle evidence requires the lifecycle evaluator.")
         return self
 
 
@@ -363,6 +398,8 @@ __all__ = [
     "EvaluatorId",
     "EvidenceReference",
     "FailureBoundary",
+    "LifecycleEpisodeExpectation",
+    "MultiEpisodeLifecycleExpectation",
     "ProviderCapture",
     "ProvenanceReference",
     "RawReferenceRating",

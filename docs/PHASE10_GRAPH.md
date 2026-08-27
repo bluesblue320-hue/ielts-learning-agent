@@ -33,7 +33,7 @@ External Design Review approval authorizes P10-03.
 - P10-02: COMPLETE
 - Phase 10 External Design Review: APPROVED
 - P10-03: COMPLETE
-- P10-04: FIXING_REQUIRED
+- P10-04: COMPLETE
 - P10-05: COMPLETE
 - P10-06: FIXING_REQUIRED
 - P10-07: FIXING_REQUIRED
@@ -446,7 +446,7 @@ START
   -> P10-02 Evaluation & Calibration Contract Freeze [COMPLETE]
   -> Phase 10 External Design Review [APPROVED]
   -> P10-03 Canonical Eval Case Schemas [COMPLETE]
-  -> P10-04 Regression and Calibration Corpora v1 [FIXING_REQUIRED]
+  -> P10-04 Regression and Calibration Corpora v1 [COMPLETE]
   -> P10-05 Deterministic Outcome Evaluator [COMPLETE]
   -> P10-06 Trajectory Evaluator [FIXING_REQUIRED]
   -> P10-07 Knowledge Grounding Evaluator [FIXING_REQUIRED]
@@ -703,7 +703,7 @@ and suite results.
 
 Prove malformed, duplicate, unsupported-version, unknown-evaluator, and ambiguous required-field cases fail closed.
 
-## P10-04 — Regression and Calibration Corpora v1 — FIXING_REQUIRED
+## P10-04 — Regression and Calibration Corpora v1 — COMPLETE
 
 ### Objective
 
