@@ -6,6 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.eval.schemas import (
+    AdjudicatedReferenceLabel,
     AmbiguityState,
     CalibrationCase,
     EvalCategory,
@@ -87,6 +88,26 @@ def test_regression_case_rejects_extra_fields_and_two_fixture_kinds() -> None:
     with pytest.raises(ValidationError, match="not both"):
         _regression_case(captured_fixture_reference="capture-1")
 
+
+def test_reference_labels_serialize_frozen_version_and_preserve_raw_identity() -> None:
+    raw = _raw_rating()
+    adjudicated = AdjudicatedReferenceLabel(
+        criteria=raw.criteria,
+        overall_band=raw.overall_band,
+        provenance=raw.provenance,
+    )
+
+    assert raw.schema_version == "writing-score-reference-label-v1"
+    assert raw.model_dump()["schema_version"] == "writing-score-reference-label-v1"
+    assert raw.rater_id == "rater-a"
+    assert raw.provenance == _provenance()
+    assert adjudicated.schema_version == "writing-score-reference-label-v1"
+    assert adjudicated.model_dump(exclude={"schema_version"}) != raw.model_dump(exclude={"schema_version"})
+
+    with pytest.raises(ValidationError, match="schema_version"):
+        RawReferenceRating.model_validate({**raw.model_dump(), "schema_version": "unsupported"})
+    with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
+        RawReferenceRating.model_validate({**raw.model_dump(), "unexpected": "no"})
 
 def test_calibration_case_preserves_raw_ratings_and_validates_half_bands() -> None:
     case = CalibrationCase.model_validate(

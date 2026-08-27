@@ -2,7 +2,7 @@
 
 ## Document status
 
-**DESIGN GRAPH EXECUTING — Formal Phase 10 External Design Review APPROVED; P10-03 through P10-08 COMPLETE, P10-09 READY. Batch A (P10-03 through P10-09) is authorized; P10-10 remains blocked by Milestone Review.**
+**DESIGN GRAPH EXECUTING — Batch A Review is FIXING_REQUIRED: P10-03, P10-04, P10-06, and P10-07 require repair; P10-09 is blocked by the repair cycle. P10-10 remains blocked by Milestone Review.**
 
 Phase 9 is COMPLETE and merged to `master` through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`). Phase 10 starts from the
@@ -33,13 +33,13 @@ External Design Review approval authorizes P10-03.
 - P10-02: COMPLETE
 - Phase 10 External Design Review: APPROVED
 - P10-03: COMPLETE
-- P10-04: COMPLETE
+- P10-04: FIXING_REQUIRED
 - P10-05: COMPLETE
-- P10-06: COMPLETE
-- P10-07: COMPLETE
+- P10-06: FIXING_REQUIRED
+- P10-07: FIXING_REQUIRED
 - P10-08: COMPLETE
-- P10-09: READY
-- Phase 10 Milestone Review: BLOCKED_BY_P10-09
+- P10-09: BLOCKED_BY_BATCH_A_REPAIR
+- Phase 10 Milestone Review: NOT_READY
 - P10-10: BLOCKED_BY_MILESTONE_REVIEW
 - P10-11 onward: BLOCKED_BY_MILESTONE_REVIEW
 - Phase 10 implementation: AUTHORIZED_FOR_BATCH_A_ONLY
@@ -446,12 +446,12 @@ START
   -> P10-02 Evaluation & Calibration Contract Freeze [COMPLETE]
   -> Phase 10 External Design Review [APPROVED]
   -> P10-03 Canonical Eval Case Schemas [COMPLETE]
-  -> P10-04 Regression and Calibration Corpora v1 [COMPLETE]
+  -> P10-04 Regression and Calibration Corpora v1 [FIXING_REQUIRED]
   -> P10-05 Deterministic Outcome Evaluator [COMPLETE]
-  -> P10-06 Trajectory Evaluator [COMPLETE]
-  -> P10-07 Knowledge Grounding Evaluator [COMPLETE]
+  -> P10-06 Trajectory Evaluator [FIXING_REQUIRED]
+  -> P10-07 Knowledge Grounding Evaluator [FIXING_REQUIRED]
   -> P10-08 Authority / Fail-Closed Evaluator [COMPLETE]
-  -> P10-09 Learning Lifecycle Evaluator [READY]
+  -> P10-09 Learning Lifecycle Evaluator [BLOCKED_BY_BATCH_A_REPAIR]
   -> Phase 10 Milestone Review [BLOCKED_BY_P10-09]
   -> P10-10 Writing Score Calibration Analysis [BLOCKED_BY_MILESTONE_REVIEW]
   -> P10-11 Failure Taxonomy & Attribution
@@ -703,7 +703,7 @@ and suite results.
 
 Prove malformed, duplicate, unsupported-version, unknown-evaluator, and ambiguous required-field cases fail closed.
 
-## P10-04 — Regression and Calibration Corpora v1 — COMPLETE
+## P10-04 — Regression and Calibration Corpora v1 — FIXING_REQUIRED
 
 ### Objective
 
@@ -769,7 +769,7 @@ Structured Agent response and state evidence is authoritative. Natural-language
 claim checking is secondary and applies only where free-form output actually
 exists; it is never the primary correctness authority.
 
-## P10-06 — Trajectory Evaluator — COMPLETE
+## P10-06 — Trajectory Evaluator — FIXING_REQUIRED
 
 ### Objective
 
@@ -784,7 +784,7 @@ Verify allowed lifecycle execution from observable application evidence.
 
 If required evidence is not observable, add the smallest test-only or non-semantic instrumentation approved by P10-02. Do not add a production behavioral dependency merely for eval convenience.
 
-## P10-07 — Knowledge Grounding Evaluator — COMPLETE
+## P10-07 — Knowledge Grounding Evaluator — FIXING_REQUIRED
 
 ### Objective
 
@@ -823,7 +823,7 @@ At minimum include cases for:
 
 Veto-class authority violations must fail the suite regardless of lower-severity passes elsewhere.
 
-## P10-09 — Learning Lifecycle Evaluator — READY
+## P10-09 — Learning Lifecycle Evaluator — BLOCKED_BY_BATCH_A_REPAIR
 
 ### Objective
 
@@ -1226,10 +1226,10 @@ At any time:
 - record evidence before moving forward;
 - do not start Phase 11 automatically.
 
-Current authorized node after Formal Phase 10 External Design Review approval:
+Current authorized repair sequence after Batch A Review FIXING_REQUIRED:
 
 ```text
-P10-03 Canonical Eval Case Schemas
+P10-03 Canonical Eval Case Schemas [COMPLETE]
 ```
 
 Batch A authorizes only serial execution of P10-03 through P10-09. Do not begin

@@ -186,6 +186,9 @@ class RegressionCase(EvalSchema):
 class RawReferenceRating(EvalSchema):
     """One preserved independent human/reference rating; never overwritten."""
 
+    schema_version: Literal["writing-score-reference-label-v1"] = (
+        REFERENCE_LABEL_SCHEMA_VERSION
+    )
     rater_id: NonBlank
     criteria: CriterionBandScores
     overall_band: BandScore | None = None
@@ -196,6 +199,10 @@ class RawReferenceRating(EvalSchema):
 
 class AdjudicatedReferenceLabel(EvalSchema):
     """Separate resolution of disagreement; raw labels remain intact."""
+
+    schema_version: Literal["writing-score-reference-label-v1"] = (
+        REFERENCE_LABEL_SCHEMA_VERSION
+    )
 
     criteria: CriterionBandScores
     overall_band: BandScore | None = None
