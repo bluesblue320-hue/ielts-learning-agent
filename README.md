@@ -27,7 +27,7 @@ source/citation UX. The Phase 10 graph review, P10-01 audit/external review,
 and P10-02 frozen `writing-eval-calibration-v1` contract are complete. Formal
 Phase 10 External Design Review and Milestone Review are APPROVED. Batch A
 is COMPLETE; Batch B is authorized serially from P10-10 through P10-18, with
-P10-10 and P10-11 COMPLETE; P10-12 currently READY.
+P10-10 through P10-12 COMPLETE; P10-13 currently READY.
 
 Phase 7 connects authoritative current learner state and longitudinal Writing
 Memory to deterministic Planner v2. Memory is consulted only for exact
