@@ -151,10 +151,10 @@ P10-09 = COMPLETE
 Phase 10 Milestone Review = APPROVED
 P10-10 = COMPLETE
 P10-11 = COMPLETE
-P10-12 = FIXING
+P10-12 = COMPLETE
 P10-13 = COMPLETE
 P10-14 = COMPLETE
-P10-15 = BLOCKED_BY_P10-12_REPAIR
+P10-15 = COMPLETE
 P10-16 = COMPLETE
 P10-17 = COMPLETE
 P10-18 = RE_AUDIT_REQUIRED
@@ -206,8 +206,8 @@ COMPLETE and APPROVED. P10-02 is COMPLETE and freezes
 `writing-eval-calibration-v1`. The formal Phase 10 External Design Review is
 APPROVED. Batch A is COMPLETE, and the Phase 10 Milestone Review is APPROVED.
 External Implementation Review found the canonical regression execution path
-incomplete. P10-12 is FIXING, P10-15 is BLOCKED_BY_P10-12_REPAIR, and P10-18
-is RE_AUDIT_REQUIRED. Phase 10 remains in external-review repair and is not
+incomplete. The canonical runtime and CI gate repair make P10-12 and P10-15
+COMPLETE; P10-18 remains RE_AUDIT_REQUIRED pending full local and remote validation. Phase 10 remains in external-review repair and is not
 approved or complete.
 
 The development loop defines HOW each graph node should be executed.

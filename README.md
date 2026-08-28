@@ -27,8 +27,8 @@ source/citation UX. The Phase 10 graph review, P10-01 audit/external review,
 and P10-02 frozen `writing-eval-calibration-v1` contract are complete. Formal
 Phase 10 External Design Review and Milestone Review are APPROVED. Batch A
 is COMPLETE. External Implementation Review returned `FIXING_REQUIRED`: P10-12
-is `FIXING`, P10-15 is `BLOCKED_BY_P10-12_REPAIR`, and P10-18 is
-`RE_AUDIT_REQUIRED`. Phase 10 remains in external-review repair and is not
+and P10-15 are repaired and `COMPLETE`; P10-18 remains
+`RE_AUDIT_REQUIRED` pending full local and remote validation. Phase 10 remains in external-review repair and is not
 approved or complete.
 
 Phase 7 connects authoritative current learner state and longitudinal Writing

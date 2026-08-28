@@ -2,7 +2,7 @@
 
 ## Document status
 
-**EXTERNAL REVIEW REPAIR — P10-12 is FIXING, P10-15 is BLOCKED_BY_P10-12_REPAIR, and P10-18 is RE_AUDIT_REQUIRED. External Implementation Review is FIXING_REQUIRED.**
+**EXTERNAL REVIEW REPAIR — P10-12 and P10-15 are COMPLETE. P10-18 remains RE_AUDIT_REQUIRED pending full local and remote validation; External Implementation Review remains FIXING_REQUIRED.**
 
 Phase 9 is COMPLETE and merged to `master` through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`). Phase 10 starts from the
@@ -42,10 +42,10 @@ External Design Review approval authorizes P10-03.
 - Phase 10 Milestone Review: APPROVED
 - P10-10: COMPLETE
 - P10-11: COMPLETE
-- P10-12: FIXING
+- P10-12: COMPLETE
 - P10-13: COMPLETE
 - P10-14: COMPLETE
-- P10-15: BLOCKED_BY_P10-12_REPAIR
+- P10-15: COMPLETE
 - P10-16: COMPLETE
 - P10-17: COMPLETE
 - P10-18: RE_AUDIT_REQUIRED
@@ -1002,6 +1002,14 @@ isolated environment and applies the registered evaluator set.
 
 The harness may be CLI, pytest-integrated, or another minimal repository-native form. P10-01/P10-02 determine the simplest justified approach; do not add an Eval framework merely for branding.
 
+External-review repair adds `app/eval/regression_runtime.py` as the official
+provider-free path. It loads all 11 canonical cases, requires an exact executor
+registry match, isolates every database case with a validated test PostgreSQL
+reset, invokes real Phase 1–9 services and all applicable evaluators, and returns
+`RunnerSuiteResult` without operator-supplied executors. The stale-practice
+case now correctly uses Outcome plus Authority because the real Phase 8 stale
+fence raises `AgentStalePracticeError` before an `AgentTurnResponse` exists.
+
 ## P10-13 — Machine-Readable Eval Result & Human Report — COMPLETE
 
 ### Objective
@@ -1085,6 +1093,12 @@ Add the deterministic core suite to CI at a cost and runtime appropriate for the
 - existing Phase 1–9 test suite remains intact.
 
 If CI runtime is too high, split smoke and full deterministic suites only if the policy defines exactly what remains merge-gating.
+
+The repaired `python -m app.eval.gate` first runs bounded Eval framework
+self-tests and then executes the official canonical runtime. Only suite `PASS`
+returns zero; `FAIL`, `BLOCKED`, and `INVALID_CASE` return nonzero, while
+registry, database-isolation, migration, or unexpected runtime failures return
+an infrastructure error.
 
 ## P10-16 — Full Phase 1–10 Regression Validation — COMPLETE
 

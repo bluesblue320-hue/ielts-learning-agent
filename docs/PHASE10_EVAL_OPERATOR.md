@@ -45,9 +45,31 @@ Set the URL supplied by that profile, then run:
 python -m app.eval.gate
 ```
 
-The entrypoint removes any inherited `IELTS_DEEPSEEK_API_KEY` and executes only
-the bounded, provider-free deterministic targets. Run the complete backend
-suite separately when performing a full regression:
+The entrypoint removes any inherited `IELTS_DEEPSEEK_API_KEY`, runs the bounded
+Eval framework self-tests, and then executes the actual canonical path:
+
+```text
+writing-eval-regression-corpus-v1
+→ exact official executor registry
+→ real deterministic Phase 1–9 services
+→ applicable Eval evaluators
+→ EvalRunner / RunnerSuiteResult
+→ structured report / Markdown report
+→ gate exit
+```
+
+The current canonical corpus contains 11 cases. Missing, unknown, or duplicate
+executor registrations fail closed. Database-backed cases are reset before and
+after execution in the validated disposable PostgreSQL database. Only suite
+`pass` returns exit code 0; `fail`, `blocked`, and `invalid_case` return nonzero.
+
+For the narrower canonical execution and report without framework self-tests:
+
+```bash
+python -m app.eval.regression_runtime
+```
+
+Run the complete backend suite separately when performing a full regression:
 
 ```bash
 python -m pytest -q --strict-markers
