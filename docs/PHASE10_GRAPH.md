@@ -2,7 +2,7 @@
 
 ## Document status
 
-**BATCH B EXECUTING — P10-10 through P10-16 are COMPLETE. P10-17 is READY.**
+**BATCH B EXECUTING — P10-10 through P10-17 are COMPLETE. P10-18 is READY.**
 
 Phase 9 is COMPLETE and merged to `master` through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`). Phase 10 starts from the
@@ -47,9 +47,9 @@ External Design Review approval authorizes P10-03.
 - P10-14: COMPLETE
 - P10-15: COMPLETE
 - P10-16: COMPLETE
-- P10-17: READY
-- P10-18: BLOCKED_BY_PREDECESSOR
-- Phase 10 implementation: BATCH_B_P10-17_READY
+- P10-17: COMPLETE
+- P10-18: READY
+- Phase 10 implementation: BATCH_B_P10-18_READY
 
 ## Phase goal
 
@@ -467,8 +467,8 @@ START
   -> P10-14 Regression Corpus Promotion [COMPLETE]
   -> P10-15 CI-Compatible Deterministic Eval Gate [COMPLETE]
   -> P10-16 Full Phase 1-10 Regression Validation [COMPLETE]
-  -> P10-17 Documentation / Operator Workflow [READY]
-  -> P10-18 Internal Final Audit [INTERNAL_AUDIT_COMPLETE target]
+  -> P10-17 Documentation / Operator Workflow [COMPLETE]
+  -> P10-18 Internal Final Audit [READY]
   -> External Implementation Review
   -> PR / CI / merge authorization
   -> Phase 10 COMPLETE
@@ -1121,7 +1121,7 @@ Historical Phase 1–9 behavior must remain compatible unless P10-02 explicitly 
 - no migration, production scoring change, or runtime application contract
   change was introduced by Batch B validation.
 
-## P10-17 — Documentation / Operator Workflow — READY
+## P10-17 — Documentation / Operator Workflow — COMPLETE
 
 ### Objective
 
@@ -1142,7 +1142,9 @@ Make the Eval Harness usable by a future maintainer without tribal knowledge.
 
 Documentation must not overstate examiner validity, statistical confidence, or production capability.
 
-## P10-18 — Internal Final Audit
+The canonical operator workflow is docs/PHASE10_EVAL_OPERATOR.md.
+
+## P10-18 — Internal Final Audit — READY
 
 ### Objective
 

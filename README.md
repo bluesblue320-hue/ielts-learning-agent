@@ -27,7 +27,7 @@ source/citation UX. The Phase 10 graph review, P10-01 audit/external review,
 and P10-02 frozen `writing-eval-calibration-v1` contract are complete. Formal
 Phase 10 External Design Review and Milestone Review are APPROVED. Batch A
 is COMPLETE; Batch B is authorized serially from P10-10 through P10-18, with
-P10-10 through P10-16 COMPLETE; P10-17 currently READY.
+P10-10 through P10-17 COMPLETE; P10-18 currently READY.
 
 Phase 7 connects authoritative current learner state and longitudinal Writing
 Memory to deterministic Planner v2. Memory is consulted only for exact
@@ -185,12 +185,13 @@ Before changing the project, read these documents in order:
    has passed graph review; P10-01 and P10-02 are complete. Formal External
    Design Review and Milestone Review are APPROVED; Batch A is complete and
    Batch B is authorized serially from P10-10 through P10-18.
-3. [Phase 8 graph](docs/PHASE8_GRAPH.md) and frozen
+3. [Phase 10 Eval operator workflow](docs/PHASE10_EVAL_OPERATOR.md)
+4. [Phase 8 graph](docs/PHASE8_GRAPH.md) and frozen
    [Core Learning Agent policy](docs/CORE_LEARNING_AGENT_POLICY.md), with the
    Phase 7 [planner policy](docs/MEMORY_AWARE_PLANNING_POLICY.md) and Phase 6
    [Writing memory policy](docs/WRITING_MEMORY_POLICY.md)
-4. [Development loop](docs/DEVELOPMENT_LOOP.md)
-5. [Target architecture](docs/ARCHITECTURE.md)
+5. [Development loop](docs/DEVELOPMENT_LOOP.md)
+6. [Target architecture](docs/ARCHITECTURE.md)
 
 Phase 1 remains complete and preserved in
 [docs/PHASE1_GRAPH.md](docs/PHASE1_GRAPH.md). Phase 2 is complete and preserved
