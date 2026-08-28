@@ -2,7 +2,7 @@
 
 ## Document status
 
-**BATCH B EXECUTING — P10-10 through P10-12 are COMPLETE. P10-13 is READY.**
+**BATCH B EXECUTING — P10-10 through P10-13 are COMPLETE. P10-14 is READY.**
 
 Phase 9 is COMPLETE and merged to `master` through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`). Phase 10 starts from the
@@ -43,9 +43,10 @@ External Design Review approval authorizes P10-03.
 - P10-10: COMPLETE
 - P10-11: COMPLETE
 - P10-12: COMPLETE
-- P10-13: READY
-- P10-14 onward: BLOCKED_BY_PREDECESSOR
-- Phase 10 implementation: BATCH_B_P10-13_READY
+- P10-13: COMPLETE
+- P10-14: READY
+- P10-15 onward: BLOCKED_BY_PREDECESSOR
+- Phase 10 implementation: BATCH_B_P10-14_READY
 
 ## Phase goal
 
@@ -459,8 +460,8 @@ START
   -> P10-10 Writing Score Calibration Analysis [COMPLETE]
   -> P10-11 Failure Taxonomy & Attribution [COMPLETE]
   -> P10-12 Eval Runner / Harness [COMPLETE]
-  -> P10-13 Machine-Readable Eval Result & Human Report [READY]
-  -> P10-14 Regression Corpus Promotion
+  -> P10-13 Machine-Readable Eval Result & Human Report [COMPLETE]
+  -> P10-14 Regression Corpus Promotion [READY]
   -> P10-15 CI-Compatible Deterministic Eval Gate
   -> P10-16 Full Phase 1-10 Regression Validation
   -> P10-17 Documentation / Operator Workflow
@@ -996,7 +997,7 @@ isolated environment and applies the registered evaluator set.
 
 The harness may be CLI, pytest-integrated, or another minimal repository-native form. P10-01/P10-02 determine the simplest justified approach; do not add an Eval framework merely for branding.
 
-## P10-13 — Machine-Readable Eval Result & Human Report
+## P10-13 — Machine-Readable Eval Result & Human Report — COMPLETE
 
 ### Objective
 
