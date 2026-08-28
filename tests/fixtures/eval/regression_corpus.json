@@ -80,7 +80,7 @@
       "category": "practice",
       "input": {"practice_state": "stale_generated"},
       "expected_structured_outcomes": {"provider_calls": 0, "safe_conflict": true},
-      "applicable_evaluators": ["trajectory", "authority"],
+      "applicable_evaluators": ["outcome", "authority"],
       "severity_expectations": [{"boundary": "practice_submission", "severity": "major"}],
       "provenance": {"source": "P10-01 audit", "locator": "tests/test_agent_api.py::test_agent_stale_generated_first_submission_is_safe_conflict"}
     },
