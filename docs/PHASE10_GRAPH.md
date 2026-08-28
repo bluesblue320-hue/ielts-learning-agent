@@ -2,7 +2,7 @@
 
 ## Document status
 
-**BATCH B EXECUTING — P10-10 is COMPLETE with zero eligible canonical calibration samples reported truthfully as insufficient reference data. P10-11 is READY.**
+**BATCH B EXECUTING — P10-10 and P10-11 are COMPLETE. P10-12 is READY.**
 
 Phase 9 is COMPLETE and merged to `master` through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`). Phase 10 starts from the
@@ -41,9 +41,10 @@ External Design Review approval authorizes P10-03.
 - P10-09: COMPLETE
 - Phase 10 Milestone Review: APPROVED
 - P10-10: COMPLETE
-- P10-11: READY
-- P10-12 onward: BLOCKED_BY_PREDECESSOR
-- Phase 10 implementation: BATCH_B_P10-11_READY
+- P10-11: COMPLETE
+- P10-12: READY
+- P10-13 onward: BLOCKED_BY_PREDECESSOR
+- Phase 10 implementation: BATCH_B_P10-12_READY
 
 ## Phase goal
 
@@ -455,8 +456,8 @@ START
   -> P10-09 Learning Lifecycle Evaluator [COMPLETE]
   -> Phase 10 Milestone Review [APPROVED]
   -> P10-10 Writing Score Calibration Analysis [COMPLETE]
-  -> P10-11 Failure Taxonomy & Attribution [READY]
-  -> P10-12 Eval Runner / Harness
+  -> P10-11 Failure Taxonomy & Attribution [COMPLETE]
+  -> P10-12 Eval Runner / Harness [READY]
   -> P10-13 Machine-Readable Eval Result & Human Report
   -> P10-14 Regression Corpus Promotion
   -> P10-15 CI-Compatible Deterministic Eval Gate
@@ -934,7 +935,7 @@ It must not automatically mutate the rubric or a calibration label, and it must
 not be treated as deterministic CI contract failure merely because a live score
 differs.
 
-## P10-11 — Failure Taxonomy & Attribution
+## P10-11 — Failure Taxonomy & Attribution — COMPLETE
 
 ### Objective
 
