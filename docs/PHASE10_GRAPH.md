@@ -2,7 +2,7 @@
 
 ## Document status
 
-**BATCH B EXECUTING — P10-10 through P10-15 are COMPLETE. P10-16 is READY.**
+**BATCH B EXECUTING — P10-10 through P10-16 are COMPLETE. P10-17 is READY.**
 
 Phase 9 is COMPLETE and merged to `master` through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`). Phase 10 starts from the
@@ -46,9 +46,10 @@ External Design Review approval authorizes P10-03.
 - P10-13: COMPLETE
 - P10-14: COMPLETE
 - P10-15: COMPLETE
-- P10-16: READY
-- P10-17 onward: BLOCKED_BY_PREDECESSOR
-- Phase 10 implementation: BATCH_B_P10-16_READY
+- P10-16: COMPLETE
+- P10-17: READY
+- P10-18: BLOCKED_BY_PREDECESSOR
+- Phase 10 implementation: BATCH_B_P10-17_READY
 
 ## Phase goal
 
@@ -465,8 +466,8 @@ START
   -> P10-13 Machine-Readable Eval Result & Human Report [COMPLETE]
   -> P10-14 Regression Corpus Promotion [COMPLETE]
   -> P10-15 CI-Compatible Deterministic Eval Gate [COMPLETE]
-  -> P10-16 Full Phase 1-10 Regression Validation [READY]
-  -> P10-17 Documentation / Operator Workflow
+  -> P10-16 Full Phase 1-10 Regression Validation [COMPLETE]
+  -> P10-17 Documentation / Operator Workflow [READY]
   -> P10-18 Internal Final Audit [INTERNAL_AUDIT_COMPLETE target]
   -> External Implementation Review
   -> PR / CI / merge authorization
@@ -1083,7 +1084,7 @@ Add the deterministic core suite to CI at a cost and runtime appropriate for the
 
 If CI runtime is too high, split smoke and full deterministic suites only if the policy defines exactly what remains merge-gating.
 
-## P10-16 — Full Phase 1–10 Regression Validation — READY
+## P10-16 — Full Phase 1–10 Regression Validation — COMPLETE
 
 ### Objective
 
@@ -1103,7 +1104,24 @@ At minimum capture:
 
 Historical Phase 1–9 behavior must remain compatible unless P10-02 explicitly freezes a justified narrow compatibility exception.
 
-## P10-17 — Documentation / Operator Workflow
+### P10-16 validation evidence
+
+- CI-equivalent provider-free deterministic gate: `71 passed`, zero skipped;
+- complete backend suite against isolated PostgreSQL: `1121 passed`, zero skipped,
+  with one dependency deprecation warning;
+- Alembic integrity: upgrade to `0006_submission_claim_recovery`, current-head
+  check, downgrade to base, and re-upgrade to head all succeeded;
+- FastAPI application import and route registration succeeded;
+- web lint and TypeScript typecheck succeeded;
+- web unit tests: `15 passed`; Next.js production build succeeded;
+- Playwright browser regression: `6 passed`;
+- Calibration Replay Mode: `BLOCKED` with
+  `insufficient_reference_data`, because the canonical calibration corpus has
+  zero admissible reference cases; no provider call or quality claim was made;
+- no migration, production scoring change, or runtime application contract
+  change was introduced by Batch B validation.
+
+## P10-17 — Documentation / Operator Workflow — READY
 
 ### Objective
 
