@@ -134,7 +134,7 @@ P9-13 = INTERNAL_AUDIT_COMPLETE
 Phase 9 = COMPLETE
 Phase 9 External Implementation Review = APPROVED
 PR #13 = MERGED
-Phase 10 = EXTERNAL_REVIEW_REPAIR
+Phase 10 = PAUSED_AT_EXTERNAL_IMPLEMENTATION_REVIEW
 P10-00 = COMPLETE
 Phase 10 Graph Review = APPROVED
 P10-01 = COMPLETE
@@ -157,10 +157,10 @@ P10-14 = COMPLETE
 P10-15 = COMPLETE
 P10-16 = COMPLETE
 P10-17 = COMPLETE
-P10-18 = RE_AUDIT_REQUIRED
-Batch B = EXTERNAL_REVIEW_REPAIR
-Phase 10 implementation = EXTERNAL_REVIEW_REPAIR
-Phase 10 External Implementation Review = FIXING_REQUIRED
+P10-18 = INTERNAL_AUDIT_COMPLETE
+Batch B = COMPLETE
+Phase 10 implementation = INTERNAL_AUDIT_COMPLETE
+Phase 10 External Implementation Review = READY_FOR_REVIEW
 ```
 
 Phase 6 design (P6-01 audit, P6-02 contract freeze, versions
@@ -205,10 +205,10 @@ Phase 10 graph review is APPROVED. P10-01 audit and its External Review are
 COMPLETE and APPROVED. P10-02 is COMPLETE and freezes
 `writing-eval-calibration-v1`. The formal Phase 10 External Design Review is
 APPROVED. Batch A is COMPLETE, and the Phase 10 Milestone Review is APPROVED.
-External Implementation Review found the canonical regression execution path
-incomplete. The canonical runtime and CI gate repair make P10-12 and P10-15
-COMPLETE; P10-18 remains RE_AUDIT_REQUIRED pending full local and remote validation. Phase 10 remains in external-review repair and is not
-approved or complete.
+The canonical regression runtime and CI gate repair make P10-12 and P10-15
+COMPLETE. Full local validation and GitHub Actions succeeded, P10-18 is
+INTERNAL_AUDIT_COMPLETE, and External Implementation Review is READY_FOR_REVIEW.
+Phase 10 remains paused and is not externally approved or complete.
 
 The development loop defines HOW each graph node should be executed.
 

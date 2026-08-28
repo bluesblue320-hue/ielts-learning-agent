@@ -2,7 +2,7 @@
 
 ## Document status
 
-**EXTERNAL REVIEW REPAIR — P10-12 and P10-15 are COMPLETE. P10-18 remains RE_AUDIT_REQUIRED pending full local and remote validation; External Implementation Review remains FIXING_REQUIRED.**
+**EXTERNAL REVIEW REPAIR COMPLETE — P10-12 and P10-15 are COMPLETE, P10-18 is INTERNAL_AUDIT_COMPLETE, Phase 10 is PAUSED_AT_EXTERNAL_IMPLEMENTATION_REVIEW, and External Implementation Review is READY_FOR_REVIEW.**
 
 Phase 9 is COMPLETE and merged to `master` through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`). Phase 10 starts from the
@@ -25,7 +25,7 @@ External Design Review approval authorizes P10-03.
 - Runtime behavior default: frozen; evaluation is observational unless a later phase explicitly authorizes behavior changes
 - Current evaluator semantics: `writing-task2-v1` remains frozen
 - Phase 9 Knowledge: `ielts-writing-knowledge-v1` remains frozen
-- Phase 10 status: EXTERNAL_REVIEW_REPAIR
+- Phase 10 status: PAUSED_AT_EXTERNAL_IMPLEMENTATION_REVIEW
 - P10-00: COMPLETE
 - Phase 10 Graph Review: APPROVED
 - P10-01: COMPLETE
@@ -48,10 +48,10 @@ External Design Review approval authorizes P10-03.
 - P10-15: COMPLETE
 - P10-16: COMPLETE
 - P10-17: COMPLETE
-- P10-18: RE_AUDIT_REQUIRED
-- Batch B: EXTERNAL_REVIEW_REPAIR
-- Phase 10 implementation: EXTERNAL_REVIEW_REPAIR
-- Phase 10 External Implementation Review: FIXING_REQUIRED
+- P10-18: INTERNAL_AUDIT_COMPLETE
+- Batch B: COMPLETE
+- Phase 10 implementation: INTERNAL_AUDIT_COMPLETE
+- Phase 10 External Implementation Review: READY_FOR_REVIEW
 
 ## Phase goal
 
@@ -1191,6 +1191,23 @@ docs/PHASE10_AUDIT.md
 13. no secret, personal production data, or uncontrolled network dependency was introduced;
 14. docs match implementation;
 15. unresolved limitations are explicit.
+
+### External-review repair re-audit evidence
+
+- official runtime: `app/eval/regression_runtime.py`;
+- canonical cases / executor coverage: `11 / 11`;
+- actual suite result: `PASS` with 11 PASS, zero FAIL/BLOCKED/INVALID_CASE;
+- deterministic Eval self-tests: `73 passed`;
+- full backend: `1131 passed` with one dependency deprecation warning;
+- web: lint, typecheck, 15 unit tests, and 9-route production build succeeded;
+- browser: Playwright `6 passed`;
+- Alembic: current head, downgrade to base, re-upgrade to head succeeded on
+  disposable PostgreSQL 17;
+- GitHub Actions run `33160887212` succeeded, including the canonical gate,
+  backend, web quality gates, and Playwright;
+- provider-free: no provider key and no live provider call;
+- no migration, dependency, public Eval API, scoring/Planner/Memory/Agent
+  semantic change, PR, or merge.
 
 Target status after successful audit:
 

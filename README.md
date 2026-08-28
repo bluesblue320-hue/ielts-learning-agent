@@ -26,10 +26,11 @@ provider-free grounded guidance, knowledge-grounded practice generation v2, and
 source/citation UX. The Phase 10 graph review, P10-01 audit/external review,
 and P10-02 frozen `writing-eval-calibration-v1` contract are complete. Formal
 Phase 10 External Design Review and Milestone Review are APPROVED. Batch A
-is COMPLETE. External Implementation Review returned `FIXING_REQUIRED`: P10-12
-and P10-15 are repaired and `COMPLETE`; P10-18 remains
-`RE_AUDIT_REQUIRED` pending full local and remote validation. Phase 10 remains in external-review repair and is not
-approved or complete.
+is COMPLETE. The external-review repair for P10-12 and P10-15 is complete;
+the canonical 11-case runtime, structured reports, and CI gate now execute the
+real deterministic path. P10-18 is `INTERNAL_AUDIT_COMPLETE`, External
+Implementation Review is `READY_FOR_REVIEW`, and Phase 10 remains paused and
+not externally approved or complete.
 
 Phase 7 connects authoritative current learner state and longitudinal Writing
 Memory to deterministic Planner v2. Memory is consulted only for exact
