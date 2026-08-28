@@ -2,7 +2,7 @@
 
 ## Document status
 
-**BATCH B COMPLETE — P10-18 is INTERNAL_AUDIT_COMPLETE. Phase 10 is PAUSED_AT_EXTERNAL_IMPLEMENTATION_REVIEW; External Implementation Review is READY_FOR_REVIEW.**
+**EXTERNAL REVIEW REPAIR — P10-12 is FIXING, P10-15 is BLOCKED_BY_P10-12_REPAIR, and P10-18 is RE_AUDIT_REQUIRED. External Implementation Review is FIXING_REQUIRED.**
 
 Phase 9 is COMPLETE and merged to `master` through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`). Phase 10 starts from the
@@ -25,7 +25,7 @@ External Design Review approval authorizes P10-03.
 - Runtime behavior default: frozen; evaluation is observational unless a later phase explicitly authorizes behavior changes
 - Current evaluator semantics: `writing-task2-v1` remains frozen
 - Phase 9 Knowledge: `ielts-writing-knowledge-v1` remains frozen
-- Phase 10 status: PAUSED_AT_EXTERNAL_IMPLEMENTATION_REVIEW
+- Phase 10 status: EXTERNAL_REVIEW_REPAIR
 - P10-00: COMPLETE
 - Phase 10 Graph Review: APPROVED
 - P10-01: COMPLETE
@@ -42,16 +42,16 @@ External Design Review approval authorizes P10-03.
 - Phase 10 Milestone Review: APPROVED
 - P10-10: COMPLETE
 - P10-11: COMPLETE
-- P10-12: COMPLETE
+- P10-12: FIXING
 - P10-13: COMPLETE
 - P10-14: COMPLETE
-- P10-15: COMPLETE
+- P10-15: BLOCKED_BY_P10-12_REPAIR
 - P10-16: COMPLETE
 - P10-17: COMPLETE
-- P10-18: INTERNAL_AUDIT_COMPLETE
-- Batch B: COMPLETE
-- Phase 10 implementation: INTERNAL_AUDIT_COMPLETE
-- Phase 10 External Implementation Review: READY_FOR_REVIEW
+- P10-18: RE_AUDIT_REQUIRED
+- Batch B: EXTERNAL_REVIEW_REPAIR
+- Phase 10 implementation: EXTERNAL_REVIEW_REPAIR
+- Phase 10 External Implementation Review: FIXING_REQUIRED
 
 ## Phase goal
 

@@ -134,7 +134,7 @@ P9-13 = INTERNAL_AUDIT_COMPLETE
 Phase 9 = COMPLETE
 Phase 9 External Implementation Review = APPROVED
 PR #13 = MERGED
-Phase 10 = PAUSED_AT_EXTERNAL_IMPLEMENTATION_REVIEW
+Phase 10 = EXTERNAL_REVIEW_REPAIR
 P10-00 = COMPLETE
 Phase 10 Graph Review = APPROVED
 P10-01 = COMPLETE
@@ -151,16 +151,16 @@ P10-09 = COMPLETE
 Phase 10 Milestone Review = APPROVED
 P10-10 = COMPLETE
 P10-11 = COMPLETE
-P10-12 = COMPLETE
+P10-12 = FIXING
 P10-13 = COMPLETE
 P10-14 = COMPLETE
-P10-15 = COMPLETE
+P10-15 = BLOCKED_BY_P10-12_REPAIR
 P10-16 = COMPLETE
 P10-17 = COMPLETE
-P10-18 = INTERNAL_AUDIT_COMPLETE
-Batch B = COMPLETE
-Phase 10 implementation = INTERNAL_AUDIT_COMPLETE
-Phase 10 External Implementation Review = READY_FOR_REVIEW
+P10-18 = RE_AUDIT_REQUIRED
+Batch B = EXTERNAL_REVIEW_REPAIR
+Phase 10 implementation = EXTERNAL_REVIEW_REPAIR
+Phase 10 External Implementation Review = FIXING_REQUIRED
 ```
 
 Phase 6 design (P6-01 audit, P6-02 contract freeze, versions
@@ -205,7 +205,10 @@ Phase 10 graph review is APPROVED. P10-01 audit and its External Review are
 COMPLETE and APPROVED. P10-02 is COMPLETE and freezes
 `writing-eval-calibration-v1`. The formal Phase 10 External Design Review is
 APPROVED. Batch A is COMPLETE, and the Phase 10 Milestone Review is APPROVED.
-Batch B is COMPLETE. P10-10 through P10-17 are COMPLETE, P10-18 is INTERNAL_AUDIT_COMPLETE, and Phase 10 is paused with External Implementation Review READY_FOR_REVIEW.
+External Implementation Review found the canonical regression execution path
+incomplete. P10-12 is FIXING, P10-15 is BLOCKED_BY_P10-12_REPAIR, and P10-18
+is RE_AUDIT_REQUIRED. Phase 10 remains in external-review repair and is not
+approved or complete.
 
 The development loop defines HOW each graph node should be executed.
 

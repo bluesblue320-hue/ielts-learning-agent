@@ -2,14 +2,17 @@
 
 ## Audit result
 
-**P10-18 = INTERNAL_AUDIT_COMPLETE**
+**P10-18 = RE_AUDIT_REQUIRED**
 
-**Phase 10 External Implementation Review = READY_FOR_REVIEW**
+**Phase 10 External Implementation Review = FIXING_REQUIRED**
 
-**Phase 10 = PAUSED_AT_EXTERNAL_IMPLEMENTATION_REVIEW**
+**Phase 10 = EXTERNAL_REVIEW_REPAIR**
 
-This result is an internal readiness finding. It is not external approval,
-Phase 10 completion, PR authorization, or merge authorization.
+The external review found that the canonical corpus is not yet connected to
+official real executors, `EvalRunner`, reporting, and the CI gate. The prior
+internal readiness finding is superseded until P10-12 and P10-15 are repaired
+and P10-18 is re-audited. This status is not external approval, Phase 10
+completion, PR authorization, or merge authorization.
 
 ## Scope and evidence basis
 
