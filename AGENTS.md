@@ -134,7 +134,7 @@ P9-13 = INTERNAL_AUDIT_COMPLETE
 Phase 9 = COMPLETE
 Phase 9 External Implementation Review = APPROVED
 PR #13 = MERGED
-Phase 10 = DESIGN
+Phase 10 = PAUSED_AT_EXTERNAL_IMPLEMENTATION_REVIEW
 P10-00 = COMPLETE
 Phase 10 Graph Review = APPROVED
 P10-01 = COMPLETE
@@ -157,8 +157,10 @@ P10-14 = COMPLETE
 P10-15 = COMPLETE
 P10-16 = COMPLETE
 P10-17 = COMPLETE
-P10-18 = READY
-Phase 10 implementation = BATCH_B_P10-18_READY
+P10-18 = INTERNAL_AUDIT_COMPLETE
+Batch B = COMPLETE
+Phase 10 implementation = INTERNAL_AUDIT_COMPLETE
+Phase 10 External Implementation Review = READY_FOR_REVIEW
 ```
 
 Phase 6 design (P6-01 audit, P6-02 contract freeze, versions
@@ -203,7 +205,7 @@ Phase 10 graph review is APPROVED. P10-01 audit and its External Review are
 COMPLETE and APPROVED. P10-02 is COMPLETE and freezes
 `writing-eval-calibration-v1`. The formal Phase 10 External Design Review is
 APPROVED. Batch A is COMPLETE, and the Phase 10 Milestone Review is APPROVED.
-Batch B serial execution is active: P10-10 through P10-17 are COMPLETE; P10-18 is READY.
+Batch B is COMPLETE. P10-10 through P10-17 are COMPLETE, P10-18 is INTERNAL_AUDIT_COMPLETE, and Phase 10 is paused with External Implementation Review READY_FOR_REVIEW.
 
 The development loop defines HOW each graph node should be executed.
 
