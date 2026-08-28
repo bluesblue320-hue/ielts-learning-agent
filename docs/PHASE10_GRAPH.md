@@ -2,7 +2,7 @@
 
 ## Document status
 
-**BATCH B EXECUTING — P10-10 through P10-14 are COMPLETE. P10-15 is READY.**
+**BATCH B EXECUTING — P10-10 through P10-15 are COMPLETE. P10-16 is READY.**
 
 Phase 9 is COMPLETE and merged to `master` through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`). Phase 10 starts from the
@@ -45,9 +45,10 @@ External Design Review approval authorizes P10-03.
 - P10-12: COMPLETE
 - P10-13: COMPLETE
 - P10-14: COMPLETE
-- P10-15: READY
-- P10-16 onward: BLOCKED_BY_PREDECESSOR
-- Phase 10 implementation: BATCH_B_P10-15_READY
+- P10-15: COMPLETE
+- P10-16: READY
+- P10-17 onward: BLOCKED_BY_PREDECESSOR
+- Phase 10 implementation: BATCH_B_P10-16_READY
 
 ## Phase goal
 
@@ -463,8 +464,8 @@ START
   -> P10-12 Eval Runner / Harness [COMPLETE]
   -> P10-13 Machine-Readable Eval Result & Human Report [COMPLETE]
   -> P10-14 Regression Corpus Promotion [COMPLETE]
-  -> P10-15 CI-Compatible Deterministic Eval Gate [READY]
-  -> P10-16 Full Phase 1-10 Regression Validation
+  -> P10-15 CI-Compatible Deterministic Eval Gate [COMPLETE]
+  -> P10-16 Full Phase 1-10 Regression Validation [READY]
   -> P10-17 Documentation / Operator Workflow
   -> P10-18 Internal Final Audit [INTERNAL_AUDIT_COMPLETE target]
   -> External Implementation Review
@@ -1064,7 +1065,7 @@ case requires an explicit rationale and contract-change evidence. Calibration
 labels remain separate measurement evidence and may not weaken a regression
 expectation.
 
-## P10-15 — CI-Compatible Deterministic Eval Gate
+## P10-15 — CI-Compatible Deterministic Eval Gate — COMPLETE
 
 ### Objective
 
@@ -1082,7 +1083,7 @@ Add the deterministic core suite to CI at a cost and runtime appropriate for the
 
 If CI runtime is too high, split smoke and full deterministic suites only if the policy defines exactly what remains merge-gating.
 
-## P10-16 — Full Phase 1–10 Regression Validation
+## P10-16 — Full Phase 1–10 Regression Validation — READY
 
 ### Objective
 

@@ -27,7 +27,7 @@ source/citation UX. The Phase 10 graph review, P10-01 audit/external review,
 and P10-02 frozen `writing-eval-calibration-v1` contract are complete. Formal
 Phase 10 External Design Review and Milestone Review are APPROVED. Batch A
 is COMPLETE; Batch B is authorized serially from P10-10 through P10-18, with
-P10-10 through P10-14 COMPLETE; P10-15 currently READY.
+P10-10 through P10-15 COMPLETE; P10-16 currently READY.
 
 Phase 7 connects authoritative current learner state and longitudinal Writing
 Memory to deterministic Planner v2. Memory is consulted only for exact
@@ -101,6 +101,17 @@ docker compose --profile test run --rm --build test
 
 The test profile starts a separate, non-persistent `test-db` service. Pytest and
 its Alembic downgrade/re-upgrade checks never connect to the development `db`.
+
+With `IELTS_TEST_DATABASE_URL` pointing to that isolated database, run the
+provider-free Phase 10 deterministic Eval gate locally with:
+
+```bash
+python -m app.eval.gate
+```
+
+This command never invokes Live Calibration or a real provider and requires no
+provider key. It is the dedicated CI gate; the complete backend suite remains a
+separate validation step.
 
 6. Stop services while preserving development data:
 
