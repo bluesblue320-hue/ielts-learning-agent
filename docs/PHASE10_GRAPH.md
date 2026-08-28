@@ -2,7 +2,7 @@
 
 ## Document status
 
-**EXTERNAL REVIEW REPAIR COMPLETE — P10-12 and P10-15 are COMPLETE, P10-18 is INTERNAL_AUDIT_COMPLETE, Phase 10 is PAUSED_AT_EXTERNAL_IMPLEMENTATION_REVIEW, and External Implementation Review is READY_FOR_REVIEW.**
+**EXTERNAL IMPLEMENTATION REVIEW APPROVED — P10-12 and P10-15 are COMPLETE, P10-18 is INTERNAL_AUDIT_COMPLETE, the Phase 10 PR is READY_TO_OPEN, and Phase 10 is AWAITING_PR_VALIDATION.**
 
 Phase 9 is COMPLETE and merged to `master` through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`). Phase 10 starts from the
@@ -25,7 +25,7 @@ External Design Review approval authorizes P10-03.
 - Runtime behavior default: frozen; evaluation is observational unless a later phase explicitly authorizes behavior changes
 - Current evaluator semantics: `writing-task2-v1` remains frozen
 - Phase 9 Knowledge: `ielts-writing-knowledge-v1` remains frozen
-- Phase 10 status: PAUSED_AT_EXTERNAL_IMPLEMENTATION_REVIEW
+- Phase 10 status: AWAITING_PR_VALIDATION
 - P10-00: COMPLETE
 - Phase 10 Graph Review: APPROVED
 - P10-01: COMPLETE
@@ -51,7 +51,8 @@ External Design Review approval authorizes P10-03.
 - P10-18: INTERNAL_AUDIT_COMPLETE
 - Batch B: COMPLETE
 - Phase 10 implementation: INTERNAL_AUDIT_COMPLETE
-- Phase 10 External Implementation Review: READY_FOR_REVIEW
+- Phase 10 External Implementation Review: APPROVED
+- Phase 10 PR: READY_TO_OPEN
 
 ## Phase goal
 
@@ -471,7 +472,7 @@ START
   -> P10-16 Full Phase 1-10 Regression Validation [COMPLETE]
   -> P10-17 Documentation / Operator Workflow [COMPLETE]
   -> P10-18 Internal Final Audit [INTERNAL_AUDIT_COMPLETE]
-  -> External Implementation Review [READY_FOR_REVIEW]
+  -> External Implementation Review [APPROVED]
   -> PR / CI / merge authorization
   -> Phase 10 COMPLETE
   -> STOP (do not start Phase 11)
@@ -1209,17 +1210,18 @@ docs/PHASE10_AUDIT.md
 - no migration, dependency, public Eval API, scoring/Planner/Memory/Agent
   semantic change, PR, or merge.
 
-Target status after successful audit:
+Current status after external approval:
 
 ```text
 P10-18 = INTERNAL_AUDIT_COMPLETE
-Phase 10 External Implementation Review = READY_FOR_REVIEW
-Phase 10 = PAUSED_AT_EXTERNAL_IMPLEMENTATION_REVIEW
+Phase 10 External Implementation Review = APPROVED
+Phase 10 PR = READY_TO_OPEN
+Phase 10 = AWAITING_PR_VALIDATION
 ```
 
 This status is not authorization to merge.
 
-## External Implementation Review gate — READY_FOR_REVIEW
+## External Implementation Review gate — APPROVED
 
 External Implementation Review must inspect at least:
 
@@ -1242,7 +1244,7 @@ FIXING_REQUIRED
 BLOCKED
 ```
 
-Only an approved outcome may proceed to PR/CI/merge authorization according to the repository's normal process.
+The recorded APPROVED outcome authorizes PR creation and PR CI validation according to the repository's normal process; it does not authorize merge.
 
 ## Phase completion criteria
 

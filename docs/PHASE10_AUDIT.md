@@ -4,13 +4,15 @@
 
 **P10-18 = INTERNAL_AUDIT_COMPLETE**
 
-**Phase 10 External Implementation Review = READY_FOR_REVIEW**
+**Phase 10 External Implementation Review = APPROVED**
 
-**Phase 10 = PAUSED_AT_EXTERNAL_IMPLEMENTATION_REVIEW**
+**Phase 10 PR = READY_TO_OPEN**
 
-This is an internal readiness finding after the external-review repair. It is
-not external approval, Phase 10 completion, PR authorization, or merge
-authorization.
+**Phase 10 = AWAITING_PR_VALIDATION**
+
+The internal audit remains complete, and External Implementation Review has now
+returned APPROVED. This approval authorizes PR creation and validation; it is
+not Phase 10 completion or merge authorization.
 
 ## Repair finding and audited scope
 
@@ -150,8 +152,8 @@ live calibration.
 No LangChain, LangGraph, vector database, Redis, Celery, Kafka, runtime web
 search, multi-agent behavior, Reading, Listening, Speaking, authentication,
 payments, P10-19, or Phase 11 work was added. No secret, personal production
-data, or uncontrolled network dependency was introduced. No PR was opened and
-nothing was merged.
+data, or uncontrolled network dependency was introduced. At the time of the
+internal audit, no PR was opened and nothing was merged.
 
 The canonical calibration corpus truthfully remains at zero admissible cases
 with `no_admissible_reference_data`. The project still makes no examiner-grade
@@ -165,12 +167,11 @@ contract evidence.
 
 ## Stop gate
 
-P10-12 and P10-15 are COMPLETE and P10-18 is INTERNAL_AUDIT_COMPLETE. The next
-authority is External Implementation Review. Until it returns an approved
-outcome and the user separately authorizes repository workflow steps:
+P10-12 and P10-15 are COMPLETE, P10-18 is INTERNAL_AUDIT_COMPLETE, and
+External Implementation Review is APPROVED. The next authority is PR validation.
+PR creation is authorized, but merge is not:
 
 - do not mark Phase 10 COMPLETE;
-- do not mark External Implementation Review APPROVED;
-- do not open or merge a PR;
+- do not merge or close the PR;
 - do not modify `master`;
 - do not start Phase 11.

@@ -29,8 +29,8 @@ Phase 10 External Design Review and Milestone Review are APPROVED. Batch A
 is COMPLETE. The external-review repair for P10-12 and P10-15 is complete;
 the canonical 11-case runtime, structured reports, and CI gate now execute the
 real deterministic path. P10-18 is `INTERNAL_AUDIT_COMPLETE`, External
-Implementation Review is `READY_FOR_REVIEW`, and Phase 10 remains paused and
-not externally approved or complete.
+Implementation Review is `APPROVED`, the Phase 10 PR is `READY_TO_OPEN`, and
+Phase 10 is `AWAITING_PR_VALIDATION` and not complete.
 
 Phase 7 connects authoritative current learner state and longitudinal Writing
 Memory to deterministic Planner v2. Memory is consulted only for exact

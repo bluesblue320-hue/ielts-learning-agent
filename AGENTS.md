@@ -134,7 +134,7 @@ P9-13 = INTERNAL_AUDIT_COMPLETE
 Phase 9 = COMPLETE
 Phase 9 External Implementation Review = APPROVED
 PR #13 = MERGED
-Phase 10 = PAUSED_AT_EXTERNAL_IMPLEMENTATION_REVIEW
+Phase 10 = AWAITING_PR_VALIDATION
 P10-00 = COMPLETE
 Phase 10 Graph Review = APPROVED
 P10-01 = COMPLETE
@@ -160,7 +160,8 @@ P10-17 = COMPLETE
 P10-18 = INTERNAL_AUDIT_COMPLETE
 Batch B = COMPLETE
 Phase 10 implementation = INTERNAL_AUDIT_COMPLETE
-Phase 10 External Implementation Review = READY_FOR_REVIEW
+Phase 10 External Implementation Review = APPROVED
+Phase 10 PR = READY_TO_OPEN
 ```
 
 Phase 6 design (P6-01 audit, P6-02 contract freeze, versions
@@ -207,8 +208,9 @@ COMPLETE and APPROVED. P10-02 is COMPLETE and freezes
 APPROVED. Batch A is COMPLETE, and the Phase 10 Milestone Review is APPROVED.
 The canonical regression runtime and CI gate repair make P10-12 and P10-15
 COMPLETE. Full local validation and GitHub Actions succeeded, P10-18 is
-INTERNAL_AUDIT_COMPLETE, and External Implementation Review is READY_FOR_REVIEW.
-Phase 10 remains paused and is not externally approved or complete.
+INTERNAL_AUDIT_COMPLETE, and External Implementation Review is APPROVED.
+The Phase 10 PR is READY_TO_OPEN; Phase 10 awaits PR validation and merge
+authorization and is not complete.
 
 The development loop defines HOW each graph node should be executed.
 
