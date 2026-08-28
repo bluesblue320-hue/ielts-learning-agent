@@ -153,9 +153,10 @@ P10-10 = COMPLETE
 P10-11 = COMPLETE
 P10-12 = COMPLETE
 P10-13 = COMPLETE
-P10-14 = READY
-P10-15 onward = BLOCKED_BY_PREDECESSOR
-Phase 10 implementation = BATCH_B_P10-14_READY
+P10-14 = COMPLETE
+P10-15 = READY
+P10-16 onward = BLOCKED_BY_PREDECESSOR
+Phase 10 implementation = BATCH_B_P10-15_READY
 ```
 
 Phase 6 design (P6-01 audit, P6-02 contract freeze, versions
@@ -200,7 +201,7 @@ Phase 10 graph review is APPROVED. P10-01 audit and its External Review are
 COMPLETE and APPROVED. P10-02 is COMPLETE and freezes
 `writing-eval-calibration-v1`. The formal Phase 10 External Design Review is
 APPROVED. Batch A is COMPLETE, and the Phase 10 Milestone Review is APPROVED.
-Batch B serial execution is active: P10-10 through P10-13 are COMPLETE; P10-14 is READY.
+Batch B serial execution is active: P10-10 through P10-14 are COMPLETE; P10-15 is READY.
 
 The development loop defines HOW each graph node should be executed.
 

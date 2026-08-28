@@ -2,7 +2,7 @@
 
 ## Document status
 
-**BATCH B EXECUTING — P10-10 through P10-13 are COMPLETE. P10-14 is READY.**
+**BATCH B EXECUTING — P10-10 through P10-14 are COMPLETE. P10-15 is READY.**
 
 Phase 9 is COMPLETE and merged to `master` through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`). Phase 10 starts from the
@@ -44,9 +44,10 @@ External Design Review approval authorizes P10-03.
 - P10-11: COMPLETE
 - P10-12: COMPLETE
 - P10-13: COMPLETE
-- P10-14: READY
-- P10-15 onward: BLOCKED_BY_PREDECESSOR
-- Phase 10 implementation: BATCH_B_P10-14_READY
+- P10-14: COMPLETE
+- P10-15: READY
+- P10-16 onward: BLOCKED_BY_PREDECESSOR
+- Phase 10 implementation: BATCH_B_P10-15_READY
 
 ## Phase goal
 
@@ -461,8 +462,8 @@ START
   -> P10-11 Failure Taxonomy & Attribution [COMPLETE]
   -> P10-12 Eval Runner / Harness [COMPLETE]
   -> P10-13 Machine-Readable Eval Result & Human Report [COMPLETE]
-  -> P10-14 Regression Corpus Promotion [READY]
-  -> P10-15 CI-Compatible Deterministic Eval Gate
+  -> P10-14 Regression Corpus Promotion [COMPLETE]
+  -> P10-15 CI-Compatible Deterministic Eval Gate [READY]
   -> P10-16 Full Phase 1-10 Regression Validation
   -> P10-17 Documentation / Operator Workflow
   -> P10-18 Internal Final Audit [INTERNAL_AUDIT_COMPLETE target]
@@ -1038,7 +1039,7 @@ The report must be answer-first and include:
 - provider-dependent exclusions or operational failures;
 - recommended follow-up without silently implementing future-phase changes.
 
-## P10-14 — Regression Corpus Promotion
+## P10-14 — Regression Corpus Promotion — COMPLETE
 
 ### Objective
 
