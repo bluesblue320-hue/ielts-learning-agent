@@ -18,11 +18,19 @@ are approved/successful.
 Core Learning Agent v1 is available through
 `POST /learners/{learner_id}/writing/agent/turn`.
 
-**Phase 9 implementation is complete on
-`phase/9-ielts-knowledge-grounding-v1` and awaits External Implementation
-Review.** P9-13 is `INTERNAL_AUDIT_COMPLETE`; External Design Review is
-`APPROVED`, External Implementation Review is `PENDING`, and no PR or merge
-has been created.
+**Phase 9 = COMPLETE and MERGED through PR #13**, merge commit
+`75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`. Both External Design Review and
+External Implementation Review are `APPROVED`. Phase 9 delivers the static
+`ielts-writing-knowledge-v1` snapshot, deterministic structured retrieval,
+provider-free grounded guidance, knowledge-grounded practice generation v2, and
+source/citation UX. The Phase 10 graph review, P10-01 audit/external review,
+and P10-02 frozen `writing-eval-calibration-v1` contract are complete. Formal
+Phase 10 External Design Review and Milestone Review are APPROVED. Batch A
+is COMPLETE. The external-review repair for P10-12 and P10-15 is complete;
+the canonical 11-case runtime, structured reports, and CI gate now execute the
+real deterministic path. P10-18 is `INTERNAL_AUDIT_COMPLETE`, External
+Implementation Review is `APPROVED`, the Phase 10 PR is `READY_TO_OPEN`, and
+Phase 10 is `AWAITING_PR_VALIDATION` and not complete.
 
 Phase 7 connects authoritative current learner state and longitudinal Writing
 Memory to deterministic Planner v2. Memory is consulted only for exact
@@ -97,6 +105,17 @@ docker compose --profile test run --rm --build test
 The test profile starts a separate, non-persistent `test-db` service. Pytest and
 its Alembic downgrade/re-upgrade checks never connect to the development `db`.
 
+With `IELTS_TEST_DATABASE_URL` pointing to that isolated database, run the
+provider-free Phase 10 deterministic Eval gate locally with:
+
+```bash
+python -m app.eval.gate
+```
+
+This command never invokes Live Calibration or a real provider and requires no
+provider key. It is the dedicated CI gate; the complete backend suite remains a
+separate validation step.
+
 6. Stop services while preserving development data:
 
 ```bash
@@ -163,15 +182,19 @@ implemented system.
 Before changing the project, read these documents in order:
 
 1. [AGENTS.md](AGENTS.md)
-2. [Phase 9 graph](docs/PHASE9_GRAPH.md), frozen
+2. Completed [Phase 9 graph](docs/PHASE9_GRAPH.md), frozen
    [IELTS Knowledge policy](docs/IELTS_KNOWLEDGE_POLICY.md), and
-   [internal audit](docs/PHASE9_AUDIT.md)
-3. [Phase 8 graph](docs/PHASE8_GRAPH.md) and frozen
+   [internal audit](docs/PHASE9_AUDIT.md). The [Phase 10 graph](docs/PHASE10_GRAPH.md)
+   has passed graph review; P10-01 and P10-02 are complete. Formal External
+   Design Review and Milestone Review are APPROVED; Batch A is complete and
+   Batch B is authorized serially from P10-10 through P10-18.
+3. [Phase 10 internal audit](docs/PHASE10_AUDIT.md) and [Eval operator workflow](docs/PHASE10_EVAL_OPERATOR.md)
+4. [Phase 8 graph](docs/PHASE8_GRAPH.md) and frozen
    [Core Learning Agent policy](docs/CORE_LEARNING_AGENT_POLICY.md), with the
    Phase 7 [planner policy](docs/MEMORY_AWARE_PLANNING_POLICY.md) and Phase 6
    [Writing memory policy](docs/WRITING_MEMORY_POLICY.md)
-4. [Development loop](docs/DEVELOPMENT_LOOP.md)
-5. [Target architecture](docs/ARCHITECTURE.md)
+5. [Development loop](docs/DEVELOPMENT_LOOP.md)
+6. [Target architecture](docs/ARCHITECTURE.md)
 
 Phase 1 remains complete and preserved in
 [docs/PHASE1_GRAPH.md](docs/PHASE1_GRAPH.md). Phase 2 is complete and preserved
@@ -198,12 +221,12 @@ maximum-gap ties. The frozen execution record is
 Phase 8 is COMPLETE and merged through PR #12. Its bounded,
 Writing-only Core Learning Agent v1 remains available through
 `POST /learners/{learner_id}/writing/agent/turn`; granular APIs remain
-supported. Phase 9 implementation is complete on
-`phase/9-ielts-knowledge-grounding-v1`: P9-13 is
-`INTERNAL_AUDIT_COMPLETE`, External Design Review is `APPROVED`, and External
-Implementation Review is `PENDING`. The frozen execution record and audit are
+supported. Phase 9 is COMPLETE and merged through PR #13 (merge commit
+`75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`); both external reviews are
+approved. The completed execution record and audit are
 [docs/PHASE9_GRAPH.md](docs/PHASE9_GRAPH.md) and
-[docs/PHASE9_AUDIT.md](docs/PHASE9_AUDIT.md).
+[docs/PHASE9_AUDIT.md](docs/PHASE9_AUDIT.md). Phase 10 Batch A is complete and its Milestone Review is APPROVED; Batch B is
+authorized and begins at P10-10.
 
 ## Phase 5 Web MVP
 

@@ -1,0 +1,134 @@
+{
+  "corpus_version": "writing-eval-regression-corpus-v1",
+  "cases": [
+    {
+      "case_id": "provider-invalid-structured-output",
+      "description": "Malformed provider output fails closed before persistence.",
+      "category": "provider_contract",
+      "input": {"submission_fixture": "writing-submission-v1"},
+      "provider_fixture": "provider-invalid-payload.json",
+      "expected_structured_outcomes": {"status": "provider_error", "persistence": "none"},
+      "applicable_evaluators": ["outcome", "authority"],
+      "severity_expectations": [{"boundary": "provider_contract", "severity": "veto"}],
+      "provenance": {"source": "P10-01 audit", "locator": "tests/test_llm_provider_contract.py"}
+    },
+    {
+      "case_id": "product-band-application-authority",
+      "description": "Application computes product band from four criterion bands.",
+      "category": "evaluation",
+      "input": {"submission_fixture": "writing-submission-v1"},
+      "provider_fixture": "provider-valid-payload.json",
+      "expected_structured_outcomes": {"product_band_owner": "application"},
+      "applicable_evaluators": ["outcome", "authority"],
+      "severity_expectations": [{"boundary": "authority", "severity": "veto"}],
+      "provenance": {"source": "P10-01 audit", "locator": "tests/test_writing_evaluator.py::test_evaluator_rejects_provider_product_band_override"}
+    },
+    {
+      "case_id": "retry-exhaustion-no-write",
+      "description": "A retryable provider failure exhausts safely without a write.",
+      "category": "provider_contract",
+      "input": {"retry_category": "timeout"},
+      "expected_structured_outcomes": {"status": "provider_error", "write_count": 0},
+      "applicable_evaluators": ["outcome", "authority"],
+      "severity_expectations": [{"boundary": "provider_contract", "severity": "major"}],
+      "provenance": {"source": "P10-01 audit", "locator": "tests/test_writing_api.py::test_retryable_failure_stops_at_three_attempts_without_write"}
+    },
+    {
+      "case_id": "learning-update-idempotent-replay",
+      "description": "Same learner and evaluation returns one durable logical update.",
+      "category": "persistence",
+      "input": {"replay": true},
+      "expected_structured_outcomes": {"duplicate_effects": 0},
+      "expected_lifecycle_evidence": [{"kind": "learning_update", "locator": "writing_evaluation_id"}],
+      "applicable_evaluators": ["outcome", "lifecycle"],
+      "severity_expectations": [{"boundary": "learning_update", "severity": "veto"}],
+      "provenance": {"source": "P10-01 audit", "locator": "tests/test_learning_application.py::test_idempotent_replay_returns_existing_without_duplicate_effects"}
+    },
+    {
+      "case_id": "state-late-arrival-canonical-rebuild",
+      "description": "Late historical evidence rebuilds state in canonical attempt chronology.",
+      "category": "state",
+      "input": {"arrival_order": "late_older"},
+      "expected_structured_outcomes": {"chronology": "writing_attempt_created_at_id_asc"},
+      "applicable_evaluators": ["outcome", "lifecycle"],
+      "severity_expectations": [{"boundary": "state", "severity": "major"}],
+      "provenance": {"source": "P10-01 audit", "locator": "tests/test_state_engine.py::test_late_older_evidence_rebuilds_to_canonical_order"}
+    },
+    {
+      "case_id": "memory-planner-exact-tie",
+      "description": "Memory resolves only exact maximum-gap Planner ties.",
+      "category": "memory",
+      "input": {"planner_version": "writing-practice-gap-memory-v2"},
+      "expected_structured_outcomes": {"tie_break_order": "persistent_gap_trend_recency_priority"},
+      "applicable_evaluators": ["outcome", "lifecycle"],
+      "severity_expectations": [{"boundary": "planner", "severity": "major"}],
+      "provenance": {"source": "P10-01 audit", "locator": "tests/test_memory_planner.py::test_recent_practice_then_canonical_priority_have_frozen_semantics"}
+    },
+    {
+      "case_id": "recommendation-cross-learner-rejected",
+      "description": "A recommendation cannot generate practice for another learner.",
+      "category": "recommendation",
+      "input": {"ownership": "cross_learner"},
+      "expected_structured_outcomes": {"provider_calls": 0, "practice_rows": 0},
+      "applicable_evaluators": ["outcome", "authority"],
+      "severity_expectations": [{"boundary": "recommendation", "severity": "veto"}],
+      "provenance": {"source": "P10-01 audit", "locator": "tests/test_practice_generation.py::test_cross_learner_request_is_rejected_before_generator_call"}
+    },
+    {
+      "case_id": "practice-stale-fence",
+      "description": "A stale unsubmitted generated practice is rejected before provider work.",
+      "category": "practice",
+      "input": {"practice_state": "stale_generated"},
+      "expected_structured_outcomes": {"provider_calls": 0, "safe_conflict": true},
+      "applicable_evaluators": ["outcome", "authority"],
+      "severity_expectations": [{"boundary": "practice_submission", "severity": "major"}],
+      "provenance": {"source": "P10-01 audit", "locator": "tests/test_agent_api.py::test_agent_stale_generated_first_submission_is_safe_conflict"}
+    },
+    {
+      "case_id": "knowledge-unknown-provenance-fails-closed",
+      "description": "Unknown Knowledge provenance cannot be presented as grounded.",
+      "category": "knowledge",
+      "input": {"knowledge_id": "unknown"},
+      "expected_structured_outcomes": {"grounded": false},
+      "applicable_evaluators": ["knowledge_grounding", "authority"],
+      "severity_expectations": [{"boundary": "knowledge", "severity": "veto"}],
+      "provenance": {"source": "P10-01 audit", "locator": "tests/test_phase9_grounding_hardening.py::test_public_guidance_claims_and_citations_resolve_to_snapshot"}
+    },
+    {
+      "case_id": "agent-bounded-trajectory",
+      "description": "Agent execution remains within frozen mutation, observation, and provider bounds.",
+      "category": "agent_trajectory",
+      "input": {"turn": "bounded_continue"},
+      "expected_structured_outcomes": {"max_mutations": 3, "max_observations": 4, "max_provider_calls": 2},
+      "expected_trajectory_constraints": {"structured_trace_only": true},
+      "applicable_evaluators": ["trajectory", "outcome"],
+      "severity_expectations": [{"boundary": "agent_trajectory", "severity": "major"}],
+      "provenance": {"source": "P10-01 audit", "locator": "tests/test_agent_executor.py::test_turn_never_exceeds_frozen_mutation_provider_or_observation_bounds"}    },
+    {
+      "case_id": "multi-episode-authoritative-learning-loop",
+      "description": "Two accepted Writing episodes rebuild canonical state while Memory, Planner, recommendation, and replay remain learner-owned.",
+      "category": "lifecycle",
+      "input": {"learner_id": "eval-lifecycle-learner-001", "episode_arrival_order": "first_then_late_older"},
+      "expected_structured_outcomes": {"accepted_updates": 2, "duplicate_effects": 0, "planner_projection": "authoritative_current_projection"},
+      "expected_lifecycle_evidence": [
+        {"kind": "learner", "locator": "eval-lifecycle-learner-001"},
+        {"kind": "chronology", "locator": "writing_attempt_created_at_id_asc"},
+        {"kind": "chronology", "locator": "learning_update_created_at_id_desc"},
+        {"kind": "chronology", "locator": "learning_update_id_desc"}
+      ],
+      "multi_episode_lifecycle": {
+        "state_chronology": "writing_attempt_created_at_id_asc",
+        "memory_chronology": "learning_update_created_at_id_desc",
+        "current_observation_chronology": "learning_update_id_desc",
+        "planner_projection": "authoritative_current_projection",
+        "episodes": [
+          {"episode_id": "eval-lifecycle-episode-1", "learner_id": "eval-lifecycle-learner-001", "writing_evaluation": {"kind": "writing_evaluation", "locator": "episode-1"}, "learning_update": {"kind": "learning_update", "locator": "episode-1"}, "state_projection": {"kind": "learner_state", "locator": "after-episode-1"}, "memory_projection": {"kind": "memory", "locator": "after-episode-1"}, "recommendation": {"kind": "recommendation", "locator": "after-episode-1"}, "replay_duplicate_effects": 0},
+          {"episode_id": "eval-lifecycle-episode-2", "learner_id": "eval-lifecycle-learner-001", "writing_evaluation": {"kind": "writing_evaluation", "locator": "episode-2"}, "learning_update": {"kind": "learning_update", "locator": "episode-2"}, "state_projection": {"kind": "learner_state", "locator": "after-episode-2"}, "memory_projection": {"kind": "memory", "locator": "after-episode-2"}, "recommendation": {"kind": "recommendation", "locator": "after-episode-2"}, "replay_duplicate_effects": 0}
+        ]
+      },
+      "applicable_evaluators": ["outcome", "lifecycle", "authority"],
+      "severity_expectations": [{"boundary": "learning_update", "severity": "veto"}],
+      "provenance": {"source": "P10-01 audit", "locator": "tests/test_learning_application.py::test_idempotent_replay_returns_existing_without_duplicate_effects"}
+      }
+  ]
+}

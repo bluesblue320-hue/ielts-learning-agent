@@ -1,17 +1,16 @@
 # Phase 9 Internal Audit
 
-**Status:** Phase 9 implementation is
-`IMPLEMENTATION_COMPLETE_AWAITING_EXTERNAL_REVIEW` on
-`phase/9-ielts-knowledge-grounding-v1`. External Design Review is `APPROVED`;
-External Implementation Review is `PENDING`. No PR or merge has been created.
+**Closure status:** Phase 9 is `COMPLETE`. External Design Review and External
+Implementation Review are `APPROVED`. PR #13 merged the Phase 9 branch to
+`master` with merge commit `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`.
 
 ## Validation identity
 
 The repaired implementation and browser-test HEAD validated by every command
-below is `25e6591763283f485a0361d95c9f17017cb21d85`. The following
-documentation-only repair-audit commit does not change runtime or test
-behavior. The branch is based on Phase 8 master merge commit
-`4739bca53ebcae96f10bca256e3568a644f2fef4`.
+below is `25e6591763283f485a0361d95c9f17017cb21d85`. That evidence was produced
+before merge; the implementation was subsequently approved and merged unchanged
+apart from documented closure-status synchronization. The branch is based on
+Phase 8 master merge commit `4739bca53ebcae96f10bca256e3568a644f2fef4`.
 
 ## Frozen contract proof
 
@@ -156,15 +155,19 @@ payments, microservices, or new migration was introduced.
   rewrite it or change scoring.
 - Retrieval is intentionally structured rather than semantic; no arbitrary
   corpus query or public Knowledge search endpoint exists.
-- External Implementation Review, PR/CI, merge authorization, and master merge
-  remain pending.
+- Phase 9 closure is complete. Phase 10 is authorized for design only; its
+  implementation has not started.
 
 ## Status
 
 P9-01 through P9-12 are `COMPLETE`; P9-13 is
-`INTERNAL_AUDIT_COMPLETE`. Phase 9 implementation is
-`IMPLEMENTATION_COMPLETE_AWAITING_EXTERNAL_REVIEW`. External Design Review is
-`APPROVED`; External Implementation Review is `PENDING`.
+`INTERNAL_AUDIT_COMPLETE`.
 
-STOP. Do not begin another phase, open a PR, or merge without explicit
-authorization.
+Phase 9 External Design Review = `APPROVED`
+Phase 9 External Implementation Review = `APPROVED`
+PR #13 = `MERGED`
+Merge commit = `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`
+Phase 9 = `COMPLETE`
+
+Phase 10 is `AUTHORIZED_FOR_DESIGN`. STOP: do not begin Phase 10
+implementation until separately authorized by an approved Phase 10 graph.

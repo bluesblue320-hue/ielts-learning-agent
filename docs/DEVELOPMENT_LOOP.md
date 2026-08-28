@@ -82,6 +82,24 @@ Record evidence            │
 Re-read graph ─────────────┘
 ```
 
+## Serial Batch Between Gates
+
+A graph or explicit authorization may define a batch of consecutive `READY`
+nodes. Within an authorized batch, keep one node `ACTIVE` at a time: finish,
+test, review, and fix the current node; mark it `COMPLETE`; select the next
+valid `READY` node; and continue automatically.
+
+Never execute nodes in parallel, skip dependencies, cross an explicit review or
+approval gate, or continue after a stop condition. Default selection remains the
+lowest-numbered `READY` node unless the user explicitly chooses another valid
+node.
+
+Explicit gates include at minimum External Design Review, Milestone Review,
+External Implementation Review, and PR / merge authorization. A gate is a hard
+stop: a later node may not start until the required external or human approval
+is recorded in the graph. Repository-safety rules, frozen-contract boundaries,
+and all other stop conditions remain unchanged.
+
 ## 1. Observe
 
 Establish the repository's actual state before editing:

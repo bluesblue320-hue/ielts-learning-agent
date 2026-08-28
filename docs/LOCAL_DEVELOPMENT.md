@@ -101,6 +101,17 @@ Start the isolated test database with
 python -m pytest -q --strict-markers
 ```
 
+Run the dedicated provider-free Phase 10 deterministic Eval gate against the
+same isolated database with:
+
+```bash
+python -m app.eval.gate
+```
+
+The gate fails closed when `IELTS_TEST_DATABASE_URL` is absent and removes any
+inherited provider key before invoking its bounded pytest targets. Live
+Calibration and fresh provider calls are intentionally excluded.
+
 The database name must contain a separate `test` token and its URL must differ
 from `IELTS_DATABASE_URL`. Integration tests skip explicitly only when
 `IELTS_TEST_DATABASE_URL` is absent. Run the deterministic non-integration

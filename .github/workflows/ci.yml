@@ -7,6 +7,7 @@ on:
       - master
       - phase/5-web-product-mvp
       - phase/7-memory-aware-planning-v2
+      - phase/10-writing-evaluation-calibration-v1
 
 permissions:
   contents: read
@@ -46,6 +47,9 @@ jobs:
 
       - name: Install test dependencies
         run: python -m pip install ".[test]"
+
+      - name: Phase 10 deterministic eval
+        run: python -m app.eval.gate
 
       - name: Run backend tests
         run: python -m pytest -q --strict-markers
