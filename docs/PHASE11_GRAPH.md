@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**BATCH C ACTIVE — MILESTONE REVIEW APPROVED; P11-10 ACTIVE**
+**BATCH C ACTIVE — MILESTONE REVIEW APPROVED; P11-11 ACTIVE**
 
 Repository:
 
@@ -49,8 +49,9 @@ P11-07 = COMPLETE
 P11-08 = COMPLETE
 Phase 11 Milestone Review = APPROVED
 P11-09 = COMPLETE
-P11-10 = ACTIVE
-P11-11 onward = BLOCKED_BY_DEPENDENCY
+P11-10 = COMPLETE
+P11-11 = ACTIVE
+P11-12 onward = BLOCKED_BY_DEPENDENCY
 ```
 
 Scope:
@@ -708,10 +709,10 @@ Phase 11 Milestone Review [APPROVED]
 P11-09 Typed Web Wiki Client [COMPLETE]
   |
   v
-P11-10 Wiki Index + Page Detail Experience [ACTIVE]
+P11-10 Wiki Index + Page Detail Experience [COMPLETE]
   |
   v
-P11-11 Existing Citation -> Wiki Navigation Bridge
+P11-11 Existing Citation -> Wiki Navigation Bridge [ACTIVE]
   |
   v
 P11-12 Phase 10 Eval Harness Wiki Extension
@@ -1209,12 +1210,12 @@ no browser-side source of truth
 
 ---
 
-# P11-10 — Wiki Index + Page Detail Experience — ACTIVE
+# P11-10 — Wiki Index + Page Detail Experience — COMPLETE
 
 Current status:
 
 ```text
-ACTIVE
+COMPLETE
 ```
 
 Add a Chinese-first Wiki browsing experience.
@@ -1250,7 +1251,13 @@ The frontend is presentation only.
 
 ---
 
-# P11-11 — Existing Citation -> Wiki Navigation Bridge
+# P11-11 — Existing Citation -> Wiki Navigation Bridge — ACTIVE
+
+Current status:
+
+```text
+ACTIVE
+```
 
 Existing grounded guidance and Knowledge citations may link into corresponding Wiki pages.
 

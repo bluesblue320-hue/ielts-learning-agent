@@ -10,6 +10,7 @@ const navigation = [
   { href: "/writing", label: "首次写作" },
   { href: "/history", label: "历史" },
   { href: "/progress", label: "进度" },
+  { href: "/knowledge", label: "知识库" },
   { href: "/setup", label: "学习设置" },
 ];
 
@@ -24,8 +25,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <nav aria-label="主要导航">
           {navigation.map((item) => (
             <Link
-              aria-current={pathname === item.href ? "page" : undefined}
-              className={pathname === item.href ? "nav-link active" : "nav-link"}
+              aria-current={pathname === item.href || pathname.startsWith(`${item.href}/`) ? "page" : undefined}
+              className={pathname === item.href || pathname.startsWith(`${item.href}/`) ? "nav-link active" : "nav-link"}
               href={item.href}
               key={item.href}
             >
