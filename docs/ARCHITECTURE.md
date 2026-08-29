@@ -33,8 +33,8 @@ harness and is COMPLETE and merged through PR #14 (merge commit
 `c7a5f991df9c556408295d01194f1f17c13653b5`). Phase 11 — Structured Wiki
 Knowledge v1 — is the current phase: P11-00 is COMPLETE, Graph Review is
 APPROVED, and P11-01 is COMPLETE. P11-01 External Audit Review is APPROVED;
-P11-02 is COMPLETE. Phase 11 External Design Review is PENDING, and P11-03
-onward is BLOCKED_BY_EXTERNAL_DESIGN_REVIEW.
+P11-02 is COMPLETE. Phase 11 External Design Review is CHANGES_REQUESTED, and
+P11-03 onward is BLOCKED_BY_EXTERNAL_DESIGN_REVIEW.
 No Phase 11 runtime implementation has started.
 
 The completed [PHASE1_GRAPH.md](PHASE1_GRAPH.md) remains the historical Phase 1
@@ -217,7 +217,8 @@ approved. Phase 10 implements the deterministic Writing evaluation/calibration
 harness and is COMPLETE and merged through PR #14 (merge commit
 `c7a5f991df9c556408295d01194f1f17c13653b5`). Phase 11 has completed P11-00,
 Graph Review, P11-01, and P11-02. P11-01 External Audit Review is APPROVED.
-Phase 11 External Design Review is PENDING, so P11-03 onward remains blocked.
+Phase 11 External Design Review is CHANGES_REQUESTED, so P11-03 onward remains
+blocked.
 Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
 
 ## Phase 5 presentation layer
@@ -234,5 +235,5 @@ and dashboard citation UX are implemented without a new migration or dependency.
 Both external reviews are approved. Phase 10 is COMPLETE and merged through PR
 #14 (merge commit `c7a5f991df9c556408295d01194f1f17c13653b5`). Phase 11 P11-00
 and P11-01 are COMPLETE; Graph Review is APPROVED, External Audit Review is
-APPROVED, and P11-02 is COMPLETE. Phase 11 External Design Review is PENDING,
-and P11-03 onward is BLOCKED_BY_EXTERNAL_DESIGN_REVIEW.
+APPROVED, and P11-02 is COMPLETE. Phase 11 External Design Review is
+CHANGES_REQUESTED, and P11-03 onward is BLOCKED_BY_EXTERNAL_DESIGN_REVIEW.

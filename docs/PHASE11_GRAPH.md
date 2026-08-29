@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**P11-02 COMPLETE — EXTERNAL DESIGN REVIEW PENDING; P11-03 BLOCKED**
+**P11-02 COMPLETE — EXTERNAL DESIGN REVIEW CHANGES REQUESTED; P11-03 BLOCKED**
 
 Repository:
 
@@ -40,7 +40,7 @@ Phase 11 Graph Review = APPROVED
 P11-01 = COMPLETE
 P11-01 External Audit Review = APPROVED
 P11-02 = COMPLETE
-Phase 11 External Design Review = PENDING
+Phase 11 External Design Review = CHANGES_REQUESTED
 P11-03 onward = BLOCKED_BY_EXTERNAL_DESIGN_REVIEW
 ```
 
@@ -672,7 +672,7 @@ P11-01 External Audit Review [APPROVED]
 P11-02 Wiki Knowledge Contract Freeze [COMPLETE]
   |
   v
-Phase 11 External Design Review [PENDING]
+Phase 11 External Design Review [CHANGES_REQUESTED]
   |
   v
 P11-03 Wiki Schemas [BLOCKED_BY_EXTERNAL_DESIGN_REVIEW]
@@ -939,7 +939,7 @@ No implementation should invent additional semantics after this point.
 Current status:
 
 ```text
-PENDING
+CHANGES_REQUESTED
 ```
 
 The review must explicitly approve:
@@ -1027,6 +1027,10 @@ authority source where required
 rationale where required
 ```
 
+For Wiki v1, the frozen authority is `application_structural`; its basis is
+mechanically derived from the frozen structural policy, no separate authority
+source is stored, and structural relation rationale is not required or stored.
+
 No relationship may be inferred at runtime by an LLM or added through automatic
 graph enrichment. Semantic relations without the evidence required by P11-02
 must fail closed.
@@ -1042,7 +1046,8 @@ illegal direction
 illegal symmetry
 illegal inverse behavior
 unsupported semantic relation
-missing required rationale
+unknown or non-application structural authority
+prohibited persisted free-text semantic rationale
 ```
 
 ---

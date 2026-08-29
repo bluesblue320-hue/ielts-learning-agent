@@ -12,8 +12,10 @@ Navigation version = writing-wiki-navigation-v1
 Knowledge version = ielts-writing-knowledge-v1
 Canonical pages = 58
 Canonical KnowledgeUnits = 54
+Canonical relations = 93
 Secondary Knowledge references = NOT SUPPORTED
 Semantic relations = OUT OF SCOPE FOR WIKI V1
+Relation authority = application_structural
 ```
 
 P11-02 freezes documentation only. It does not implement schemas, registries,
@@ -46,7 +48,8 @@ change to:
 - the canonical page set or a canonical page ID;
 - `WikiPageType` membership or meaning;
 - primary Knowledge ownership or projection semantics;
-- relation membership, canonical identity, or meaning;
+- relation membership, canonical identity, authority, authority basis,
+  rationale policy, or meaning;
 - the authority boundary between Knowledge and Wiki;
 - public Wiki response semantic meaning;
 - removal of a canonical page.
@@ -305,6 +308,40 @@ contains
 adjacent_band
 ```
 
+`WikiRelationAuthority` is the following closed enum and no other authority
+value is valid in Wiki v1:
+
+```text
+application_structural
+```
+
+Every canonical Wiki v1 relation MUST declare:
+
+```text
+authority = application_structural
+```
+
+`application_structural` means an application-owned navigation/topology
+relation derived deterministically from this frozen Wiki contract and existing
+canonical metadata. It is not official IELTS provenance, `KnowledgeSource`
+authority, a source-backed semantic IELTS claim, pedagogical evidence, or
+Planner authority.
+
+The conceptual canonical `WikiRelation` contract has exactly these semantic
+fields:
+
+```text
+relation_type: WikiRelationType
+authority: WikiRelationAuthority
+source_page_id: string
+target_page_id: string
+```
+
+Wiki v1 relations have no `source_id`, `knowledge_id`, `provider_id`, semantic
+confidence, embedding score, generation timestamp, or LLM-authored rationale.
+Application structural authority MUST NOT be exposed or interpreted as IELTS
+source provenance.
+
 Semantic relations are out of scope for Wiki v1. The following values and
 equivalent inferred meanings are prohibited:
 
@@ -321,6 +358,10 @@ prerequisite_of
 `contains` is structural, directional, and not symmetric. Its canonical
 orientation is parent `source_page_id` to direct child `target_page_id`. It
 MUST match the frozen tree and MUST NOT skip hierarchy levels.
+
+Its authority basis is the canonical parent/child assignment frozen in this
+policy. That assignment is mechanically validated against the 58-page rooted
+tree; it does not come from an IELTS source document.
 
 ### 8.2 `adjacent_band`
 
@@ -344,12 +385,38 @@ improvement, next lesson, or Planner instruction. Cross-criterion, equal-band,
 nonconsecutive, self, reversed duplicate, and repeated adjacent-band relations
 are invalid.
 
+Its authority basis is the conjunction of:
+
+```text
+same criterion
++ descriptor bands differ by exactly 1
++ lower-band/higher-band canonical normalization
+```
+
+This basis is mechanically validated from page metadata. It does not come from
+an IELTS source document and does not establish a pedagogical or factual IELTS
+relation.
+
 Relations have no separate public ID in v1. Their canonical identities are:
 
 ```text
 contains: (contains, parent_page_id, child_page_id)
 adjacent_band: (adjacent_band, lower_page_id, higher_page_id)
 ```
+
+### 8.3 Rationale policy
+
+Canonical relation ledger rationale is not stored and is not required for
+either Wiki v1 relation type. The frozen parent assignment is the complete
+`contains` rationale; same criterion plus consecutive integer bands and
+canonical lower/higher normalization is the complete `adjacent_band`
+rationale.
+
+Developers MUST NOT author 93 repetitive free-text rationales. Arbitrary
+free-text rationale MUST NOT become a second semantic authority and is not a
+field of the Wiki v1 relation schema. Validator diagnostics MAY explain why a
+relation is invalid, but such messages are transient diagnostics and are not
+persisted relation rationale.
 
 ## 9. Deterministic ordering
 
@@ -366,11 +433,13 @@ Frozen orders are:
 5. task types: the Phase 9 declaration order in section 5.4.
 
 The full index order is deterministic depth-first preorder: emit a page, then
-its children recursively in sibling order. Relation lists are ordered first by
-relation-type order `contains`, `adjacent_band`, then by the canonical full
-page order of source and target. Knowledge and source projections preserve
-their frozen upstream declaration order except for the explicit deduplication
-rule in section 14.
+its children recursively in sibling order. The global canonical relation
+ledger is ordered first by relation-type order `contains`, `adjacent_band`,
+then by the canonical full-page order of source and target. A page-detail
+relation list is produced only by filtering incident relations from this
+already ordered global ledger; it MUST NOT be independently or unstably
+re-sorted. Knowledge and source projections preserve their frozen upstream
+declaration order except for the explicit deduplication rule in section 14.
 
 ## 10. Titles, aliases, and identity lookup
 
@@ -504,9 +573,14 @@ sources: array[WikiSourceProjection]
 
 ```text
 relation_type: WikiRelationType
+authority: WikiRelationAuthority
 source_page_id: string
 target_page_id: string
 ```
+
+No separate `authority_source` field is exposed. The authority and its
+relation-type-specific mechanical basis are static application contract
+metadata, not official source provenance.
 
 `WikiNeighborDirection` is closed to:
 
@@ -541,9 +615,44 @@ neighbors: array[WikiNeighborView]
 ```
 
 `knowledge` has length zero for root/section pages and exactly one otherwise.
-Children use sibling order. Relations use canonical relation order. Neighbors
-are ordered parent, children, previous band, next band, omitting directions
-that do not apply.
+Children use sibling order.
+
+`WikiPageDetail.relations` contains all and only canonical relations incident
+to the current page. A relation is included exactly when:
+
+```text
+relation.source_page_id == current page_id
+OR
+relation.target_page_id == current page_id
+```
+
+Each canonical relation appears exactly once and retains its canonical
+source/target orientation. The one normalized undirected `adjacent_band` edge
+MUST NOT be duplicated as two directed objects. Membership is obtained by
+filtering the globally ordered canonical ledger, so page-detail relations keep
+the frozen order: `contains` before `adjacent_band`, then canonical full-page
+order of source, then canonical full-page order of target.
+
+For the Task Response criterion page, incident relations include Assessment
+Criteria → Task Response and Task Response → each of its ten band pages. For
+Task Response Band 7, they include Task Response → Task Response Band 7,
+Task Response Band 6 → Task Response Band 7, and Task Response Band 7 → Task
+Response Band 8. Boundary bands omit the nonexistent previous or next edge.
+
+`relations` and `neighbors` have different responsibilities:
+
+```text
+relations = raw canonical topology edges incident to the current page
+neighbors = navigation-oriented projection derived from those incident edges
+```
+
+For Task Response Band 7, the three raw relations above project to parent →
+Task Response, previous_band → Band 6, and next_band → Band 8. Neighbor
+directions remain `parent`, `child`, `previous_band`, and `next_band`.
+Neighbors are ordered parent, children, previous band, next band, omitting
+directions that do not apply. This projection MUST NOT reinterpret
+`adjacent_band` as recommended progression, prerequisite, improvement path, or
+Planner output.
 
 `WikiIndexResponse`:
 
@@ -667,8 +776,14 @@ for at least:
 - incorrect sibling or full-index ordering;
 - unknown relation endpoints, illegal relation types, self-relations, or
   duplicate canonical relations;
+- unknown `WikiRelationAuthority`, authority other than
+  `application_structural`, or relation type/authority mismatch;
+- a relation carrying unsupported semantic/source/provider authority;
+- a relation carrying prohibited persisted free-text semantic rationale;
 - reversed, nonconsecutive, or cross-criterion adjacent-band relations;
 - a `contains` count other than 57 or `adjacent_band` count other than 36;
+- a canonical relation count other than 93, or any of the 93 relations lacking
+  `authority = application_structural`;
 - title, normalized title, alias, or canonical identity collision;
 - empty-string, implicit, generated, or ambiguous alias entries;
 - unresolved source references or altered source identity/provenance;
@@ -688,6 +803,8 @@ Required future Eval coverage includes:
 - exact Knowledge ID to canonical page resolution;
 - 54/54 primary ownership coverage and uniqueness;
 - the 58-page topology, root, reachability, relation, and ordering invariants;
+- all 93 relation authority values and the prohibition on persisted rationale;
+- exact incident-relation membership and relation-to-neighbor projection;
 - deterministic page, relation, neighbor, breadcrumb, and lookup results;
 - unknown page and unknown Knowledge failures;
 - preservation of Knowledge source references and canonical source identity;
@@ -758,7 +875,7 @@ Phase 11 Graph Review = APPROVED
 P11-01 = COMPLETE
 P11-01 External Audit Review = APPROVED
 P11-02 = COMPLETE
-Phase 11 External Design Review = PENDING
+Phase 11 External Design Review = CHANGES_REQUESTED
 P11-03 onward = BLOCKED_BY_EXTERNAL_DESIGN_REVIEW
 ```
 

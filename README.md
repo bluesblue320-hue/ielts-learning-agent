@@ -34,7 +34,7 @@ reviews are complete.
 **Current phase: Phase 11 — Structured Wiki Knowledge v1.** Phase 11 is STARTED.
 P11-00 is COMPLETE; Phase 11 Graph Review is APPROVED; P11-01 is COMPLETE; its
 External Audit Review is APPROVED. P11-02 is COMPLETE; Phase 11 External Design
-Review is PENDING, and P11-03 onward is
+Review is `CHANGES_REQUESTED`, and P11-03 onward is
 `BLOCKED_BY_EXTERNAL_DESIGN_REVIEW`. No Wiki runtime implementation has
 started.
 
@@ -191,7 +191,7 @@ Before changing the project, read these documents in order:
 2. Current [Phase 11 graph](docs/PHASE11_GRAPH.md) and
    [P11-01 audit](docs/PHASE11_AUDIT.md), followed by the frozen
    [Wiki Knowledge policy](docs/WIKI_KNOWLEDGE_POLICY.md). P11-02 is COMPLETE;
-   External Design Review is PENDING, so P11-03 remains blocked.
+   External Design Review is CHANGES_REQUESTED, so P11-03 remains blocked.
 3. Completed [Phase 10 graph](docs/PHASE10_GRAPH.md), [internal audit](docs/PHASE10_AUDIT.md),
    and [Eval operator workflow](docs/PHASE10_EVAL_OPERATOR.md). Phase 10 is
    complete and merged through PR #14.
@@ -238,8 +238,8 @@ approved. The completed execution record and audit are
 through PR #14 (merge commit
 `c7a5f991df9c556408295d01194f1f17c13653b5`). Phase 11 P11-00 and P11-01 are
 COMPLETE; Graph Review is APPROVED, External Audit Review is APPROVED, and
-P11-02 is COMPLETE. Phase 11 External Design Review is PENDING, and P11-03
-onward is BLOCKED_BY_EXTERNAL_DESIGN_REVIEW.
+P11-02 is COMPLETE. Phase 11 External Design Review is CHANGES_REQUESTED, and
+P11-03 onward is BLOCKED_BY_EXTERNAL_DESIGN_REVIEW.
 
 ## Phase 5 Web MVP
 
