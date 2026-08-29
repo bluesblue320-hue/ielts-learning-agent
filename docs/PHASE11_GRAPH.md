@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**GRAPH REVIEW CHANGES REQUESTED — P11-00 COMPLETE; P11-01 BLOCKED**
+**P11-01 COMPLETE — EXTERNAL AUDIT REVIEW PENDING; P11-02 BLOCKED**
 
 Repository:
 
@@ -35,11 +35,12 @@ Current phase state:
 Phase 10 = COMPLETE
 PR #14 = MERGED
 Phase 11 = STARTED
-Phase 11 status = GRAPH_REVIEW_PENDING
 P11-00 = COMPLETE
-Phase 11 Graph Review = CHANGES_REQUESTED
-P11-01 = BLOCKED_BY_GRAPH_REVIEW
-P11-02 onward = BLOCKED
+Phase 11 Graph Review = APPROVED
+P11-01 = COMPLETE
+P11-01 External Audit Review = PENDING
+P11-02 = BLOCKED_BY_EXTERNAL_AUDIT_REVIEW
+P11-03 onward = BLOCKED
 ```
 
 Scope:
@@ -658,16 +659,16 @@ START
 P11-00 Phase 11 Kickoff / Phase Status Sync / Graph Establishment [COMPLETE]
   |
   v
-Phase 11 Graph Review [CHANGES_REQUESTED]
+Phase 11 Graph Review [APPROVED]
   |
   v
-P11-01 Existing Knowledge & Product Surface Audit [BLOCKED_BY_GRAPH_REVIEW]
+P11-01 Existing Knowledge & Product Surface Audit [COMPLETE]
   |
   v
-P11-01 External Audit Review
+P11-01 External Audit Review [PENDING]
   |
   v
-P11-02 Wiki Knowledge Contract Freeze
+P11-02 Wiki Knowledge Contract Freeze [BLOCKED_BY_EXTERNAL_AUDIT_REVIEW]
   |
   v
 Phase 11 External Design Review
@@ -802,7 +803,7 @@ COMPLETE
 Current status:
 
 ```text
-CHANGES_REQUESTED
+APPROVED
 ```
 
 External review must verify:
@@ -820,7 +821,7 @@ No P11-01 work may start until Graph Review is APPROVED.
 
 ---
 
-# P11-01 — Existing Knowledge & Product Surface Audit
+# P11-01 — Existing Knowledge & Product Surface Audit — COMPLETE
 
 ## Goal
 
@@ -858,10 +859,10 @@ Produce:
 docs/PHASE11_AUDIT.md
 ```
 
-Initial status:
+Status:
 
 ```text
-BLOCKED_BY_GRAPH_REVIEW
+COMPLETE
 ```
 
 ---
@@ -872,9 +873,21 @@ Review whether the audit describes actual code rather than intended architecture
 
 No Wiki contract may be frozen from assumptions.
 
+Current status:
+
+```text
+PENDING
+```
+
 ---
 
-# P11-02 — Wiki Knowledge Contract Freeze
+# P11-02 — Wiki Knowledge Contract Freeze — BLOCKED_BY_EXTERNAL_AUDIT_REVIEW
+
+Current status:
+
+```text
+BLOCKED_BY_EXTERNAL_AUDIT_REVIEW
+```
 
 ## Goal
 
