@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**BATCH C ACTIVE — MILESTONE REVIEW APPROVED; P11-09 ACTIVE**
+**BATCH C ACTIVE — MILESTONE REVIEW APPROVED; P11-10 ACTIVE**
 
 Repository:
 
@@ -48,8 +48,9 @@ P11-06 = COMPLETE
 P11-07 = COMPLETE
 P11-08 = COMPLETE
 Phase 11 Milestone Review = APPROVED
-P11-09 = ACTIVE
-P11-10 onward = BLOCKED_BY_DEPENDENCY
+P11-09 = COMPLETE
+P11-10 = ACTIVE
+P11-11 onward = BLOCKED_BY_DEPENDENCY
 ```
 
 Scope:
@@ -704,10 +705,10 @@ P11-08 Read-only Wiki API [COMPLETE]
 Phase 11 Milestone Review [APPROVED]
   |
   v
-P11-09 Typed Web Wiki Client [ACTIVE]
+P11-09 Typed Web Wiki Client [COMPLETE]
   |
   v
-P11-10 Wiki Index + Page Detail Experience
+P11-10 Wiki Index + Page Detail Experience [ACTIVE]
   |
   v
 P11-11 Existing Citation -> Wiki Navigation Bridge
@@ -1187,12 +1188,12 @@ no RAG capability slipped into scope
 
 ---
 
-# P11-09 — Typed Web Wiki Client — ACTIVE
+# P11-09 — Typed Web Wiki Client — COMPLETE
 
 Current status:
 
 ```text
-ACTIVE
+COMPLETE
 ```
 
 Add typed client support for the frozen Wiki API.
@@ -1208,7 +1209,13 @@ no browser-side source of truth
 
 ---
 
-# P11-10 — Wiki Index + Page Detail Experience
+# P11-10 — Wiki Index + Page Detail Experience — ACTIVE
+
+Current status:
+
+```text
+ACTIVE
+```
 
 Add a Chinese-first Wiki browsing experience.
 
