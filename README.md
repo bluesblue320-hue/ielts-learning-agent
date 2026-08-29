@@ -35,7 +35,7 @@ reviews are complete.
 P11-00 is COMPLETE; Phase 11 Graph Review is APPROVED; P11-01 is COMPLETE; its
 External Audit Review is APPROVED. P11-02 is COMPLETE; Phase 11 External Design
 Review is APPROVED. P11-03 through P11-08 are COMPLETE. Phase 11 Milestone
-Review is PENDING, and P11-09 onward is `BLOCKED_BY_MILESTONE_REVIEW`.
+Review is CHANGES_REQUESTED, and P11-09 onward is `BLOCKED_BY_MILESTONE_REVIEW`.
 
 Phase 7 connects authoritative current learner state and longitudinal Writing
 Memory to deterministic Planner v2. Memory is consulted only for exact
@@ -191,7 +191,7 @@ Before changing the project, read these documents in order:
    [P11-01 audit](docs/PHASE11_AUDIT.md), followed by the frozen
    [Wiki Knowledge policy](docs/WIKI_KNOWLEDGE_POLICY.md). P11-02 is COMPLETE;
    External Design Review is APPROVED; P11-03 through P11-08 are COMPLETE, and
-   Milestone Review is PENDING.
+   Milestone Review is CHANGES_REQUESTED.
 3. Completed [Phase 10 graph](docs/PHASE10_GRAPH.md), [internal audit](docs/PHASE10_AUDIT.md),
    and [Eval operator workflow](docs/PHASE10_EVAL_OPERATOR.md). Phase 10 is
    complete and merged through PR #14.
@@ -238,8 +238,8 @@ approved. The completed execution record and audit are
 through PR #14 (merge commit
 `c7a5f991df9c556408295d01194f1f17c13653b5`). Phase 11 P11-00 and P11-01 are
 COMPLETE; Graph Review is APPROVED, External Audit Review is APPROVED, and
-P11-02 is COMPLETE. Phase 11 External Design Review is CHANGES_REQUESTED, and
-P11-03 through P11-08 are COMPLETE. Phase 11 Milestone Review is PENDING, and
+P11-02 is COMPLETE. Phase 11 External Design Review is APPROVED, and P11-03
+through P11-08 are COMPLETE. Phase 11 Milestone Review is CHANGES_REQUESTED, and
 P11-09 onward is BLOCKED_BY_MILESTONE_REVIEW.
 
 ## Phase 5 Web MVP

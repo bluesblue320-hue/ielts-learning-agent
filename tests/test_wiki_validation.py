@@ -11,9 +11,13 @@ from app.wiki.snapshot import VALIDATED_WIKI_SNAPSHOT
 from app.wiki.validation import validate_wiki_snapshot
 
 
-def _replace_page(page_id: str, **updates: object) -> tuple[WikiPage, ...]:
+def _replace_page(
+    canonical_page_id: str, **updates: object
+) -> tuple[WikiPage, ...]:
     return tuple(
-        page.model_copy(update=updates) if page.page_id == page_id else page
+        page.model_copy(update=updates)
+        if page.page_id == canonical_page_id
+        else page
         for page in WIKI_PAGES
     )
 
@@ -98,6 +102,15 @@ def test_validator_rejects_corrupted_page_and_ownership_snapshots(
     pages: tuple[WikiPage, ...]
 ) -> None:
     _assert_invalid(pages=pages)
+
+
+def test_validator_rejects_malformed_page_id_bypassing_schema_validation() -> None:
+    pages = _replace_page(
+        "writing-task2-task-response-band-7",
+        page_id="writing--task2-extra",
+    )
+    with pytest.raises(WikiIntegrityError, match="wiki page ID is invalid"):
+        validate_wiki_snapshot(pages=pages)
 
 
 def test_validator_rejects_missing_and_extra_contains_relations() -> None:

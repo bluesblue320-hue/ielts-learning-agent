@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**BATCH B COMPLETE — MILESTONE REVIEW PENDING; P11-09 BLOCKED**
+**BATCH B COMPLETE — MILESTONE REVIEW CHANGES REQUESTED; P11-09 BLOCKED**
 
 Repository:
 
@@ -47,7 +47,7 @@ P11-05 = COMPLETE
 P11-06 = COMPLETE
 P11-07 = COMPLETE
 P11-08 = COMPLETE
-Phase 11 Milestone Review = PENDING
+Phase 11 Milestone Review = CHANGES_REQUESTED
 P11-09 onward = BLOCKED_BY_MILESTONE_REVIEW
 ```
 
@@ -700,7 +700,7 @@ P11-07 Deterministic Wiki Navigation / Lookup Service [COMPLETE]
 P11-08 Read-only Wiki API [COMPLETE]
   |
   v
-Phase 11 Milestone Review [PENDING]
+Phase 11 Milestone Review [CHANGES_REQUESTED]
   |
   v
 P11-09 Typed Web Wiki Client [BLOCKED_BY_MILESTONE_REVIEW]
@@ -1170,7 +1170,7 @@ No admin mutation endpoint.
 Current status:
 
 ```text
-PENDING
+CHANGES_REQUESTED
 ```
 
 Before frontend integration verify:

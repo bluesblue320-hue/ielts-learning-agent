@@ -21,6 +21,7 @@ from app.schemas.learner import WritingSkillKey
 WIKI_VERSION = "ielts-writing-wiki-v1"
 NAVIGATION_VERSION = "writing-wiki-navigation-v1"
 WIKI_ROOT_PAGE_ID = "writing-task2"
+WIKI_PAGE_ID_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
 
 WikiPageId = Annotated[
     str,
@@ -28,7 +29,7 @@ WikiPageId = Annotated[
         strip_whitespace=True,
         min_length=1,
         max_length=128,
-        pattern=r"^[a-z0-9][a-z0-9-]*$",
+        pattern=WIKI_PAGE_ID_PATTERN,
     ),
 ]
 WikiTitle = Annotated[

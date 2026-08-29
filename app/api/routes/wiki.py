@@ -4,7 +4,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query
 
-from app.schemas.wiki import WikiIndexResponse, WikiPageDetail
+from app.schemas.wiki import (
+    WIKI_PAGE_ID_PATTERN,
+    WikiIndexResponse,
+    WikiPageDetail,
+)
 from app.wiki.service import WikiService, get_wiki_service
 
 
@@ -28,7 +32,7 @@ def get_wiki_page(
         Path(
             min_length=1,
             max_length=128,
-            pattern=r"^[a-z0-9][a-z0-9-]*$",
+            pattern=WIKI_PAGE_ID_PATTERN,
         ),
     ],
     service: Annotated[WikiService, Depends(get_wiki_service)],

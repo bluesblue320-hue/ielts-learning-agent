@@ -85,6 +85,37 @@ def test_wiki_page_rejects_invalid_boundary_values(overrides: dict[str, object])
         WikiPage.model_validate(values)
 
 
+@pytest.mark.parametrize(
+    "page_id",
+    [
+        "writing--task2",
+        "writing-task2-",
+        "-writing-task2",
+        "writing---task2",
+    ],
+)
+def test_wiki_page_rejects_malformed_hyphenated_ids(page_id: str) -> None:
+    with pytest.raises(ValidationError):
+        WikiPage(
+            page_id=page_id,
+            page_type="root",
+            title="Writing Task 2",
+            parent_page_id=None,
+            order=1,
+        )
+
+
+def test_wiki_page_accepts_canonical_segmented_id() -> None:
+    page = WikiPage(
+        page_id="writing-task2-task-response-band-7",
+        page_type="band_descriptor",
+        title="Task Response Band 7",
+        parent_page_id="writing-task2-task-response",
+        order=8,
+    )
+    assert page.page_id == "writing-task2-task-response-band-7"
+
+
 def test_wiki_relation_has_only_frozen_structural_fields() -> None:
     relation = WikiRelation(
         relation_type="contains",

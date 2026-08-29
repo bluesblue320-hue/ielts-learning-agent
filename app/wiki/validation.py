@@ -16,6 +16,7 @@ from app.schemas.knowledge import (
 )
 from app.schemas.wiki import (
     NAVIGATION_VERSION,
+    WIKI_PAGE_ID_PATTERN,
     WIKI_ROOT_PAGE_ID,
     WIKI_VERSION,
     WikiPage,
@@ -35,7 +36,6 @@ from app.wiki.registry import (
 from app.wiki.relations import WIKI_RELATIONS
 
 
-_PAGE_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 _RELATION_FIELDS = {
     "relation_type",
     "authority",
@@ -54,6 +54,9 @@ def _validate_pages(pages: Sequence[WikiPage]) -> dict[str, WikiPage]:
     page_ids = [page.page_id for page in pages]
     if len(page_ids) != len(set(page_ids)):
         _fail("wiki page IDs must be unique")
+    for page_id in page_ids:
+        if not re.fullmatch(WIKI_PAGE_ID_PATTERN, page_id):
+            _fail("wiki page ID is invalid")
     if set(page_ids) != set(CANONICAL_PAGE_IDS):
         _fail("wiki page set differs from the frozen registry")
     if tuple(page_ids) != CANONICAL_PAGE_IDS:
@@ -61,8 +64,6 @@ def _validate_pages(pages: Sequence[WikiPage]) -> dict[str, WikiPage]:
 
     page_by_id = {page.page_id: page for page in pages}
     for page in pages:
-        if not _PAGE_ID_PATTERN.fullmatch(page.page_id):
-            _fail("wiki page ID is invalid")
         if page.wiki_version != WIKI_VERSION:
             _fail("wiki page version mismatch")
         if page.navigation_version != NAVIGATION_VERSION:

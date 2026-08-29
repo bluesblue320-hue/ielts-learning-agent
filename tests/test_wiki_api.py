@@ -71,6 +71,22 @@ def test_wiki_api_returns_frozen_safe_lookup_errors() -> None:
     assert invalid_page.json()["error"]["code"] == "request_invalid"
 
 
+def test_wiki_api_distinguishes_malformed_and_unknown_page_ids() -> None:
+    client = _client()
+    for malformed_page_id in (
+        "writing--task2",
+        "writing-task2-",
+        "-writing-task2",
+    ):
+        response = client.get(f"/knowledge/writing/wiki/{malformed_page_id}")
+        assert response.status_code == 422
+        assert response.json()["error"]["code"] == "request_invalid"
+
+    unknown_page = client.get("/knowledge/writing/wiki/writing-task2-unknown")
+    assert unknown_page.status_code == 404
+    assert unknown_page.json()["error"]["code"] == "wiki_page_not_found"
+
+
 def test_invalid_internal_wiki_state_maps_to_safe_503() -> None:
     application = create_app()
 
