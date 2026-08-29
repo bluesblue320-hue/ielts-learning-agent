@@ -16,6 +16,7 @@ DETERMINISTIC_GATE_TARGETS = (
     "tests/test_eval_outcome.py",
     "tests/test_eval_trajectory.py",
     "tests/test_eval_knowledge.py",
+    "tests/test_eval_wiki.py",
     "tests/test_eval_authority.py",
     "tests/test_eval_lifecycle.py",
     "tests/test_eval_lifecycle_integration.py",

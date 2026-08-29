@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**BATCH C ACTIVE — MILESTONE REVIEW APPROVED; P11-12 ACTIVE**
+**BATCH C ACTIVE — MILESTONE REVIEW APPROVED; P11-13 ACTIVE**
 
 Repository:
 
@@ -51,8 +51,9 @@ Phase 11 Milestone Review = APPROVED
 P11-09 = COMPLETE
 P11-10 = COMPLETE
 P11-11 = COMPLETE
-P11-12 = ACTIVE
-P11-13 onward = BLOCKED_BY_DEPENDENCY
+P11-12 = COMPLETE
+P11-13 = ACTIVE
+P11-14 onward = BLOCKED_BY_DEPENDENCY
 ```
 
 Scope:
@@ -716,10 +717,10 @@ P11-10 Wiki Index + Page Detail Experience [COMPLETE]
 P11-11 Existing Citation -> Wiki Navigation Bridge [COMPLETE]
   |
   v
-P11-12 Phase 10 Eval Harness Wiki Extension [ACTIVE]
+P11-12 Phase 10 Eval Harness Wiki Extension [COMPLETE]
   |
   v
-P11-13 Wiki Browser E2E / Integration Regression
+P11-13 Wiki Browser E2E / Integration Regression [ACTIVE]
   |
   v
 P11-14 Documentation & Architecture Synchronization
@@ -1280,12 +1281,12 @@ This node changes discoverability/presentation only.
 
 ---
 
-# P11-12 — Phase 10 Eval Harness Wiki Extension — ACTIVE
+# P11-12 — Phase 10 Eval Harness Wiki Extension — COMPLETE
 
 Current status:
 
 ```text
-ACTIVE
+COMPLETE
 ```
 
 Extend deterministic Eval coverage rather than creating a parallel ad-hoc test architecture.
@@ -1317,7 +1318,13 @@ No LLM judge is required.
 
 ---
 
-# P11-13 — Wiki Browser E2E / Integration Regression
+# P11-13 — Wiki Browser E2E / Integration Regression — ACTIVE
+
+Current status:
+
+```text
+ACTIVE
+```
 
 Add browser-level validation of representative Wiki flows.
 

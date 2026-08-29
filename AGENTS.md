@@ -184,8 +184,9 @@ Phase 11 Milestone Review = APPROVED
 P11-09 = COMPLETE
 P11-10 = COMPLETE
 P11-11 = COMPLETE
-P11-12 = ACTIVE
-P11-13 onward = BLOCKED_BY_DEPENDENCY
+P11-12 = COMPLETE
+P11-13 = ACTIVE
+P11-14 onward = BLOCKED_BY_DEPENDENCY
 ```
 
 Phase 6 design (P6-01 audit, P6-02 contract freeze, versions
@@ -234,7 +235,7 @@ complete historical evidence. Phase 11 has started with P11-00 COMPLETE and
 Graph Review APPROVED. P11-01 and P11-02 are COMPLETE; P11-01 External Audit
 Review and Phase 11 External Design Review are APPROVED. P11-03 through P11-08
 are COMPLETE. Phase 11 Milestone Review is APPROVED. P11-09 is COMPLETE,
-P11-10 and P11-11 are COMPLETE. P11-12 is ACTIVE, and P11-13 onward is
+P11-10 through P11-12 are COMPLETE. P11-13 is ACTIVE, and P11-14 onward is
 BLOCKED_BY_DEPENDENCY.
 
 The development loop defines HOW each graph node should be executed.
