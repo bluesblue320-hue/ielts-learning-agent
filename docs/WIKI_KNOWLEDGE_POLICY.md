@@ -895,7 +895,11 @@ P11-12 = COMPLETE
 P11-13 = COMPLETE
 P11-14 = COMPLETE
 P11-15 = COMPLETE
-P11-16 = ACTIVE
+P11-16 = INTERNAL_AUDIT_COMPLETE
+Phase 11 External Implementation Review = PENDING
+Phase 11 PR Validation = BLOCKED_BY_EXTERNAL_IMPLEMENTATION_REVIEW
+Merge Authorization = BLOCKED
+Phase 11 = NOT COMPLETE
 ```
 
 Later nodes remain governed by the Phase 11 dependency graph.

@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**BATCH C ACTIVE — MILESTONE REVIEW APPROVED; P11-16 ACTIVE**
+**BATCH C COMPLETE — INTERNAL AUDIT COMPLETE; EXTERNAL IMPLEMENTATION REVIEW PENDING**
 
 Repository:
 
@@ -55,7 +55,11 @@ P11-12 = COMPLETE
 P11-13 = COMPLETE
 P11-14 = COMPLETE
 P11-15 = COMPLETE
-P11-16 = ACTIVE
+P11-16 = INTERNAL_AUDIT_COMPLETE
+Phase 11 External Implementation Review = PENDING
+Phase 11 PR Validation = BLOCKED_BY_EXTERNAL_IMPLEMENTATION_REVIEW
+Merge Authorization = BLOCKED
+Phase 11 = NOT COMPLETE
 ```
 
 Scope:
@@ -731,16 +735,16 @@ P11-14 Documentation & Architecture Synchronization [COMPLETE]
 P11-15 Full Phase 1-11 Regression Validation [COMPLETE]
   |
   v
-P11-16 Internal Audit [ACTIVE]
+P11-16 Internal Audit [INTERNAL_AUDIT_COMPLETE]
   |
   v
-Phase 11 External Implementation Review
+Phase 11 External Implementation Review [PENDING]
   |
   v
-Phase 11 PR Validation
+Phase 11 PR Validation [BLOCKED_BY_EXTERNAL_IMPLEMENTATION_REVIEW]
   |
   v
-Merge Authorization
+Merge Authorization [BLOCKED]
   |
   v
 STOP
@@ -1407,7 +1411,7 @@ Phase 11 should require no live provider credential.
 
 ---
 
-# P11-16 — Internal Audit — ACTIVE
+# P11-16 — Internal Audit — INTERNAL_AUDIT_COMPLETE
 
 Produce final implementation evidence.
 
