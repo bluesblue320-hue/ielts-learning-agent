@@ -878,8 +878,10 @@ P11-02 = COMPLETE
 Phase 11 External Design Review = APPROVED
 P11-03 = COMPLETE
 P11-04 = COMPLETE
-P11-05 = ACTIVE
-P11-06 onward = BLOCKED_BY_DEPENDENCY
+P11-05 = COMPLETE
+P11-06 = COMPLETE
+P11-07 = ACTIVE
+P11-08 onward = BLOCKED_BY_DEPENDENCY
 ```
 
 P11-03 may now implement this approved contract. Later nodes remain governed

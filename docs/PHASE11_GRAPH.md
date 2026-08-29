@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**P11-03/04 COMPLETE — P11-05 ACTIVE; P11-06 BLOCKED**
+**P11-03 THROUGH P11-06 COMPLETE — P11-07 ACTIVE; P11-08 BLOCKED**
 
 Repository:
 
@@ -43,8 +43,10 @@ P11-02 = COMPLETE
 Phase 11 External Design Review = APPROVED
 P11-03 = COMPLETE
 P11-04 = COMPLETE
-P11-05 = ACTIVE
-P11-06 onward = BLOCKED_BY_DEPENDENCY
+P11-05 = COMPLETE
+P11-06 = COMPLETE
+P11-07 = ACTIVE
+P11-08 onward = BLOCKED_BY_DEPENDENCY
 ```
 
 Scope:
@@ -684,13 +686,13 @@ P11-03 Wiki Schemas [COMPLETE]
 P11-04 Canonical Wiki Page Registry [COMPLETE]
   |
   v
-P11-05 Wiki Relation Ledger [ACTIVE]
+P11-05 Wiki Relation Ledger [COMPLETE]
   |
   v
-P11-06 Wiki Integrity Validator
+P11-06 Wiki Integrity Validator [COMPLETE]
   |
   v
-P11-07 Deterministic Wiki Navigation / Lookup Service
+P11-07 Deterministic Wiki Navigation / Lookup Service [ACTIVE]
   |
   v
 P11-08 Read-only Wiki API
@@ -1015,7 +1017,7 @@ Tests must prove complete canonical mapping.
 
 ---
 
-# P11-05 — Wiki Relation Ledger — ACTIVE
+# P11-05 — Wiki Relation Ledger — COMPLETE
 
 Create the explicit reviewed relation ledger.
 
@@ -1055,7 +1057,7 @@ prohibited persisted free-text semantic rationale
 
 ---
 
-# P11-06 — Wiki Integrity Validator
+# P11-06 — Wiki Integrity Validator — COMPLETE
 
 Implement deterministic full-snapshot validation.
 
@@ -1080,7 +1082,7 @@ Validation should run during tests and, where appropriate, module initialization
 
 ---
 
-# P11-07 — Deterministic Wiki Navigation / Lookup Service
+# P11-07 — Deterministic Wiki Navigation / Lookup Service — ACTIVE
 
 Implement provider-free deterministic navigation.
 
