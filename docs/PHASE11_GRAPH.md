@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**BATCH C ACTIVE — MILESTONE REVIEW APPROVED; P11-15 ACTIVE**
+**BATCH C ACTIVE — MILESTONE REVIEW APPROVED; P11-16 ACTIVE**
 
 Repository:
 
@@ -54,8 +54,8 @@ P11-11 = COMPLETE
 P11-12 = COMPLETE
 P11-13 = COMPLETE
 P11-14 = COMPLETE
-P11-15 = ACTIVE
-P11-16 onward = BLOCKED_BY_DEPENDENCY
+P11-15 = COMPLETE
+P11-16 = ACTIVE
 ```
 
 Scope:
@@ -728,10 +728,10 @@ P11-13 Wiki Browser E2E / Integration Regression [COMPLETE]
 P11-14 Documentation & Architecture Synchronization [COMPLETE]
   |
   v
-P11-15 Full Phase 1-11 Regression Validation [ACTIVE]
+P11-15 Full Phase 1-11 Regression Validation [COMPLETE]
   |
   v
-P11-16 Internal Audit
+P11-16 Internal Audit [ACTIVE]
   |
   v
 Phase 11 External Implementation Review
@@ -1382,7 +1382,7 @@ These must not be described as interchangeable concepts.
 
 ---
 
-# P11-15 — Full Phase 1-11 Regression Validation — ACTIVE
+# P11-15 — Full Phase 1-11 Regression Validation — COMPLETE
 
 Run the complete relevant validation matrix.
 
@@ -1407,7 +1407,7 @@ Phase 11 should require no live provider credential.
 
 ---
 
-# P11-16 — Internal Audit
+# P11-16 — Internal Audit — ACTIVE
 
 Produce final implementation evidence.
 

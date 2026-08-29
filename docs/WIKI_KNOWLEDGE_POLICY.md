@@ -894,8 +894,8 @@ P11-11 = COMPLETE
 P11-12 = COMPLETE
 P11-13 = COMPLETE
 P11-14 = COMPLETE
-P11-15 = ACTIVE
-P11-16 onward = BLOCKED_BY_DEPENDENCY
+P11-15 = COMPLETE
+P11-16 = ACTIVE
 ```
 
 Later nodes remain governed by the Phase 11 dependency graph.
