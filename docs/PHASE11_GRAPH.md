@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**BATCH C ACTIVE — MILESTONE REVIEW APPROVED; P11-11 ACTIVE**
+**BATCH C ACTIVE — MILESTONE REVIEW APPROVED; P11-12 ACTIVE**
 
 Repository:
 
@@ -50,8 +50,9 @@ P11-08 = COMPLETE
 Phase 11 Milestone Review = APPROVED
 P11-09 = COMPLETE
 P11-10 = COMPLETE
-P11-11 = ACTIVE
-P11-12 onward = BLOCKED_BY_DEPENDENCY
+P11-11 = COMPLETE
+P11-12 = ACTIVE
+P11-13 onward = BLOCKED_BY_DEPENDENCY
 ```
 
 Scope:
@@ -712,10 +713,10 @@ P11-09 Typed Web Wiki Client [COMPLETE]
 P11-10 Wiki Index + Page Detail Experience [COMPLETE]
   |
   v
-P11-11 Existing Citation -> Wiki Navigation Bridge [ACTIVE]
+P11-11 Existing Citation -> Wiki Navigation Bridge [COMPLETE]
   |
   v
-P11-12 Phase 10 Eval Harness Wiki Extension
+P11-12 Phase 10 Eval Harness Wiki Extension [ACTIVE]
   |
   v
 P11-13 Wiki Browser E2E / Integration Regression
@@ -1251,12 +1252,12 @@ The frontend is presentation only.
 
 ---
 
-# P11-11 — Existing Citation -> Wiki Navigation Bridge — ACTIVE
+# P11-11 — Existing Citation -> Wiki Navigation Bridge — COMPLETE
 
 Current status:
 
 ```text
-ACTIVE
+COMPLETE
 ```
 
 Existing grounded guidance and Knowledge citations may link into corresponding Wiki pages.
@@ -1279,7 +1280,13 @@ This node changes discoverability/presentation only.
 
 ---
 
-# P11-12 — Phase 10 Eval Harness Wiki Extension
+# P11-12 — Phase 10 Eval Harness Wiki Extension — ACTIVE
+
+Current status:
+
+```text
+ACTIVE
+```
 
 Extend deterministic Eval coverage rather than creating a parallel ad-hoc test architecture.
 

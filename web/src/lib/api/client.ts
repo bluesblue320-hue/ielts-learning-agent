@@ -316,6 +316,11 @@ export type GroundedGuidanceItem = {
   explanation: string;
   knowledge_ids: string[];
   citations: GroundedCitation[];
+  wiki_pages: {
+    knowledge_id: string;
+    page_id: string;
+    title: string;
+  }[];
 };
 
 export type GroundedRecommendationSummary = {

@@ -21,11 +21,14 @@ from app.schemas.knowledge import (
     GroundedGuidanceItem,
     GroundedLearnerStateSummary,
     GroundedRecommendationSummary,
+    GroundedWikiPageLink,
     KnowledgeRetrievalPurpose,
     KnowledgeRetrievalQuery,
     WritingGroundedGuidanceResponse,
 )
 from app.services.learning_application import LearnerNotFoundError, LearningPersistenceError
+from app.wiki.errors import WikiPageNotFoundError
+from app.wiki.service import WIKI_SERVICE
 
 
 _CHINESE_CRITERION_LABELS = {
@@ -40,6 +43,27 @@ def _nearest_half_band(value: Decimal) -> BandScore:
     """Make a presentation-only, deterministic descriptor query value."""
     rounded = (value * 2).quantize(Decimal("1"), rounding=ROUND_HALF_UP) / 2
     return BandScore(value=rounded)
+
+
+def _wiki_page_links(knowledge_ids: tuple[str, ...]) -> tuple[GroundedWikiPageLink, ...]:
+    links: list[GroundedWikiPageLink] = []
+    seen: set[str] = set()
+    try:
+        for knowledge_id in knowledge_ids:
+            page = WIKI_SERVICE.page_for_knowledge_id(knowledge_id)
+            if page.page_id in seen:
+                continue
+            seen.add(page.page_id)
+            links.append(
+                GroundedWikiPageLink(
+                    knowledge_id=knowledge_id,
+                    page_id=page.page_id,
+                    title=page.title,
+                )
+            )
+    except WikiPageNotFoundError as error:
+        raise LearningPersistenceError("knowledge has no canonical Wiki page") from error
+    return tuple(links)
 
 
 class WritingGuidanceService:
@@ -149,12 +173,14 @@ class WritingGuidanceService:
                         )
                     )
         label = _CHINESE_CRITERION_LABELS[decision.target_skill]
+        knowledge_ids = tuple(unit.knowledge_id for unit in result.units)
         item = GroundedGuidanceItem(
             criterion=decision.target_skill,
             title=f"{label}：下一步重点",
             explanation="；".join(unit.statement for unit in result.units),
-            knowledge_ids=tuple(unit.knowledge_id for unit in result.units),
+            knowledge_ids=knowledge_ids,
             citations=tuple(citations),
+            wiki_pages=_wiki_page_links(knowledge_ids),
         )
         return WritingGroundedGuidanceResponse(
             learner_state=state,

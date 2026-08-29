@@ -119,6 +119,10 @@ def test_guidance_api_returns_grounded_practice_guidance_without_provider() -> N
     assert body["current_recommendation"]["target_skill"] == "task_response"
     assert body["learner_state"]["current_estimates"]["task_response"] == "6.25"
     assert body["guidance_items"][0]["knowledge_ids"]
+    assert body["guidance_items"][0]["wiki_pages"]
+    assert body["guidance_items"][0]["wiki_pages"][0]["page_id"].startswith(
+        "writing-task2-task-response-band-"
+    )
     assert body["source_citations"][0]["url"].startswith("https://ielts.org/")
 
 

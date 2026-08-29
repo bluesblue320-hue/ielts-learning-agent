@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.services.learning_application import LearnerNotFoundError, LearningPersistenceError
-from app.services.writing_guidance import WritingGuidanceService
+from app.services.writing_guidance import WritingGuidanceService, _wiki_page_links
 
 
 class _Session:
@@ -99,7 +99,29 @@ def test_practice_recommendation_uses_chronology_bound_snapshot_and_citations() 
     assert response.learner_state.current_estimates["task_response"] == Decimal("6.25")
     assert response.guidance_items[0].criterion == "task_response"
     assert response.guidance_items[0].citations == response.source_citations
+    assert tuple(
+        link.knowledge_id for link in response.guidance_items[0].wiki_pages
+    ) == response.guidance_items[0].knowledge_ids
+    assert response.guidance_items[0].wiki_pages[0].page_id.startswith(
+        "writing-task2-task-response-band-"
+    )
     assert all(citation.source_id.startswith("ielts-") for citation in response.source_citations)
+
+
+def test_guidance_wiki_links_preserve_order_deduplicate_and_fail_closed() -> None:
+    links = _wiki_page_links(
+        (
+            "writing-task-response-band-7",
+            "writing-task-response-criterion",
+            "writing-task-response-band-7",
+        )
+    )
+    assert tuple(link.page_id for link in links) == (
+        "writing-task2-task-response-band-7",
+        "writing-task2-task-response",
+    )
+    with pytest.raises(LearningPersistenceError):
+        _wiki_page_links(("unknown-knowledge-id",))
 
 
 def test_no_practice_uses_snapshot_but_does_not_invent_a_training_target() -> None:
