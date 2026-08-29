@@ -875,9 +875,12 @@ Phase 11 Graph Review = APPROVED
 P11-01 = COMPLETE
 P11-01 External Audit Review = APPROVED
 P11-02 = COMPLETE
-Phase 11 External Design Review = CHANGES_REQUESTED
-P11-03 onward = BLOCKED_BY_EXTERNAL_DESIGN_REVIEW
+Phase 11 External Design Review = APPROVED
+P11-03 = COMPLETE
+P11-04 = COMPLETE
+P11-05 = ACTIVE
+P11-06 onward = BLOCKED_BY_DEPENDENCY
 ```
 
-No P11-03 work may start until that external design review is explicitly
-APPROVED.
+P11-03 may now implement this approved contract. Later nodes remain governed
+by the Phase 11 dependency graph.

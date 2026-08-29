@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**P11-02 COMPLETE — EXTERNAL DESIGN REVIEW CHANGES REQUESTED; P11-03 BLOCKED**
+**P11-03/04 COMPLETE — P11-05 ACTIVE; P11-06 BLOCKED**
 
 Repository:
 
@@ -40,8 +40,11 @@ Phase 11 Graph Review = APPROVED
 P11-01 = COMPLETE
 P11-01 External Audit Review = APPROVED
 P11-02 = COMPLETE
-Phase 11 External Design Review = CHANGES_REQUESTED
-P11-03 onward = BLOCKED_BY_EXTERNAL_DESIGN_REVIEW
+Phase 11 External Design Review = APPROVED
+P11-03 = COMPLETE
+P11-04 = COMPLETE
+P11-05 = ACTIVE
+P11-06 onward = BLOCKED_BY_DEPENDENCY
 ```
 
 Scope:
@@ -672,16 +675,16 @@ P11-01 External Audit Review [APPROVED]
 P11-02 Wiki Knowledge Contract Freeze [COMPLETE]
   |
   v
-Phase 11 External Design Review [CHANGES_REQUESTED]
+Phase 11 External Design Review [APPROVED]
   |
   v
-P11-03 Wiki Schemas [BLOCKED_BY_EXTERNAL_DESIGN_REVIEW]
+P11-03 Wiki Schemas [COMPLETE]
   |
   v
-P11-04 Canonical Wiki Page Registry
+P11-04 Canonical Wiki Page Registry [COMPLETE]
   |
   v
-P11-05 Wiki Relation Ledger
+P11-05 Wiki Relation Ledger [ACTIVE]
   |
   v
 P11-06 Wiki Integrity Validator
@@ -939,7 +942,7 @@ No implementation should invent additional semantics after this point.
 Current status:
 
 ```text
-CHANGES_REQUESTED
+APPROVED
 ```
 
 The review must explicitly approve:
@@ -957,12 +960,12 @@ P11-03 may not start without approval.
 
 ---
 
-# P11-03 — Wiki Schemas — BLOCKED_BY_EXTERNAL_DESIGN_REVIEW
+# P11-03 — Wiki Schemas — COMPLETE
 
 Current status:
 
 ```text
-BLOCKED_BY_EXTERNAL_DESIGN_REVIEW
+COMPLETE
 ```
 
 Implement strict application-owned schemas for:
@@ -985,7 +988,7 @@ No database model.
 
 ---
 
-# P11-04 — Canonical Wiki Page Registry
+# P11-04 — Canonical Wiki Page Registry — COMPLETE
 
 Build the static canonical Writing Task 2 Wiki page registry.
 
@@ -1012,7 +1015,7 @@ Tests must prove complete canonical mapping.
 
 ---
 
-# P11-05 — Wiki Relation Ledger
+# P11-05 — Wiki Relation Ledger — ACTIVE
 
 Create the explicit reviewed relation ledger.
 
