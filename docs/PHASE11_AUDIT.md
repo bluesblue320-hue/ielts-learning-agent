@@ -1,5 +1,12 @@
 # Phase 11 Existing Knowledge & Product Surface Audit
 
+> Historical record: this file captures the P11-01 pre-contract audit and its
+> then-current gate state. P11-01 External Audit Review was subsequently
+> APPROVED, and implementation proceeded through P11-13. The distinct P11-16
+> implementation audit will be recorded in `PHASE11_IMPLEMENTATION_AUDIT.md`;
+> the historical statements below are intentionally not rewritten as if the
+> Wiki runtime existed during P11-01.
+
 ## Audit status
 
 ```text

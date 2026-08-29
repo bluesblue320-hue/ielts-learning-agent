@@ -6,6 +6,11 @@ This document is the normative P11-02 contract for the static, read-only IELTS
 Writing Task 2 Wiki. Later Phase 11 nodes must implement this contract without
 changing its authority boundaries or silently widening its scope.
 
+Implementation note: P11-03 through P11-13 now implement the frozen schemas,
+58-page registry, relation ledger, validation, deterministic service, read-only
+API, Web experience, citation bridge, and Eval/browser coverage. This note does
+not alter the normative P11-02 contract.
+
 ```text
 Wiki version = ielts-writing-wiki-v1
 Navigation version = writing-wiki-navigation-v1
@@ -883,9 +888,14 @@ P11-06 = COMPLETE
 P11-07 = COMPLETE
 P11-08 = COMPLETE
 Phase 11 Milestone Review = APPROVED
-P11-09 = ACTIVE
-P11-10 onward = BLOCKED_BY_DEPENDENCY
+P11-09 = COMPLETE
+P11-10 = COMPLETE
+P11-11 = COMPLETE
+P11-12 = COMPLETE
+P11-13 = COMPLETE
+P11-14 = COMPLETE
+P11-15 = ACTIVE
+P11-16 onward = BLOCKED_BY_DEPENDENCY
 ```
 
-P11-03 may now implement this approved contract. Later nodes remain governed
-by the Phase 11 dependency graph.
+Later nodes remain governed by the Phase 11 dependency graph.

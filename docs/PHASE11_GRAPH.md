@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**BATCH C ACTIVE — MILESTONE REVIEW APPROVED; P11-14 ACTIVE**
+**BATCH C ACTIVE — MILESTONE REVIEW APPROVED; P11-15 ACTIVE**
 
 Repository:
 
@@ -53,8 +53,9 @@ P11-10 = COMPLETE
 P11-11 = COMPLETE
 P11-12 = COMPLETE
 P11-13 = COMPLETE
-P11-14 = ACTIVE
-P11-15 onward = BLOCKED_BY_DEPENDENCY
+P11-14 = COMPLETE
+P11-15 = ACTIVE
+P11-16 onward = BLOCKED_BY_DEPENDENCY
 ```
 
 Scope:
@@ -724,10 +725,10 @@ P11-12 Phase 10 Eval Harness Wiki Extension [COMPLETE]
 P11-13 Wiki Browser E2E / Integration Regression [COMPLETE]
   |
   v
-P11-14 Documentation & Architecture Synchronization [ACTIVE]
+P11-14 Documentation & Architecture Synchronization [COMPLETE]
   |
   v
-P11-15 Full Phase 1-11 Regression Validation
+P11-15 Full Phase 1-11 Regression Validation [ACTIVE]
   |
   v
 P11-16 Internal Audit
@@ -1347,7 +1348,7 @@ No live provider.
 
 ---
 
-# P11-14 — Documentation & Architecture Synchronization — ACTIVE
+# P11-14 — Documentation & Architecture Synchronization — COMPLETE
 
 Current status:
 
@@ -1381,7 +1382,7 @@ These must not be described as interchangeable concepts.
 
 ---
 
-# P11-15 — Full Phase 1-11 Regression Validation
+# P11-15 — Full Phase 1-11 Regression Validation — ACTIVE
 
 Run the complete relevant validation matrix.
 

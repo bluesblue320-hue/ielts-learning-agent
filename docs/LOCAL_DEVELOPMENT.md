@@ -126,14 +126,14 @@ test supplies an explicit mocked client.
 
 Apply or inspect development migrations with `alembic upgrade head`,
 `alembic current`, and `alembic downgrade base`; `IELTS_DATABASE_URL` controls
-that target. The current head is `0005_planner_context_snapshot`. Pytest migration checks instead
+that target. The current head is `0006_submission_claim_recovery`. Pytest migration checks instead
 use `IELTS_TEST_DATABASE_URL` and must point to the isolated test database.
 
 ## Phase 3 learner-state commands
 
 Phase 3 adds deterministic learner state and planning on top of the Writing
 pipeline. The isolated test database must be migrated to `head`
-(`0005_planner_context_snapshot`) before the learner and practice integration suites run; the test fixtures
+(`0006_submission_claim_recovery`) before the learner and practice integration suites run; the test fixtures
 handle this automatically via `IELTS_TEST_DATABASE_URL`.
 
 Focused Phase 3 suites (all require the isolated test database):

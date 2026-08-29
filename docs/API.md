@@ -187,10 +187,41 @@ public response field. Historical v1 practice rows remain readable.
 `writing-grounded-guidance-v1` projection for the latest accepted
 `LearningUpdate.id DESC`. It includes the safe learner-state summary, nullable
 current recommendation, grounded guidance items, application-owned citations,
-and exact knowledge/retrieval versions. It exposes no raw Planner context,
-Memory provenance, claim metadata, provider reasoning, or filesystem paths.
+and exact knowledge/retrieval versions. Each guidance item also carries a
+`wiki_pages` array whose `knowledge_id`, canonical `page_id`, and title are
+resolved server-side from the existing `knowledge_ids`; this link projection
+does not change retrieval membership or order. It exposes no raw Planner
+context, Memory provenance, claim metadata, provider reasoning, or filesystem
+paths.
 
 No generic Knowledge search or runtime URL fetch endpoint is available.
+
+## Read-only Writing Wiki
+
+The static `ielts-writing-wiki-v1` product surface is exposed through:
+
+```text
+GET /knowledge/writing/wiki
+GET /knowledge/writing/wiki?q={exact_id_title_or_alias}
+GET /knowledge/writing/wiki/{page_id}
+```
+
+The unfiltered index returns the canonical 58-page preorder hierarchy. A
+normalized exact `q` lookup and the page-detail route return one canonical page
+with breadcrumbs, owned Knowledge statements, source provenance, children,
+incident relations, and deterministic neighbors. The routes are read-only and
+provider-free; no `POST`, `PUT`, `PATCH`, or `DELETE` Wiki contract exists.
+
+The Next.js client presents these server-authoritative responses at
+`/knowledge` and `/knowledge/[pageId]`. It does not duplicate the page registry,
+relation ledger, Knowledge statements, or ownership mapping in browser code.
+Adjacent-band navigation is structural browsing, not a recommendation or a
+learner-state decision.
+
+Safe errors use `wiki_lookup_invalid`, `wiki_lookup_ambiguous`,
+`wiki_page_not_found`, or `wiki_unavailable`. Invalid canonical registry,
+topology, ownership, relation, or provenance state fails closed as unavailable
+rather than returning partial Wiki content.
 
 ## Phase 5 web compatibility
 
