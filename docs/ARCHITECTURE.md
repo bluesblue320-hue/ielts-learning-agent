@@ -28,7 +28,13 @@ retrieval, provider-free grounded guidance, practice-generation grounding, and
 Chinese-first citation UX. Phase 9 is COMPLETE and merged to `master` through
 PR #13 (merge commit `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`); both external
 reviews are approved. No database table, migration, or new dependency was
-introduced. Phase 10 is authorized for design only.
+introduced. Phase 10 adds the deterministic Writing evaluation/calibration
+harness and is COMPLETE and merged through PR #14 (merge commit
+`c7a5f991df9c556408295d01194f1f17c13653b5`). Phase 11 — Structured Wiki
+Knowledge v1 — is the current phase with status `GRAPH_REVIEW_PENDING`:
+P11-00 is COMPLETE, Graph Review is CHANGES_REQUESTED, P11-01 is
+BLOCKED_BY_GRAPH_REVIEW, and P11-02 onward remains blocked. No Phase 11 runtime
+implementation has started.
 
 The completed [PHASE1_GRAPH.md](PHASE1_GRAPH.md) remains the historical Phase 1
 execution record, and [PHASE2_GRAPH.md](PHASE2_GRAPH.md) records the completed
@@ -206,7 +212,11 @@ PR #12. Phase 9 implements deterministic Writing Task 2 Knowledge retrieval,
 grounded guidance, practice-generation context, and source-aware Web UX. It is
 COMPLETE and merged through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`); both external reviews are
-approved. Phase 10 is authorized for design only.
+approved. Phase 10 implements the deterministic Writing evaluation/calibration
+harness and is COMPLETE and merged through PR #14 (merge commit
+`c7a5f991df9c556408295d01194f1f17c13653b5`). Phase 11 is at Graph Review:
+P11-00 is COMPLETE, Graph Review is CHANGES_REQUESTED, and P11-01 remains
+blocked.
 Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
 
 ## Phase 5 presentation layer
@@ -220,4 +230,7 @@ through PR #12. Phase 9 is COMPLETE and merged through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`): the source-backed static Knowledge
 snapshot, structured retrieval, grounded guidance API, v2 generation context,
 and dashboard citation UX are implemented without a new migration or dependency.
-Both external reviews are approved. Phase 10 is authorized for design only.
+Both external reviews are approved. Phase 10 is COMPLETE and merged through PR
+#14 (merge commit `c7a5f991df9c556408295d01194f1f17c13653b5`). Phase 11 P11-00
+is COMPLETE; Graph Review is CHANGES_REQUESTED, and P11-01 is
+BLOCKED_BY_GRAPH_REVIEW.

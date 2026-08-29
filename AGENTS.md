@@ -40,13 +40,15 @@ Always inspect the current phase documentation before implementing features.
 Current phase:
 
 ```text
-Phase 10 — Writing Evaluation Calibration v1
+Phase 11 — Structured Wiki Knowledge v1
 ```
 
 Read:
 
 ```text
+docs/PHASE11_GRAPH.md
 docs/PHASE10_GRAPH.md
+docs/PHASE10_AUDIT.md
 docs/DEVELOPMENT_LOOP.md
 docs/PHASE9_GRAPH.md
 docs/IELTS_KNOWLEDGE_POLICY.md
@@ -134,7 +136,7 @@ P9-13 = INTERNAL_AUDIT_COMPLETE
 Phase 9 = COMPLETE
 Phase 9 External Implementation Review = APPROVED
 PR #13 = MERGED
-Phase 10 = AWAITING_PR_VALIDATION
+Phase 10 = COMPLETE
 P10-00 = COMPLETE
 Phase 10 Graph Review = APPROVED
 P10-01 = COMPLETE
@@ -161,7 +163,14 @@ P10-18 = INTERNAL_AUDIT_COMPLETE
 Batch B = COMPLETE
 Phase 10 implementation = INTERNAL_AUDIT_COMPLETE
 Phase 10 External Implementation Review = APPROVED
-Phase 10 PR = READY_TO_OPEN
+PR #14 = MERGED
+Phase 10 merge commit = c7a5f991df9c556408295d01194f1f17c13653b5
+Phase 11 = STARTED
+Phase 11 status = GRAPH_REVIEW_PENDING
+P11-00 = COMPLETE
+Phase 11 Graph Review = CHANGES_REQUESTED
+P11-01 = BLOCKED_BY_GRAPH_REVIEW
+P11-02 onward = BLOCKED
 ```
 
 Phase 6 design (P6-01 audit, P6-02 contract freeze, versions
@@ -201,16 +210,14 @@ API/Web UX, and knowledge-grounded practice generation v2. Existing
 remain frozen. No migration or new dependency was added. See
 [docs/PHASE9_AUDIT.md](docs/PHASE9_AUDIT.md) for validation evidence.
 
-The Phase 9 graph and audit are completed historical execution records. The
-Phase 10 graph review is APPROVED. P10-01 audit and its External Review are
-COMPLETE and APPROVED. P10-02 is COMPLETE and freezes
-`writing-eval-calibration-v1`. The formal Phase 10 External Design Review is
-APPROVED. Batch A is COMPLETE, and the Phase 10 Milestone Review is APPROVED.
-The canonical regression runtime and CI gate repair make P10-12 and P10-15
-COMPLETE. Full local validation and GitHub Actions succeeded, P10-18 is
-INTERNAL_AUDIT_COMPLETE, and External Implementation Review is APPROVED.
-The Phase 10 PR is READY_TO_OPEN; Phase 10 awaits PR validation and merge
-authorization and is not complete.
+The Phase 9 graph and audit are completed historical execution records. Phase
+10 is COMPLETE and merged to `master` through PR #14 (merge commit
+`c7a5f991df9c556408295d01194f1f17c13653b5`). Its Graph Review, External
+Design Review, Milestone Review, External Implementation Review, canonical
+regression runtime, CI gate, full validation, and P10-18 internal audit are
+complete historical evidence. Phase 11 has started with P11-00 COMPLETE. Its
+Graph Review is CHANGES_REQUESTED, so P11-01 remains
+BLOCKED_BY_GRAPH_REVIEW and P11-02 onward remains blocked.
 
 The development loop defines HOW each graph node should be executed.
 

@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**PROPOSED — PHASE 11 KICKOFF AUTHORIZED, AWAITING GRAPH REVIEW**
+**GRAPH REVIEW CHANGES REQUESTED — P11-00 COMPLETE; P11-01 BLOCKED**
 
 Repository:
 
@@ -27,6 +27,19 @@ Phase 10 merge baseline:
 ```text
 PR #14
 merge commit: c7a5f991df9c556408295d01194f1f17c13653b5
+```
+
+Current phase state:
+
+```text
+Phase 10 = COMPLETE
+PR #14 = MERGED
+Phase 11 = STARTED
+Phase 11 status = GRAPH_REVIEW_PENDING
+P11-00 = COMPLETE
+Phase 11 Graph Review = CHANGES_REQUESTED
+P11-01 = BLOCKED_BY_GRAPH_REVIEW
+P11-02 onward = BLOCKED
 ```
 
 Scope:
@@ -255,7 +268,27 @@ new IELTS factual authority
 
 A page organizes existing KnowledgeUnits.
 
-Phase 11 should strongly prefer composing page content from existing source-backed KnowledgeUnits rather than inventing new IELTS claims.
+The authority boundary is normative:
+
+```text
+WikiPage MUST NOT introduce new normative IELTS factual claims.
+
+WikiPage content may contain only:
+
+1. deterministic composition or projection of mapped existing KnowledgeUnits;
+2. application-owned navigational or presentation metadata that does not add
+   new IELTS factual meaning.
+```
+
+Wiki titles, aliases, breadcrumbs, grouping labels, and navigation labels are
+application-owned metadata. They are not authoritative IELTS claims and must
+not be presented as source-backed facts.
+
+Any new IELTS factual meaning MUST first be introduced as a valid source-backed
+KnowledgeUnit under the existing Phase 9 Knowledge authority before the Wiki
+may expose it. Wiki assembly must fail closed when it would require unsupported
+factual content. Phase 11 does not change `ielts-writing-knowledge-v1` and this
+Graph repair adds no KnowledgeUnits.
 
 ---
 
@@ -325,10 +358,10 @@ Conceptual shape:
 ```python
 WikiRelation(
     source_page_id="writing-wiki-task-response-band-6",
-    relation_type="next_band",
+    relation_type="adjacent_band",
     target_page_id="writing-wiki-task-response-band-7",
     authority="structural",
-    rationale="Adjacent integer descriptor bands within the same criterion.",
+    rationale="Numerically adjacent integer descriptor bands within one criterion.",
 )
 ```
 
@@ -342,32 +375,57 @@ from
 source-backed IELTS semantic claims
 ```
 
-A relation must not appear to be an official IELTS claim merely because it exists in the Wiki graph.
+A relation must not appear to be an official IELTS claim merely because it
+exists in the Wiki graph. The `adjacent_band` example records structural
+numeric adjacency only; it does not assert a pedagogical progression,
+improvement path, recommendation, prerequisite, or stronger directional meaning
+from Band 6 to Band 7.
 
-Potential relation families include:
+Structural/navigation relations may be application-owned only when they are
+derived deterministically from already-authorized canonical metadata.
+Illustrative structural concepts include:
 
 ```text
 contains
-next_band
-related_to
-applies_to
+parent_of
+child_of
+adjacent_band
 ```
 
-These names are illustrative only.
+Semantic relations can themselves introduce factual or pedagogical meaning.
+Illustrative semantic concepts include:
+
+```text
+related_to
+applies_to
+supports
+improves
+prerequisite_of
+```
+
+These names are illustrative only. The Wiki layer MUST NOT freely invent a
+semantic relation. Any semantic relation MUST be backed by existing authorized
+Knowledge evidence or explicit source-backed justification frozen by P11-02.
+Unsupported semantic relations fail closed.
 
 P11-02 must freeze:
 
 ```text
 allowed relation types
+structural vs semantic classification
 directionality
 symmetry rules
+inverse relation behavior
 authority classification
+authority source
 required rationale
 ordering behavior
 cycle policy
+validation rules
 ```
 
-before implementation.
+before implementation. There is no runtime LLM relation inference, automatic
+graph enrichment, or GraphRAG.
 
 ---
 
@@ -399,6 +457,34 @@ all 54 Phase 9 KnowledgeUnits are reachable through the Wiki
 unless P11-02 explicitly records a reviewed exception.
 
 No source-backed KnowledgeUnit may silently disappear simply because it is inconvenient to organize.
+
+P11-02 must freeze KnowledgeUnit-to-WikiPage multiplicity and canonical reverse
+lookup. The Phase 11 v1 mapping model is:
+
+```text
+KnowledgeUnit
+    ↓
+exactly one primary canonical WikiPage owner
+```
+
+Additional WikiPages may reference the same KnowledgeUnit only as secondary
+references if P11-02 explicitly allows them. Secondary presentation references
+do not change canonical ownership.
+
+P11-02 must freeze at minimum:
+
+```text
+primary_page_id semantics
+allowed secondary references
+canonical reverse lookup behavior
+deduplication
+deterministic ordering
+ambiguity handling
+```
+
+Resolving a Wiki page from a Knowledge ID must always return one deterministic
+canonical primary page or fail closed. Any separately exposed secondary
+references must be deduplicated and deterministically ordered.
 
 For hierarchical relations, P11-02 must define whether:
 
@@ -569,13 +655,13 @@ Phase 11 must not pre-decide the vector-storage implementation.
 START
   |
   v
-P11-00 Phase 11 Kickoff / Phase Status Sync / Graph Establishment
+P11-00 Phase 11 Kickoff / Phase Status Sync / Graph Establishment [COMPLETE]
   |
   v
-Phase 11 Graph Review
+Phase 11 Graph Review [CHANGES_REQUESTED]
   |
   v
-P11-01 Existing Knowledge & Product Surface Audit
+P11-01 Existing Knowledge & Product Surface Audit [BLOCKED_BY_GRAPH_REVIEW]
   |
   v
 P11-01 External Audit Review
@@ -646,7 +732,7 @@ STOP
 
 ---
 
-# P11-00 — Phase 11 Kickoff / Phase Status Sync / Graph Establishment
+# P11-00 — Phase 11 Kickoff / Phase Status Sync / Graph Establishment — COMPLETE
 
 ## Goal
 
@@ -703,15 +789,21 @@ Repository documentation no longer claims that Phase 10 is unmerged.
 
 Phase 11 graph exists and accurately declares its boundaries.
 
-## Initial status
+## Status
 
 ```text
-READY
+COMPLETE
 ```
 
 ---
 
 # GRAPH REVIEW — HARD STOP
+
+Current status:
+
+```text
+CHANGES_REQUESTED
+```
 
 External review must verify:
 
@@ -803,9 +895,14 @@ page schema semantics
 page types
 relation schema semantics
 relation types
+structural vs semantic relation classification
 relation directionality
+relation symmetry and inverse behavior
 relation authority classification
+relation authority source
 KnowledgeUnit mapping rules
+primary canonical ownership and allowed secondary references
+canonical reverse lookup, deduplication, ordering, and ambiguity behavior
 root/reachability policy
 cycle policy
 ordering policy
@@ -878,6 +975,11 @@ deterministically ordered
 
 Map Phase 9 Knowledge IDs to the appropriate pages.
 
+Every canonical KnowledgeUnit must have exactly one `primary_page_id` owner.
+Any secondary references must be explicitly allowed by the frozen policy,
+deduplicated, deterministically ordered, and must not change canonical reverse
+lookup.
+
 Do not duplicate KnowledgeUnit factual content as a second source of truth.
 
 Tests must prove complete canonical mapping.
@@ -895,10 +997,13 @@ source page
 relation type
 target page
 authority classification
+authority source where required
 rationale where required
 ```
 
-No relationship may be inferred at runtime by an LLM.
+No relationship may be inferred at runtime by an LLM or added through automatic
+graph enrichment. Semantic relations without the evidence required by P11-02
+must fail closed.
 
 Tests must cover:
 
@@ -909,6 +1014,8 @@ unknown endpoint
 unknown relation type
 illegal direction
 illegal symmetry
+illegal inverse behavior
+unsupported semantic relation
 missing required rationale
 ```
 
@@ -924,6 +1031,8 @@ It must fail closed for:
 duplicate page IDs
 unknown Knowledge IDs
 unmapped required KnowledgeUnits
+missing or duplicate primary KnowledgeUnit ownership
+illegal, duplicate, or ambiguously ordered secondary references
 unknown relation endpoints
 duplicate relations
 invalid page types
@@ -949,7 +1058,8 @@ get page by canonical ID
 resolve page alias
 list page neighbors
 walk structural children
-resolve Wiki page(s) from Knowledge ID
+resolve the canonical primary Wiki page from Knowledge ID
+list explicitly allowed secondary Wiki references for a Knowledge ID
 ```
 
 Optional deterministic text lookup may support:

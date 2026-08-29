@@ -6,13 +6,15 @@
 
 **Phase 10 External Implementation Review = APPROVED**
 
-**Phase 10 PR = READY_TO_OPEN**
+**PR #14 = MERGED**
 
-**Phase 10 = AWAITING_PR_VALIDATION**
+**Phase 10 = COMPLETE**
 
-The internal audit remains complete, and External Implementation Review has now
-returned APPROVED. This approval authorizes PR creation and validation; it is
-not Phase 10 completion or merge authorization.
+**Phase 10 merge commit = `c7a5f991df9c556408295d01194f1f17c13653b5`**
+
+The internal audit and External Implementation Review remain complete
+historical evidence. Phase 10 subsequently passed PR validation and merged to
+`master` through PR #14; that post-audit merge completed Phase 10.
 
 ## Repair finding and audited scope
 
@@ -165,13 +167,21 @@ targeting Node.js 20 are being forced onto Node.js 24. The backend retains one
 non-failing Starlette/httpx deprecation warning. Neither changes Phase 10
 contract evidence.
 
-## Stop gate
+## Historical stop gate at audit time
 
 P10-12 and P10-15 are COMPLETE, P10-18 is INTERNAL_AUDIT_COMPLETE, and
 External Implementation Review is APPROVED. The next authority is PR validation.
-PR creation is authorized, but merge is not:
+At the time of this audit, PR creation was authorized but merge was not:
 
 - do not mark Phase 10 COMPLETE;
 - do not merge or close the PR;
 - do not modify `master`;
 - do not start Phase 11.
+
+That historical gate was later satisfied. Final status:
+
+```text
+Phase 10 = COMPLETE
+PR #14 = MERGED
+Phase 10 merge commit = c7a5f991df9c556408295d01194f1f17c13653b5
+```
