@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**BATCH B COMPLETE — MILESTONE REVIEW CHANGES REQUESTED; P11-09 BLOCKED**
+**BATCH C ACTIVE — MILESTONE REVIEW APPROVED; P11-09 ACTIVE**
 
 Repository:
 
@@ -47,8 +47,9 @@ P11-05 = COMPLETE
 P11-06 = COMPLETE
 P11-07 = COMPLETE
 P11-08 = COMPLETE
-Phase 11 Milestone Review = CHANGES_REQUESTED
-P11-09 onward = BLOCKED_BY_MILESTONE_REVIEW
+Phase 11 Milestone Review = APPROVED
+P11-09 = ACTIVE
+P11-10 onward = BLOCKED_BY_DEPENDENCY
 ```
 
 Scope:
@@ -700,10 +701,10 @@ P11-07 Deterministic Wiki Navigation / Lookup Service [COMPLETE]
 P11-08 Read-only Wiki API [COMPLETE]
   |
   v
-Phase 11 Milestone Review [CHANGES_REQUESTED]
+Phase 11 Milestone Review [APPROVED]
   |
   v
-P11-09 Typed Web Wiki Client [BLOCKED_BY_MILESTONE_REVIEW]
+P11-09 Typed Web Wiki Client [ACTIVE]
   |
   v
 P11-10 Wiki Index + Page Detail Experience
@@ -1170,7 +1171,7 @@ No admin mutation endpoint.
 Current status:
 
 ```text
-CHANGES_REQUESTED
+APPROVED
 ```
 
 Before frontend integration verify:
@@ -1186,12 +1187,12 @@ no RAG capability slipped into scope
 
 ---
 
-# P11-09 — Typed Web Wiki Client — BLOCKED_BY_MILESTONE_REVIEW
+# P11-09 — Typed Web Wiki Client — ACTIVE
 
 Current status:
 
 ```text
-BLOCKED_BY_MILESTONE_REVIEW
+ACTIVE
 ```
 
 Add typed client support for the frozen Wiki API.

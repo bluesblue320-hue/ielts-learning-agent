@@ -34,8 +34,8 @@ harness and is COMPLETE and merged through PR #14 (merge commit
 Knowledge v1 — is the current phase: P11-00 is COMPLETE, Graph Review is
 APPROVED, and P11-01 is COMPLETE. P11-01 External Audit Review is APPROVED;
 P11-02 is COMPLETE and Phase 11 External Design Review is APPROVED. P11-03
-through P11-08 are COMPLETE. Phase 11 Milestone Review is CHANGES_REQUESTED,
-and P11-09 onward is BLOCKED_BY_MILESTONE_REVIEW.
+through P11-08 are COMPLETE. Phase 11 Milestone Review is APPROVED. P11-09 is
+ACTIVE, and P11-10 onward is BLOCKED_BY_DEPENDENCY.
 
 The completed [PHASE1_GRAPH.md](PHASE1_GRAPH.md) remains the historical Phase 1
 execution record, and [PHASE2_GRAPH.md](PHASE2_GRAPH.md) records the completed
@@ -218,7 +218,7 @@ harness and is COMPLETE and merged through PR #14 (merge commit
 `c7a5f991df9c556408295d01194f1f17c13653b5`). Phase 11 has completed P11-00,
 Graph Review, P11-01, and P11-02. P11-01 External Audit Review is APPROVED.
 Phase 11 External Design Review is APPROVED; P11-03 through P11-08 are
-COMPLETE, and Milestone Review is CHANGES_REQUESTED.
+COMPLETE, Milestone Review is APPROVED, and P11-09 is ACTIVE.
 Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
 
 ## Phase 5 presentation layer
@@ -237,4 +237,4 @@ Both external reviews are approved. Phase 10 is COMPLETE and merged through PR
 and P11-01 are COMPLETE; Graph Review is APPROVED, External Audit Review is
 APPROVED, and P11-02 is COMPLETE. Phase 11 External Design Review is
 APPROVED. P11-03 through P11-08 are COMPLETE. Phase 11 Milestone Review is
-CHANGES_REQUESTED, and P11-09 onward is BLOCKED_BY_MILESTONE_REVIEW.
+APPROVED. P11-09 is ACTIVE, and P11-10 onward is BLOCKED_BY_DEPENDENCY.
