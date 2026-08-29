@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**BATCH C ACTIVE — MILESTONE REVIEW APPROVED; P11-13 ACTIVE**
+**BATCH C ACTIVE — MILESTONE REVIEW APPROVED; P11-14 ACTIVE**
 
 Repository:
 
@@ -52,8 +52,9 @@ P11-09 = COMPLETE
 P11-10 = COMPLETE
 P11-11 = COMPLETE
 P11-12 = COMPLETE
-P11-13 = ACTIVE
-P11-14 onward = BLOCKED_BY_DEPENDENCY
+P11-13 = COMPLETE
+P11-14 = ACTIVE
+P11-15 onward = BLOCKED_BY_DEPENDENCY
 ```
 
 Scope:
@@ -720,10 +721,10 @@ P11-11 Existing Citation -> Wiki Navigation Bridge [COMPLETE]
 P11-12 Phase 10 Eval Harness Wiki Extension [COMPLETE]
   |
   v
-P11-13 Wiki Browser E2E / Integration Regression [ACTIVE]
+P11-13 Wiki Browser E2E / Integration Regression [COMPLETE]
   |
   v
-P11-14 Documentation & Architecture Synchronization
+P11-14 Documentation & Architecture Synchronization [ACTIVE]
   |
   v
 P11-15 Full Phase 1-11 Regression Validation
@@ -1318,12 +1319,12 @@ No LLM judge is required.
 
 ---
 
-# P11-13 — Wiki Browser E2E / Integration Regression — ACTIVE
+# P11-13 — Wiki Browser E2E / Integration Regression — COMPLETE
 
 Current status:
 
 ```text
-ACTIVE
+COMPLETE
 ```
 
 Add browser-level validation of representative Wiki flows.
@@ -1346,7 +1347,13 @@ No live provider.
 
 ---
 
-# P11-14 — Documentation & Architecture Synchronization
+# P11-14 — Documentation & Architecture Synchronization — ACTIVE
+
+Current status:
+
+```text
+ACTIVE
+```
 
 Update as required:
 
