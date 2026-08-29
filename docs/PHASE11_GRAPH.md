@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**P11-03 THROUGH P11-06 COMPLETE — P11-07 ACTIVE; P11-08 BLOCKED**
+**BATCH B COMPLETE — MILESTONE REVIEW PENDING; P11-09 BLOCKED**
 
 Repository:
 
@@ -45,8 +45,10 @@ P11-03 = COMPLETE
 P11-04 = COMPLETE
 P11-05 = COMPLETE
 P11-06 = COMPLETE
-P11-07 = ACTIVE
-P11-08 onward = BLOCKED_BY_DEPENDENCY
+P11-07 = COMPLETE
+P11-08 = COMPLETE
+Phase 11 Milestone Review = PENDING
+P11-09 onward = BLOCKED_BY_MILESTONE_REVIEW
 ```
 
 Scope:
@@ -692,16 +694,16 @@ P11-05 Wiki Relation Ledger [COMPLETE]
 P11-06 Wiki Integrity Validator [COMPLETE]
   |
   v
-P11-07 Deterministic Wiki Navigation / Lookup Service [ACTIVE]
+P11-07 Deterministic Wiki Navigation / Lookup Service [COMPLETE]
   |
   v
-P11-08 Read-only Wiki API
+P11-08 Read-only Wiki API [COMPLETE]
   |
   v
-Phase 11 Milestone Review
+Phase 11 Milestone Review [PENDING]
   |
   v
-P11-09 Typed Web Wiki Client
+P11-09 Typed Web Wiki Client [BLOCKED_BY_MILESTONE_REVIEW]
   |
   v
 P11-10 Wiki Index + Page Detail Experience
@@ -1082,7 +1084,7 @@ Validation should run during tests and, where appropriate, module initialization
 
 ---
 
-# P11-07 — Deterministic Wiki Navigation / Lookup Service — ACTIVE
+# P11-07 — Deterministic Wiki Navigation / Lookup Service — COMPLETE
 
 Implement provider-free deterministic navigation.
 
@@ -1123,7 +1125,7 @@ Identical normalized input must produce identical ordered output.
 
 ---
 
-# P11-08 — Read-only Wiki API
+# P11-08 — Read-only Wiki API — COMPLETE
 
 Expose a bounded read-only API.
 
@@ -1165,6 +1167,12 @@ No admin mutation endpoint.
 
 # PHASE 11 MILESTONE REVIEW — HARD STOP
 
+Current status:
+
+```text
+PENDING
+```
+
 Before frontend integration verify:
 
 ```text
@@ -1178,7 +1186,13 @@ no RAG capability slipped into scope
 
 ---
 
-# P11-09 — Typed Web Wiki Client
+# P11-09 — Typed Web Wiki Client — BLOCKED_BY_MILESTONE_REVIEW
+
+Current status:
+
+```text
+BLOCKED_BY_MILESTONE_REVIEW
+```
 
 Add typed client support for the frozen Wiki API.
 

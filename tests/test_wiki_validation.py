@@ -84,6 +84,14 @@ def test_canonical_snapshot_is_validated_once_for_application_use() -> None:
             "writing-task2-task-response-band-7",
             knowledge_ids=("writing-task-response-criterion",),
         ),
+        _replace_page(
+            "writing-task2-task-response-band-7",
+            knowledge_ids=(),
+        ),
+        _replace_page(
+            "writing-task2-task-response-band-7",
+            parent_page_id="writing-task2-missing-parent",
+        ),
     ],
 )
 def test_validator_rejects_corrupted_page_and_ownership_snapshots(
@@ -105,6 +113,42 @@ def test_validator_rejects_missing_and_extra_contains_relations() -> None:
     relations = list(WIKI_RELATIONS)
     relations[contains_index] = replacement
     _assert_invalid(relations=tuple(relations))
+
+
+def test_validator_rejects_multiple_parent_cycle_and_unreachable_shapes() -> None:
+    extra_parent = _replace_relation(
+        57,
+        relation_type=WikiRelationType.CONTAINS,
+        source_page_id="writing-task2-assessment",
+        target_page_id="writing-task2-task-response-band-7",
+    )
+    _assert_invalid(relations=extra_parent)
+
+    pages = _replace_page(
+        "writing-task2-task-response-band-7",
+        parent_page_id="writing-task2-task-response-band-8",
+    )
+    pages = tuple(
+        page.model_copy(
+            update={"parent_page_id": "writing-task2-task-response-band-7"}
+        )
+        if page.page_id == "writing-task2-task-response-band-8"
+        else page
+        for page in pages
+    )
+    _assert_invalid(pages=pages)
+
+
+def test_validator_rejects_missing_adjacent_relation() -> None:
+    first_adjacent = next(
+        index
+        for index, relation in enumerate(WIKI_RELATIONS)
+        if relation.relation_type is WikiRelationType.ADJACENT_BAND
+    )
+    _assert_invalid(
+        relations=WIKI_RELATIONS[:first_adjacent]
+        + WIKI_RELATIONS[first_adjacent + 1 :]
+    )
 
 
 @pytest.mark.parametrize(

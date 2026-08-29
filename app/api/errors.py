@@ -42,6 +42,13 @@ from app.services.practice_submission import (
     PracticeNotFoundError,
     PracticeOwnershipError,
 )
+from app.wiki.errors import (
+    WikiIntegrityError,
+    WikiLookupAmbiguousError,
+    WikiLookupInvalidError,
+    WikiPageNotFoundError,
+    WikiUnavailableError,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -266,6 +273,54 @@ async def memory_persistence_error_handler(
     )
 
 
+async def wiki_lookup_invalid_handler(
+    request: Request,
+    error: WikiLookupInvalidError,
+) -> JSONResponse:
+    del request, error
+    return _response(
+        status.HTTP_400_BAD_REQUEST,
+        APIErrorCode.WIKI_LOOKUP_INVALID,
+        "Wiki lookup is invalid.",
+    )
+
+
+async def wiki_lookup_ambiguous_handler(
+    request: Request,
+    error: WikiLookupAmbiguousError,
+) -> JSONResponse:
+    del request, error
+    return _response(
+        status.HTTP_400_BAD_REQUEST,
+        APIErrorCode.WIKI_LOOKUP_AMBIGUOUS,
+        "Wiki lookup is ambiguous.",
+    )
+
+
+async def wiki_page_not_found_handler(
+    request: Request,
+    error: WikiPageNotFoundError,
+) -> JSONResponse:
+    del request, error
+    return _response(
+        status.HTTP_404_NOT_FOUND,
+        APIErrorCode.WIKI_PAGE_NOT_FOUND,
+        "Wiki page was not found.",
+    )
+
+
+async def wiki_unavailable_handler(
+    request: Request,
+    error: Exception,
+) -> JSONResponse:
+    del request, error
+    return _response(
+        status.HTTP_503_SERVICE_UNAVAILABLE,
+        APIErrorCode.WIKI_UNAVAILABLE,
+        "Wiki is temporarily unavailable.",
+    )
+
+
 def register_error_handlers(application: FastAPI) -> None:
     """Register centralized error responses without exposing exception text."""
 
@@ -278,6 +333,20 @@ def register_error_handlers(application: FastAPI) -> None:
         RequestValidationError,
         request_validation_error_handler,
     )
+    application.add_exception_handler(
+        WikiLookupInvalidError,
+        wiki_lookup_invalid_handler,
+    )
+    application.add_exception_handler(
+        WikiLookupAmbiguousError,
+        wiki_lookup_ambiguous_handler,
+    )
+    application.add_exception_handler(
+        WikiPageNotFoundError,
+        wiki_page_not_found_handler,
+    )
+    application.add_exception_handler(WikiUnavailableError, wiki_unavailable_handler)
+    application.add_exception_handler(WikiIntegrityError, wiki_unavailable_handler)
     register_learning_error_handlers(application)
 
 

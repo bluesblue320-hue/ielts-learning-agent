@@ -880,8 +880,10 @@ P11-03 = COMPLETE
 P11-04 = COMPLETE
 P11-05 = COMPLETE
 P11-06 = COMPLETE
-P11-07 = ACTIVE
-P11-08 onward = BLOCKED_BY_DEPENDENCY
+P11-07 = COMPLETE
+P11-08 = COMPLETE
+Phase 11 Milestone Review = PENDING
+P11-09 onward = BLOCKED_BY_MILESTONE_REVIEW
 ```
 
 P11-03 may now implement this approved contract. Later nodes remain governed
