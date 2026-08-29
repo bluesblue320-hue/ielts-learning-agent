@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**P11-01 COMPLETE — EXTERNAL AUDIT REVIEW PENDING; P11-02 BLOCKED**
+**P11-02 COMPLETE — EXTERNAL DESIGN REVIEW PENDING; P11-03 BLOCKED**
 
 Repository:
 
@@ -38,9 +38,10 @@ Phase 11 = STARTED
 P11-00 = COMPLETE
 Phase 11 Graph Review = APPROVED
 P11-01 = COMPLETE
-P11-01 External Audit Review = PENDING
-P11-02 = BLOCKED_BY_EXTERNAL_AUDIT_REVIEW
-P11-03 onward = BLOCKED
+P11-01 External Audit Review = APPROVED
+P11-02 = COMPLETE
+Phase 11 External Design Review = PENDING
+P11-03 onward = BLOCKED_BY_EXTERNAL_DESIGN_REVIEW
 ```
 
 Scope:
@@ -665,16 +666,16 @@ Phase 11 Graph Review [APPROVED]
 P11-01 Existing Knowledge & Product Surface Audit [COMPLETE]
   |
   v
-P11-01 External Audit Review [PENDING]
+P11-01 External Audit Review [APPROVED]
   |
   v
-P11-02 Wiki Knowledge Contract Freeze [BLOCKED_BY_EXTERNAL_AUDIT_REVIEW]
+P11-02 Wiki Knowledge Contract Freeze [COMPLETE]
   |
   v
-Phase 11 External Design Review
+Phase 11 External Design Review [PENDING]
   |
   v
-P11-03 Wiki Schemas
+P11-03 Wiki Schemas [BLOCKED_BY_EXTERNAL_DESIGN_REVIEW]
   |
   v
 P11-04 Canonical Wiki Page Registry
@@ -876,17 +877,17 @@ No Wiki contract may be frozen from assumptions.
 Current status:
 
 ```text
-PENDING
+APPROVED
 ```
 
 ---
 
-# P11-02 — Wiki Knowledge Contract Freeze — BLOCKED_BY_EXTERNAL_AUDIT_REVIEW
+# P11-02 — Wiki Knowledge Contract Freeze — COMPLETE
 
 Current status:
 
 ```text
-BLOCKED_BY_EXTERNAL_AUDIT_REVIEW
+COMPLETE
 ```
 
 ## Goal
@@ -935,6 +936,12 @@ No implementation should invent additional semantics after this point.
 
 # EXTERNAL DESIGN REVIEW — HARD STOP
 
+Current status:
+
+```text
+PENDING
+```
+
 The review must explicitly approve:
 
 ```text
@@ -950,7 +957,13 @@ P11-03 may not start without approval.
 
 ---
 
-# P11-03 — Wiki Schemas
+# P11-03 — Wiki Schemas — BLOCKED_BY_EXTERNAL_DESIGN_REVIEW
+
+Current status:
+
+```text
+BLOCKED_BY_EXTERNAL_DESIGN_REVIEW
+```
 
 Implement strict application-owned schemas for:
 

@@ -48,6 +48,7 @@ Read:
 ```text
 docs/PHASE11_GRAPH.md
 docs/PHASE11_AUDIT.md
+docs/WIKI_KNOWLEDGE_POLICY.md
 docs/PHASE10_GRAPH.md
 docs/PHASE10_AUDIT.md
 docs/DEVELOPMENT_LOOP.md
@@ -170,9 +171,10 @@ Phase 11 = STARTED
 P11-00 = COMPLETE
 Phase 11 Graph Review = APPROVED
 P11-01 = COMPLETE
-P11-01 External Audit Review = PENDING
-P11-02 = BLOCKED_BY_EXTERNAL_AUDIT_REVIEW
-P11-03 onward = BLOCKED
+P11-01 External Audit Review = APPROVED
+P11-02 = COMPLETE
+Phase 11 External Design Review = PENDING
+P11-03 onward = BLOCKED_BY_EXTERNAL_DESIGN_REVIEW
 ```
 
 Phase 6 design (P6-01 audit, P6-02 contract freeze, versions
@@ -218,9 +220,9 @@ The Phase 9 graph and audit are completed historical execution records. Phase
 Design Review, Milestone Review, External Implementation Review, canonical
 regression runtime, CI gate, full validation, and P10-18 internal audit are
 complete historical evidence. Phase 11 has started with P11-00 COMPLETE and
-Graph Review APPROVED. P11-01 is COMPLETE; its External Audit Review is
-PENDING, so P11-02 is BLOCKED_BY_EXTERNAL_AUDIT_REVIEW and P11-03 onward
-remains blocked.
+Graph Review APPROVED. P11-01 and P11-02 are COMPLETE; P11-01 External Audit
+Review is APPROVED. Phase 11 External Design Review is PENDING, so P11-03
+onward is BLOCKED_BY_EXTERNAL_DESIGN_REVIEW.
 
 The development loop defines HOW each graph node should be executed.
 
