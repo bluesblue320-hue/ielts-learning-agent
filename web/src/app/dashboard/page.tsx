@@ -200,6 +200,19 @@ export default function DashboardPage() {
                 <article key={item.criterion}>
                   <h3>{item.title}</h3>
                   <p className="supporting-copy">IELTS 对该维度的要求：{item.explanation}</p>
+                  {item.wiki_pages.length > 0 && (
+                    <nav aria-label={`${item.title}知识页`} className="wiki-guidance-links">
+                      <ul>
+                        {item.wiki_pages.map((wikiPage) => (
+                          <li key={wikiPage.page_id}>
+                            <Link href={`/knowledge/${wikiPage.page_id}`}>
+                              查看知识页：{wikiPage.title}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </nav>
+                  )}
                 </article>
               ))}
               {guidance.source_citations.length > 0 && (

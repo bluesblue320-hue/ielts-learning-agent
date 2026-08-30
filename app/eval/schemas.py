@@ -113,6 +113,7 @@ class EvaluatorId(StrEnum):
     KNOWLEDGE_GROUNDING = "knowledge_grounding"
     AUTHORITY = "authority"
     LIFECYCLE = "lifecycle"
+    WIKI_KNOWLEDGE = "wiki_knowledge"
 
 
 class ReferenceTier(StrEnum):

@@ -10,6 +10,7 @@ from app.api.routes.learners import router as learners_router
 from app.api.routes.memory import router as memory_router
 from app.api.routes.practice import router as practice_router
 from app.api.routes.writing import router as writing_router
+from app.api.routes.wiki import router as wiki_router
 
 
 def create_app() -> FastAPI:
@@ -23,6 +24,7 @@ def create_app() -> FastAPI:
     application.include_router(practice_router)
     application.include_router(memory_router)
     application.include_router(agent_router)
+    application.include_router(wiki_router)
     return application
 
 

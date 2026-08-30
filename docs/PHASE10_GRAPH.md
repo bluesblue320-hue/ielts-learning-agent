@@ -2,13 +2,18 @@
 
 ## Document status
 
-**EXTERNAL IMPLEMENTATION REVIEW APPROVED — P10-12 and P10-15 are COMPLETE, P10-18 is INTERNAL_AUDIT_COMPLETE, the Phase 10 PR is READY_TO_OPEN, and Phase 10 is AWAITING_PR_VALIDATION.**
+**COMPLETE — PR #14 MERGED TO `master` AT `c7a5f991df9c556408295d01194f1f17c13653b5`.**
 
 Phase 9 is COMPLETE and merged to `master` through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`). Phase 10 starts from the
 post-merge documentation-sync commit
 `1038af81f87ad1543e65c6093a10448c973193a8` on
 `phase/10-writing-evaluation-calibration-v1`.
+
+Phase 10 subsequently completed PR validation and merged to `master` through
+PR #14 at merge commit
+`c7a5f991df9c556408295d01194f1f17c13653b5`. This document is retained as
+the historical Phase 10 execution record.
 
 The Phase 10 Graph Review authorizes the Phase 10 design sequence through
 P10-01 and P10-02. No Phase 10 implementation node may start before P10-01 and
@@ -25,7 +30,7 @@ External Design Review approval authorizes P10-03.
 - Runtime behavior default: frozen; evaluation is observational unless a later phase explicitly authorizes behavior changes
 - Current evaluator semantics: `writing-task2-v1` remains frozen
 - Phase 9 Knowledge: `ielts-writing-knowledge-v1` remains frozen
-- Phase 10 status: AWAITING_PR_VALIDATION
+- Phase 10 status: COMPLETE
 - P10-00: COMPLETE
 - Phase 10 Graph Review: APPROVED
 - P10-01: COMPLETE
@@ -52,7 +57,8 @@ External Design Review approval authorizes P10-03.
 - Batch B: COMPLETE
 - Phase 10 implementation: INTERNAL_AUDIT_COMPLETE
 - Phase 10 External Implementation Review: APPROVED
-- Phase 10 PR: READY_TO_OPEN
+- Phase 10 PR #14: MERGED
+- Phase 10 merge commit: `c7a5f991df9c556408295d01194f1f17c13653b5`
 
 ## Phase goal
 
@@ -1210,7 +1216,7 @@ docs/PHASE10_AUDIT.md
 - no migration, dependency, public Eval API, scoring/Planner/Memory/Agent
   semantic change, PR, or merge.
 
-Current status after external approval:
+Historical status after external approval and before PR #14 merge:
 
 ```text
 P10-18 = INTERNAL_AUDIT_COMPLETE
@@ -1219,7 +1225,13 @@ Phase 10 PR = READY_TO_OPEN
 Phase 10 = AWAITING_PR_VALIDATION
 ```
 
-This status is not authorization to merge.
+That historical status did not authorize a merge. Final post-merge status:
+
+```text
+Phase 10 = COMPLETE
+PR #14 = MERGED
+Phase 10 merge commit = c7a5f991df9c556408295d01194f1f17c13653b5
+```
 
 ## External Implementation Review gate — APPROVED
 
@@ -1244,7 +1256,9 @@ FIXING_REQUIRED
 BLOCKED
 ```
 
-The recorded APPROVED outcome authorizes PR creation and PR CI validation according to the repository's normal process; it does not authorize merge.
+The recorded APPROVED outcome authorized PR creation and PR CI validation
+according to the repository's normal process; the later PR #14 merge completed
+Phase 10.
 
 ## Phase completion criteria
 

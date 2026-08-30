@@ -23,6 +23,10 @@ const errorCopy: Record<string, string> = {
   practice_not_found: "未找到这项练习，请返回学习概览。",
   practice_conflict: "该练习当前状态不允许此操作，请刷新后重试。",
   episode_not_found: "未找到这条学习记录，请返回写作历史。",
+  wiki_page_not_found: "未找到这个知识页面，请返回知识目录。",
+  wiki_lookup_invalid: "知识页查询内容无效，请检查后重试。",
+  wiki_lookup_ambiguous: "知识页查询结果不明确，请从知识目录重新选择。",
+  wiki_unavailable: "IELTS 知识库暂时不可用，请稍后重试。",
 };
 
 export function presentApiError(error: unknown): string {

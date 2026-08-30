@@ -316,6 +316,11 @@ export type GroundedGuidanceItem = {
   explanation: string;
   knowledge_ids: string[];
   citations: GroundedCitation[];
+  wiki_pages: {
+    knowledge_id: string;
+    page_id: string;
+    title: string;
+  }[];
 };
 
 export type GroundedRecommendationSummary = {
@@ -339,6 +344,109 @@ export type WritingGroundedGuidanceResponse = {
   guidance_version: "writing-grounded-guidance-v1";
   knowledge_version: "ielts-writing-knowledge-v1";
   retrieval_version: "writing-knowledge-structured-v1";
+};
+
+// --- Phase 11 structured Writing Wiki read contracts -----------------------
+
+export type WikiPageType =
+  | "root"
+  | "section"
+  | "criterion"
+  | "band_descriptor"
+  | "task_rule"
+  | "task_type";
+export type WikiRelationType = "contains" | "adjacent_band";
+export type WikiRelationAuthority = "application_structural";
+export type KnowledgeAuthority =
+  | "official_ielts"
+  | "official_british_council"
+  | "official_idp";
+export type WritingTask2TaskType =
+  | "opinion"
+  | "discussion"
+  | "multi_part"
+  | "multi_part_opinion"
+  | "advantage_disadvantage"
+  | "positive_negative"
+  | "cause_solution";
+export type WikiNeighborDirection =
+  | "parent"
+  | "child"
+  | "previous_band"
+  | "next_band";
+
+export type WikiPageSummary = {
+  page_id: string;
+  page_type: WikiPageType;
+  title: string;
+  aliases: string[];
+  parent_page_id: string | null;
+  order: number;
+  has_knowledge: boolean;
+};
+
+export type WikiBreadcrumb = {
+  page_id: string;
+  title: string;
+};
+
+export type WikiSourceProjection = {
+  source_id: string;
+  authority: KnowledgeAuthority;
+  publisher: string;
+  title: string;
+  url: string;
+  source_type: "official_web_or_pdf";
+  verified_at: string;
+  source_revision: string | null;
+  locator: string;
+  page: number | null;
+  section: string | null;
+};
+
+export type WikiKnowledgeProjection = {
+  knowledge_id: string;
+  knowledge_version: "ielts-writing-knowledge-v1";
+  task: "writing_task2";
+  category: "assessment" | "band_guidance" | "task_rule" | "task_understanding";
+  statement: string;
+  criterion: WritingSkill | null;
+  descriptor_band: number | null;
+  task_type: WritingTask2TaskType | null;
+  sources: WikiSourceProjection[];
+};
+
+export type WikiRelationView = {
+  relation_type: WikiRelationType;
+  authority: WikiRelationAuthority;
+  source_page_id: string;
+  target_page_id: string;
+};
+
+export type WikiNeighborView = {
+  page_id: string;
+  page_type: WikiPageType;
+  title: string;
+  relation_type: WikiRelationType;
+  direction: WikiNeighborDirection;
+};
+
+export type WikiPageDetail = {
+  wiki_version: "ielts-writing-wiki-v1";
+  navigation_version: "writing-wiki-navigation-v1";
+  page: WikiPageSummary;
+  breadcrumbs: WikiBreadcrumb[];
+  knowledge: WikiKnowledgeProjection[];
+  children: WikiPageSummary[];
+  relations: WikiRelationView[];
+  neighbors: WikiNeighborView[];
+};
+
+export type WikiIndexResponse = {
+  wiki_version: "ielts-writing-wiki-v1";
+  navigation_version: "writing-wiki-navigation-v1";
+  root_page_id: "writing-task2";
+  pages: WikiPageSummary[];
 };
 
 export type AgentTurnRequest =
@@ -470,6 +578,15 @@ export function createApiClient(options: ApiClientOptions = {}) {
     getWritingGuidance: (learnerId: number) =>
       request<WritingGroundedGuidanceResponse>(
         `/learners/${learnerId}/writing/guidance`,
+      ),
+    getWikiIndex: () => request<WikiIndexResponse>("/knowledge/writing/wiki"),
+    getWikiPage: (pageId: string) =>
+      request<WikiPageDetail>(
+        `/knowledge/writing/wiki/${encodeURIComponent(pageId)}`,
+      ),
+    lookupWikiPage: (query: string) =>
+      request<WikiPageDetail>(
+        `/knowledge/writing/wiki?q=${encodeURIComponent(query)}`,
       ),
     agentTurn: (learnerId: number, input: AgentTurnRequest) =>
       request<AgentTurnResponse>(`/learners/${learnerId}/writing/agent/turn`, { method: "POST", body: input }),

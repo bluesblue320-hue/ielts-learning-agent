@@ -140,12 +140,19 @@ class GroundedCitation(KnowledgeSchema):
     section: str | None = Field(default=None, min_length=1, max_length=200)
 
 
+class GroundedWikiPageLink(KnowledgeSchema):
+    knowledge_id: StableId
+    page_id: StableId
+    title: NonBlankText
+
+
 class GroundedGuidanceItem(KnowledgeSchema):
     criterion: WritingSkillKey
     title: NonBlankText
     explanation: NonBlankText
     knowledge_ids: tuple[StableId, ...] = Field(min_length=1)
     citations: tuple[GroundedCitation, ...] = Field(min_length=1)
+    wiki_pages: tuple[GroundedWikiPageLink, ...] = ()
 
 
 class GroundedRecommendationSummary(KnowledgeSchema):

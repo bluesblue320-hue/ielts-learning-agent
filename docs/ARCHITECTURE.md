@@ -28,7 +28,15 @@ retrieval, provider-free grounded guidance, practice-generation grounding, and
 Chinese-first citation UX. Phase 9 is COMPLETE and merged to `master` through
 PR #13 (merge commit `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`); both external
 reviews are approved. No database table, migration, or new dependency was
-introduced. Phase 10 is authorized for design only.
+introduced. Phase 10 adds the deterministic Writing evaluation/calibration
+harness and is COMPLETE and merged through PR #14 (merge commit
+`c7a5f991df9c556408295d01194f1f17c13653b5`). Phase 11 — Structured Wiki
+Knowledge v1 — is the current phase: P11-00 is COMPLETE, Graph Review is
+APPROVED, and P11-01 is COMPLETE. P11-01 External Audit Review is APPROVED;
+P11-02 is COMPLETE and Phase 11 External Design Review is APPROVED. P11-03
+through P11-15 are COMPLETE. Phase 11 Milestone Review is APPROVED, and P11-16
+is INTERNAL_AUDIT_COMPLETE. External Implementation Review is APPROVED, PR #15
+is OPEN, and PR Validation is PENDING, so Phase 11 is NOT COMPLETE.
 
 The completed [PHASE1_GRAPH.md](PHASE1_GRAPH.md) remains the historical Phase 1
 execution record, and [PHASE2_GRAPH.md](PHASE2_GRAPH.md) records the completed
@@ -116,6 +124,7 @@ The core agent coordinates the learning loop. Planner, Memory, Evaluator, and IE
 | Planner | Select the next learning objective using deterministic priorities, with constrained generation where useful | Phase 3 deterministic planner v1 is historically supported; Phase 7 deterministic memory-aware planner v2 is implemented |
 | Memory | Separate stable profile data, learning events, and derived patterns | Implemented Phase 6 read models (`writing-memory-v1` / `writing-progress-v1`); no new tables |
 | IELTS Knowledge | Ground guidance and practice content in versioned official-source claims | Phase 9 Writing Task 2 static snapshot and deterministic retrieval complete and merged through PR #13 |
+| Wiki Knowledge | Organize canonical Knowledge into deterministic pages, provenance, hierarchy, and read-only navigation | Phase 11 Writing Task 2 static registry, relation ledger, API, Web UX, citation bridge, and Eval coverage implemented through P11-13 |
 | Writing Evaluator | Convert a Task 2 submission into validated structured evidence through the provider protocol | Implemented for Writing Task 2 only |
 | LLM Provider | Isolate vendor HTTP behavior behind a typed contract | Protocol, test fake, and DeepSeek adapter implemented; no runtime fake selection |
 | Tool Layer | Expose focused learning activities behind explicit interfaces | Writing practice implemented; wider skills deferred |
@@ -127,6 +136,11 @@ The core agent coordinates the learning loop. Planner, Memory, Evaluator, and IE
 - API routes remain thin: HTTP validation and transport belong in the API layer; business behavior belongs in services or domain modules.
 - Learner state is structured and persisted; prompts and conversation history are not sources of truth.
 - State describes the learner now. Memory describes prior events or patterns. They remain separate concepts.
+- Knowledge is the canonical, source-backed IELTS factual layer. Wiki is an
+  application-owned organization and navigation projection over that Knowledge;
+  it cannot invent factual claims or change retrieval, scoring, Planner, Memory,
+  or learner-state authority. RAG would be a future retrieval architecture and
+  is not implemented by the static Wiki.
 - Deterministic rules decide what can be calculated reliably. LLMs may assist with generation or qualitative evaluation only through validated structured outputs.
 - Database schema changes use Alembic migrations with upgrade and downgrade paths when reasonably possible.
 - New modules and dependencies are introduced only when a selected graph node requires them.
@@ -160,9 +174,15 @@ official final IELTS Writing band. See [API.md](API.md) for the public contract.
 
 Phase 3 implements learner-state updates and deterministic planning. Phase 4
 implements Writing practice generation and the bounded adaptive Writing closed
-loop. Phase 5 implements the Next.js presentation layer. Long-term semantic
-memory, RAG, Reading, Listening, Speaking, and the wider multi-skill Learning
-Agent remain future targets.
+loop. Phase 5 implements the Next.js presentation layer. The current Wiki is
+Writing Task 2 only, Git-versioned, static, read-only, and provider-free. It has
+no database table, runtime ingestion, semantic/vector search, authoring UI,
+user content, or Reading/Listening/Speaking pages. Canonical Knowledge
+statements remain English, while the Web chrome is Chinese-first. Task-type
+pages are browse-only relative to the frozen adaptive retrieval contract.
+Long-term semantic memory, RAG, the remaining skills, and the wider multi-skill
+Learning Agent remain future targets.
+
 ## Phase 1 architecture boundary
 
 Phase 1 established the following supporting foundation:
@@ -206,7 +226,14 @@ PR #12. Phase 9 implements deterministic Writing Task 2 Knowledge retrieval,
 grounded guidance, practice-generation context, and source-aware Web UX. It is
 COMPLETE and merged through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`); both external reviews are
-approved. Phase 10 is authorized for design only.
+approved. Phase 10 implements the deterministic Writing evaluation/calibration
+harness and is COMPLETE and merged through PR #14 (merge commit
+`c7a5f991df9c556408295d01194f1f17c13653b5`). Phase 11 has completed P11-00,
+Graph Review, P11-01, and P11-02. P11-01 External Audit Review is APPROVED.
+Phase 11 External Design Review is APPROVED; P11-03 through P11-15 are
+COMPLETE, Milestone Review is APPROVED, and P11-16 is
+INTERNAL_AUDIT_COMPLETE. External Implementation Review is APPROVED, PR #15 is
+OPEN, and PR Validation is PENDING.
 Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
 
 ## Phase 5 presentation layer
@@ -220,4 +247,11 @@ through PR #12. Phase 9 is COMPLETE and merged through PR #13 (merge commit
 `75a667ff4ce16b79e7d4ba517081e1bd3d96fd57`): the source-backed static Knowledge
 snapshot, structured retrieval, grounded guidance API, v2 generation context,
 and dashboard citation UX are implemented without a new migration or dependency.
-Both external reviews are approved. Phase 10 is authorized for design only.
+Both external reviews are approved. Phase 10 is COMPLETE and merged through PR
+#14 (merge commit `c7a5f991df9c556408295d01194f1f17c13653b5`). Phase 11 P11-00
+and P11-01 are COMPLETE; Graph Review is APPROVED, External Audit Review is
+APPROVED, and P11-02 is COMPLETE. Phase 11 External Design Review is
+APPROVED. P11-03 through P11-15 are COMPLETE. Phase 11 Milestone Review is
+APPROVED, and P11-16 is INTERNAL_AUDIT_COMPLETE. External Implementation
+Review is APPROVED, PR #15 is OPEN, and PR Validation is PENDING. Phase 11 is
+NOT COMPLETE.

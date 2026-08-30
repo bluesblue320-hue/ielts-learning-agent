@@ -23,6 +23,10 @@ class APIErrorCode(StrEnum):
     PRACTICE_NOT_FOUND = "practice_not_found"
     PRACTICE_CONFLICT = "practice_conflict"
     EPISODE_NOT_FOUND = "episode_not_found"
+    WIKI_LOOKUP_INVALID = "wiki_lookup_invalid"
+    WIKI_LOOKUP_AMBIGUOUS = "wiki_lookup_ambiguous"
+    WIKI_PAGE_NOT_FOUND = "wiki_page_not_found"
+    WIKI_UNAVAILABLE = "wiki_unavailable"
 
 
 class APIErrorDetail(BaseModel):

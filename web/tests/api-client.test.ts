@@ -106,3 +106,47 @@ test("the client sends the published Agent turn request", async () => {
   assert.equal(requestedInit?.method, "POST");
   assert.equal(requestedInit?.body, JSON.stringify({ turn_type: "continue" }));
 });
+
+test("the client reads the frozen Phase 11 Wiki contracts", async () => {
+  const requested: string[] = [];
+  const client = createApiClient({
+    baseUrl: "http://api.example.test",
+    fetch: async (url, init) => {
+      requested.push(`${init?.method ?? "GET"} ${String(url)}`);
+      return Response.json({
+        wiki_version: "ielts-writing-wiki-v1",
+        navigation_version: "writing-wiki-navigation-v1",
+        root_page_id: "writing-task2",
+        pages: [],
+      });
+    },
+  });
+
+  await client.getWikiIndex();
+  await client.getWikiPage("writing-task2-task-response-band-7");
+  await client.lookupWikiPage("Task Response Band 7");
+
+  assert.deepEqual(requested, [
+    "GET http://api.example.test/knowledge/writing/wiki",
+    "GET http://api.example.test/knowledge/writing/wiki/writing-task2-task-response-band-7",
+    "GET http://api.example.test/knowledge/writing/wiki?q=Task%20Response%20Band%207",
+  ]);
+});
+
+test("the Wiki client preserves safe unavailable errors", async () => {
+  const client = createApiClient({
+    baseUrl: "http://api.example.test",
+    fetch: async () => Response.json(
+      { error: { code: "wiki_unavailable", message: "Wiki is temporarily unavailable.", fields: [] } },
+      { status: 503 },
+    ),
+  });
+
+  await assert.rejects(
+    () => client.getWikiIndex(),
+    (error: unknown) =>
+      error instanceof ApiRequestError &&
+      error.status === 503 &&
+      error.code === "wiki_unavailable",
+  );
+});
