@@ -15,8 +15,9 @@ P11-13 = COMPLETE
 P11-14 = COMPLETE
 P11-15 = COMPLETE
 P11-16 = INTERNAL_AUDIT_COMPLETE
-Phase 11 External Implementation Review = CHANGES_REQUESTED
-Phase 11 PR Validation = BLOCKED_BY_EXTERNAL_IMPLEMENTATION_REVIEW
+Phase 11 External Implementation Review = APPROVED
+PR #15 = OPEN
+Phase 11 PR Validation = PENDING
 Merge Authorization = BLOCKED
 Phase 11 = NOT COMPLETE
 ```
@@ -195,8 +196,27 @@ because the Docker daemon remained unavailable:
 | Repair `git diff --check` | PASS |
 
 The repair adds no migration, schema, dependency, scoring, retrieval, Planner,
-Memory, Agent, or practice-target change. External Implementation Review
-remains `CHANGES_REQUESTED`; only the external reviewer may approve it.
+Memory, Agent, or practice-target change. At repair completion, External
+Implementation Review was still `CHANGES_REQUESTED`; this sentence preserves
+that historical chronology rather than the current release state.
+
+## External implementation review outcome
+
+External Implementation Review subsequently re-reviewed repaired head:
+
+```text
+39672b8a0c60e0db26c21418fc463f769021de5f
+```
+
+Result:
+
+```text
+APPROVED
+```
+
+PR #15 is OPEN and GitHub Actions CI run #51 is SUCCESS. Phase 11 PR Validation
+is PENDING, Merge Authorization remains BLOCKED, and Phase 11 remains NOT
+COMPLETE.
 
 ## Persistence and dependency delta
 
@@ -241,7 +261,7 @@ references to future RAG are boundary statements, not implementation.
 
 ## Future work and hard stop
 
-External Implementation Review requested focused repairs after this initial
-audit. PR validation remains blocked until the repaired implementation is
-re-reviewed and explicitly approved. No PR, merge, Phase 12 work, or future RAG
-implementation is authorized by this audit.
+External Implementation Review approved the repaired implementation. PR #15 is
+OPEN and PR Validation is PENDING; merge remains blocked until PR Validation is
+explicitly approved and merge is separately authorized. No merge, Phase 12
+work, or future RAG implementation is authorized by this audit.

@@ -897,8 +897,9 @@ P11-13 = COMPLETE
 P11-14 = COMPLETE
 P11-15 = COMPLETE
 P11-16 = INTERNAL_AUDIT_COMPLETE
-Phase 11 External Implementation Review = CHANGES_REQUESTED
-Phase 11 PR Validation = BLOCKED_BY_EXTERNAL_IMPLEMENTATION_REVIEW
+Phase 11 External Implementation Review = APPROVED
+PR #15 = OPEN
+Phase 11 PR Validation = PENDING
 Merge Authorization = BLOCKED
 Phase 11 = NOT COMPLETE
 ```

@@ -35,8 +35,8 @@ Knowledge v1 — is the current phase: P11-00 is COMPLETE, Graph Review is
 APPROVED, and P11-01 is COMPLETE. P11-01 External Audit Review is APPROVED;
 P11-02 is COMPLETE and Phase 11 External Design Review is APPROVED. P11-03
 through P11-15 are COMPLETE. Phase 11 Milestone Review is APPROVED, and P11-16
-is INTERNAL_AUDIT_COMPLETE. External Implementation Review is
-CHANGES_REQUESTED, so Phase 11 is NOT COMPLETE.
+is INTERNAL_AUDIT_COMPLETE. External Implementation Review is APPROVED, PR #15
+is OPEN, and PR Validation is PENDING, so Phase 11 is NOT COMPLETE.
 
 The completed [PHASE1_GRAPH.md](PHASE1_GRAPH.md) remains the historical Phase 1
 execution record, and [PHASE2_GRAPH.md](PHASE2_GRAPH.md) records the completed
@@ -232,7 +232,8 @@ harness and is COMPLETE and merged through PR #14 (merge commit
 Graph Review, P11-01, and P11-02. P11-01 External Audit Review is APPROVED.
 Phase 11 External Design Review is APPROVED; P11-03 through P11-15 are
 COMPLETE, Milestone Review is APPROVED, and P11-16 is
-INTERNAL_AUDIT_COMPLETE. External Implementation Review is CHANGES_REQUESTED.
+INTERNAL_AUDIT_COMPLETE. External Implementation Review is APPROVED, PR #15 is
+OPEN, and PR Validation is PENDING.
 Node-level execution follows [DEVELOPMENT_LOOP.md](DEVELOPMENT_LOOP.md).
 
 ## Phase 5 presentation layer
@@ -252,4 +253,5 @@ and P11-01 are COMPLETE; Graph Review is APPROVED, External Audit Review is
 APPROVED, and P11-02 is COMPLETE. Phase 11 External Design Review is
 APPROVED. P11-03 through P11-15 are COMPLETE. Phase 11 Milestone Review is
 APPROVED, and P11-16 is INTERNAL_AUDIT_COMPLETE. External Implementation
-Review is CHANGES_REQUESTED, and Phase 11 is NOT COMPLETE.
+Review is APPROVED, PR #15 is OPEN, and PR Validation is PENDING. Phase 11 is
+NOT COMPLETE.

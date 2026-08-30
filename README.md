@@ -36,9 +36,9 @@ P11-00 is COMPLETE; Phase 11 Graph Review is APPROVED; P11-01 is COMPLETE; its
 External Audit Review is APPROVED. P11-02 is COMPLETE; Phase 11 External Design
 Review is APPROVED. P11-03 through P11-13 are COMPLETE. Phase 11 Milestone
 Review is APPROVED. P11-09 through P11-15 are COMPLETE, and P11-16 is
-`INTERNAL_AUDIT_COMPLETE`. External Implementation Review is
-CHANGES_REQUESTED; PR validation and merge authorization remain blocked, so
-Phase 11 is NOT COMPLETE.
+`INTERNAL_AUDIT_COMPLETE`. External Implementation Review is APPROVED, PR #15
+is OPEN, and CI has passed. PR Validation is PENDING and merge authorization
+remains blocked, so Phase 11 is NOT COMPLETE.
 
 Phase 7 connects authoritative current learner state and longitudinal Writing
 Memory to deterministic Planner v2. Memory is consulted only for exact
@@ -199,7 +199,8 @@ Before changing the project, read these documents in order:
    [implementation audit](docs/PHASE11_IMPLEMENTATION_AUDIT.md). P11-02 is
    COMPLETE; External Design Review and Milestone Review are APPROVED; P11-03
    through P11-15 are COMPLETE and P11-16 is INTERNAL_AUDIT_COMPLETE. External
-   Implementation Review is CHANGES_REQUESTED.
+   Implementation Review is APPROVED; PR #15 is OPEN and PR Validation is
+   PENDING.
 3. Completed [Phase 10 graph](docs/PHASE10_GRAPH.md), [internal audit](docs/PHASE10_AUDIT.md),
    and [Eval operator workflow](docs/PHASE10_EVAL_OPERATOR.md). Phase 10 is
    complete and merged through PR #14.
@@ -248,8 +249,8 @@ through PR #14 (merge commit
 COMPLETE; Graph Review is APPROVED, External Audit Review is APPROVED, and
 P11-02 is COMPLETE. Phase 11 External Design Review is APPROVED, and P11-03
 through P11-15 are COMPLETE. Phase 11 Milestone Review is APPROVED, and P11-16
-is INTERNAL_AUDIT_COMPLETE. External Implementation Review is
-CHANGES_REQUESTED, and Phase 11 is NOT COMPLETE.
+is INTERNAL_AUDIT_COMPLETE. External Implementation Review is APPROVED, PR #15
+is OPEN, and PR Validation is PENDING. Phase 11 is NOT COMPLETE.
 
 ## Phase 5 Web MVP
 
