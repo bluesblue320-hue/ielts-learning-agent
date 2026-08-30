@@ -357,6 +357,18 @@ export type WikiPageType =
   | "task_type";
 export type WikiRelationType = "contains" | "adjacent_band";
 export type WikiRelationAuthority = "application_structural";
+export type KnowledgeAuthority =
+  | "official_ielts"
+  | "official_british_council"
+  | "official_idp";
+export type WritingTask2TaskType =
+  | "opinion"
+  | "discussion"
+  | "multi_part"
+  | "multi_part_opinion"
+  | "advantage_disadvantage"
+  | "positive_negative"
+  | "cause_solution";
 export type WikiNeighborDirection =
   | "parent"
   | "child"
@@ -380,7 +392,7 @@ export type WikiBreadcrumb = {
 
 export type WikiSourceProjection = {
   source_id: string;
-  authority: "official_ielts";
+  authority: KnowledgeAuthority;
   publisher: string;
   title: string;
   url: string;
@@ -400,7 +412,7 @@ export type WikiKnowledgeProjection = {
   statement: string;
   criterion: WritingSkill | null;
   descriptor_band: number | null;
-  task_type: string | null;
+  task_type: WritingTask2TaskType | null;
   sources: WikiSourceProjection[];
 };
 

@@ -15,7 +15,7 @@ P11-13 = COMPLETE
 P11-14 = COMPLETE
 P11-15 = COMPLETE
 P11-16 = INTERNAL_AUDIT_COMPLETE
-Phase 11 External Implementation Review = PENDING
+Phase 11 External Implementation Review = CHANGES_REQUESTED
 Phase 11 PR Validation = BLOCKED_BY_EXTERNAL_IMPLEMENTATION_REVIEW
 Merge Authorization = BLOCKED
 Phase 11 = NOT COMPLETE
@@ -101,8 +101,9 @@ source identity, title, locator, or semantic similarity.
 
 The existing Phase 10 Eval architecture now includes `wiki_knowledge` evidence
 and deterministic findings. It verifies all frozen counts and versions,
-identity syntax, preorder, breadcrumbs, incident relation and neighbor
-projection, exact title lookup, safe unknown handling, provenance, API
+identity syntax, preorder, breadcrumbs, incident relations, and neighbor
+projection independently derived from canonical pages and relations, exact
+title lookup, safe unknown handling, provenance, API
 read-only behavior, citation mapping, and unchanged guidance retrieval.
 
 Wiki remains an organization/navigation projection over source-backed IELTS
@@ -142,6 +143,60 @@ bounded phase.
 
 No live LLM provider credential was required. Live calibration was not run and
 is not a Phase 11 gate.
+
+## External implementation review repair addendum
+
+Repair date: 2026-08-30
+
+The initial validation table above is preserved as the original P11-16 audit
+evidence. External Implementation Review subsequently identified two focused
+implementation gaps and one documentation inconsistency. The repair from
+reviewed head `d76bb4b7bba242798cb77ae4120ebb176487e879` makes these changes:
+
+- Wiki Eval now derives expected neighbor semantics directly from canonical
+  pages, the canonical relation ledger, and the frozen `contains` and
+  `adjacent_band` orientations. It orders parent, canonical children,
+  previous-band, then next-band and compares all five public semantic fields
+  against `WIKI_SERVICE.neighbors()` for all 58 pages.
+- A monkeypatch regression proves a stable wrong Band 7 direction is rejected
+  with VETO code `wiki_neighbor_projection_mismatch`; the expected result does
+  not call the service neighbor projection.
+- The TypeScript client now exposes the full closed backend
+  `KnowledgeAuthority` union (`official_ielts`, `official_british_council`, and
+  `official_idp`) and uses it for `WikiSourceProjection.authority`.
+- `WikiKnowledgeProjection.task_type` now uses the closed seven-value
+  `WritingTask2TaskType` union. Typecheck covers every authority, an allowed
+  task type, and a negative arbitrary-string assertion without a new
+  dependency.
+- The P11-14 node body now says `COMPLETE`. The Wiki policy's final section is
+  explicitly a current implementation-status note, not a P11-02 semantic
+  completion gate.
+
+Refreshed repair validation used an isolated temporary PostgreSQL 18 database
+because the Docker daemon remained unavailable:
+
+| Repair validation | Result |
+| --- | --- |
+| Required focused backend Wiki/guidance suites | `49 passed`, 1 existing warning |
+| Full backend suite with isolated PostgreSQL | `1201 passed`, 1 existing warning, 37.68s |
+| Deterministic gate self-tests, including stable-wrong-neighbor mutation | `79 passed`, 1 existing warning |
+| Canonical Phase 10 corpus | `11/11 PASS`, FAIL=0, VETO=0 |
+| Frontend ESLint | PASS |
+| Frontend TypeScript `--noEmit` | PASS |
+| Frontend unit tests | `21 passed` |
+| Frontend production build | PASS |
+| Full Playwright suite | `8 passed`, including 2 Phase 11 Wiki flows |
+| Changed-Python Ruff scan and Python compileall | PASS |
+| Alembic current/head | `0006_submission_claim_recovery (head)` |
+| Alembic downgrade/upgrade | PASS: head → base → head |
+| Repair dependency and migration delta | NONE |
+| Repair forbidden-scope additions scan | PASS; no matches |
+| Repair high-confidence secret scan | PASS; no matches |
+| Repair `git diff --check` | PASS |
+
+The repair adds no migration, schema, dependency, scoring, retrieval, Planner,
+Memory, Agent, or practice-target change. External Implementation Review
+remains `CHANGES_REQUESTED`; only the external reviewer may approve it.
 
 ## Persistence and dependency delta
 
@@ -186,8 +241,7 @@ references to future RAG are boundary statements, not implementation.
 
 ## Future work and hard stop
 
-The next authorized action is external implementation review against the Phase
-11 graph, both Knowledge policies, frozen Phase 9 behavior, and Phase 10 Eval
-contracts. PR validation remains blocked until that review is explicitly
-approved. No PR, merge, Phase 12 work, or future RAG implementation is
-authorized by this audit.
+External Implementation Review requested focused repairs after this initial
+audit. PR validation remains blocked until the repaired implementation is
+re-reviewed and explicitly approved. No PR, merge, Phase 12 work, or future RAG
+implementation is authorized by this audit.

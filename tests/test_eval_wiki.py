@@ -5,11 +5,13 @@ from decimal import Decimal
 from fastapi.testclient import TestClient
 
 from app.eval.wiki import WikiEvalEvidence, evaluate_wiki_knowledge
+from app.eval.schemas import EvalSeverity, EvalStatus
 from app.main import create_app
 from app.schemas.common import BandScore
 from app.schemas.knowledge import KnowledgeRetrievalPurpose, KnowledgeRetrievalQuery
-from app.schemas.wiki import WikiRelationType
+from app.schemas.wiki import WikiNeighborDirection, WikiRelationType
 from app.wiki.relations import WIKI_RELATIONS
+from app.wiki.service import WIKI_SERVICE
 
 
 def _evidence(**updates: object) -> WikiEvalEvidence:
@@ -80,6 +82,30 @@ def test_wiki_eval_vetoes_relation_or_retrieval_corruption() -> None:
     assert evaluate_wiki_knowledge(
         _evidence(expected_retrieval_ids=("writing-task-response-band-7",))
     ).failure_codes == ("wiki_changed_adaptive_retrieval",)
+
+
+def test_wiki_eval_vetoes_stable_wrong_neighbor_projection(monkeypatch) -> None:
+    original_neighbors = WIKI_SERVICE.neighbors
+
+    def stable_wrong_neighbors(page):
+        neighbors = original_neighbors(page)
+        if page.page_id != "writing-task2-task-response-band-7":
+            return neighbors
+        return (
+            neighbors[0],
+            neighbors[1].model_copy(
+                update={"direction": WikiNeighborDirection.NEXT_BAND}
+            ),
+            neighbors[2],
+        )
+
+    monkeypatch.setattr(WIKI_SERVICE, "neighbors", stable_wrong_neighbors)
+
+    finding = evaluate_wiki_knowledge(_evidence())
+
+    assert finding.status is EvalStatus.FAIL
+    assert finding.severity is EvalSeverity.VETO
+    assert finding.failure_codes == ("wiki_neighbor_projection_mismatch",)
 
 
 def test_wiki_api_is_read_only_and_preserves_safe_failures() -> None:

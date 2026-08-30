@@ -869,10 +869,11 @@ authentication
 payments
 ```
 
-## 18. P11-02 completion gate
+## 18. Current Phase 11 implementation status
 
-This contract is ready for external design review only when repository status
-truthfully records:
+P11-02 was frozen and externally approved before implementation began. The
+following block records current Phase 11 implementation status only; it is not
+part of the semantic completion condition for the P11-02 design contract.
 
 ```text
 P11-00 = COMPLETE
@@ -896,7 +897,7 @@ P11-13 = COMPLETE
 P11-14 = COMPLETE
 P11-15 = COMPLETE
 P11-16 = INTERNAL_AUDIT_COMPLETE
-Phase 11 External Implementation Review = PENDING
+Phase 11 External Implementation Review = CHANGES_REQUESTED
 Phase 11 PR Validation = BLOCKED_BY_EXTERNAL_IMPLEMENTATION_REVIEW
 Merge Authorization = BLOCKED
 Phase 11 = NOT COMPLETE

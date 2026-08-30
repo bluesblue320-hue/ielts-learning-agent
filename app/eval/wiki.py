@@ -22,7 +22,10 @@ from app.knowledge.writing_task2_v1 import WRITING_TASK2_KNOWLEDGE_UNITS
 from app.schemas.knowledge import KnowledgeRetrievalQuery, KnowledgeSource, KnowledgeUnit
 from app.schemas.wiki import (
     WIKI_PAGE_ID_PATTERN,
+    WikiNeighborDirection,
+    WikiNeighborView,
     WikiPage,
+    WikiPageType,
     WikiRelation,
     WikiRelationAuthority,
     WikiRelationType,
@@ -32,6 +35,15 @@ from app.wiki.registry import WIKI_PAGES
 from app.wiki.relations import WIKI_RELATIONS
 from app.wiki.service import WIKI_SERVICE
 from app.wiki.validation import validate_wiki_snapshot
+
+
+NeighborSemantic = tuple[
+    str,
+    WikiPageType,
+    str,
+    WikiRelationType,
+    WikiNeighborDirection,
+]
 
 
 class WikiEvalEvidence(EvalSchema):
@@ -113,7 +125,11 @@ def evaluate_wiki_knowledge(
             for relation in expected_relations
         ):
             return _failure("wiki_incident_relation_mismatch")
-        if WIKI_SERVICE.neighbors(page) != WIKI_SERVICE.neighbors(page):
+        expected_neighbors = _expected_neighbors_for_page(page, pages, relations)
+        observed_neighbors = _neighbor_semantics(WIKI_SERVICE.neighbors(page))
+        if observed_neighbors != expected_neighbors:
+            return _failure("wiki_neighbor_projection_mismatch")
+        if observed_neighbors != _neighbor_semantics(WIKI_SERVICE.neighbors(page)):
             return _failure("wiki_neighbor_not_deterministic")
         for projection in detail.knowledge:
             unit = next(
@@ -181,6 +197,94 @@ def evaluate_wiki_knowledge(
         evaluator=EvaluatorId.WIKI_KNOWLEDGE,
         status=EvalStatus.PASS,
         severity=EvalSeverity.INFO,
+    )
+
+
+def _expected_neighbors_for_page(
+    page: WikiPage,
+    pages: Sequence[WikiPage],
+    relations: Sequence[WikiRelation],
+) -> tuple[NeighborSemantic, ...]:
+    """Derive the frozen neighbor projection without using WikiService."""
+
+    page_by_id = {candidate.page_id: candidate for candidate in pages}
+    page_order = {
+        candidate.page_id: index for index, candidate in enumerate(pages)
+    }
+    buckets: dict[WikiNeighborDirection, list[NeighborSemantic]] = {
+        direction: [] for direction in WikiNeighborDirection
+    }
+
+    def append_neighbor(
+        page_id: str,
+        relation_type: WikiRelationType,
+        direction: WikiNeighborDirection,
+    ) -> None:
+        neighbor = page_by_id[page_id]
+        buckets[direction].append(
+            (
+                neighbor.page_id,
+                neighbor.page_type,
+                neighbor.title,
+                relation_type,
+                direction,
+            )
+        )
+
+    for relation in relations:
+        if relation.relation_type is WikiRelationType.CONTAINS:
+            if relation.source_page_id == page.page_id:
+                append_neighbor(
+                    relation.target_page_id,
+                    relation.relation_type,
+                    WikiNeighborDirection.CHILD,
+                )
+            elif relation.target_page_id == page.page_id:
+                append_neighbor(
+                    relation.source_page_id,
+                    relation.relation_type,
+                    WikiNeighborDirection.PARENT,
+                )
+        elif relation.relation_type is WikiRelationType.ADJACENT_BAND:
+            if relation.source_page_id == page.page_id:
+                append_neighbor(
+                    relation.target_page_id,
+                    relation.relation_type,
+                    WikiNeighborDirection.NEXT_BAND,
+                )
+            elif relation.target_page_id == page.page_id:
+                append_neighbor(
+                    relation.source_page_id,
+                    relation.relation_type,
+                    WikiNeighborDirection.PREVIOUS_BAND,
+                )
+
+    for neighbors in buckets.values():
+        neighbors.sort(key=lambda neighbor: page_order[neighbor[0]])
+    return tuple(
+        neighbor
+        for direction in (
+            WikiNeighborDirection.PARENT,
+            WikiNeighborDirection.CHILD,
+            WikiNeighborDirection.PREVIOUS_BAND,
+            WikiNeighborDirection.NEXT_BAND,
+        )
+        for neighbor in buckets[direction]
+    )
+
+
+def _neighbor_semantics(
+    neighbors: Sequence[WikiNeighborView],
+) -> tuple[NeighborSemantic, ...]:
+    return tuple(
+        (
+            neighbor.page_id,
+            neighbor.page_type,
+            neighbor.title,
+            neighbor.relation_type,
+            neighbor.direction,
+        )
+        for neighbor in neighbors
     )
 
 

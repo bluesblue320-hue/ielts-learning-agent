@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**BATCH C COMPLETE — INTERNAL AUDIT COMPLETE; EXTERNAL IMPLEMENTATION REVIEW PENDING**
+**BATCH C REPAIR COMPLETE — EXTERNAL IMPLEMENTATION REVIEW CHANGES REQUESTED**
 
 Repository:
 
@@ -56,7 +56,7 @@ P11-13 = COMPLETE
 P11-14 = COMPLETE
 P11-15 = COMPLETE
 P11-16 = INTERNAL_AUDIT_COMPLETE
-Phase 11 External Implementation Review = PENDING
+Phase 11 External Implementation Review = CHANGES_REQUESTED
 Phase 11 PR Validation = BLOCKED_BY_EXTERNAL_IMPLEMENTATION_REVIEW
 Merge Authorization = BLOCKED
 Phase 11 = NOT COMPLETE
@@ -738,7 +738,7 @@ P11-15 Full Phase 1-11 Regression Validation [COMPLETE]
 P11-16 Internal Audit [INTERNAL_AUDIT_COMPLETE]
   |
   v
-Phase 11 External Implementation Review [PENDING]
+Phase 11 External Implementation Review [CHANGES_REQUESTED]
   |
   v
 Phase 11 PR Validation [BLOCKED_BY_EXTERNAL_IMPLEMENTATION_REVIEW]
@@ -1357,7 +1357,7 @@ No live provider.
 Current status:
 
 ```text
-ACTIVE
+COMPLETE
 ```
 
 Update as required:

@@ -189,7 +189,7 @@ P11-13 = COMPLETE
 P11-14 = COMPLETE
 P11-15 = COMPLETE
 P11-16 = INTERNAL_AUDIT_COMPLETE
-Phase 11 External Implementation Review = PENDING
+Phase 11 External Implementation Review = CHANGES_REQUESTED
 Phase 11 PR Validation = BLOCKED_BY_EXTERNAL_IMPLEMENTATION_REVIEW
 Merge Authorization = BLOCKED
 Phase 11 = NOT COMPLETE
@@ -242,8 +242,8 @@ Graph Review APPROVED. P11-01 and P11-02 are COMPLETE; P11-01 External Audit
 Review and Phase 11 External Design Review are APPROVED. P11-03 through P11-08
 are COMPLETE. Phase 11 Milestone Review is APPROVED. P11-09 is COMPLETE,
 P11-10 through P11-15 are COMPLETE, and P11-16 is INTERNAL_AUDIT_COMPLETE.
-Phase 11 External Implementation Review is PENDING; PR validation and merge
-authorization remain blocked, so Phase 11 is NOT COMPLETE.
+Phase 11 External Implementation Review is CHANGES_REQUESTED; PR validation
+and merge authorization remain blocked, so Phase 11 is NOT COMPLETE.
 
 The development loop defines HOW each graph node should be executed.
 
